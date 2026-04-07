@@ -294,7 +294,20 @@
 
       if (canLoad) {
         console.log(`[Auto-Load] Carregando ${currentOffice} automaticamente...`);
-        setTimeout(() => setChipLoading(btn, false), 120);
+        const year = STATE.currentElectionYear;
+        const autoLoadPromise = (currentOffice === 'deputado')
+          ? window.onClickLoadData_Deputies(uf, year)
+          : window.onClickLoadData_General();
+
+        Promise.resolve(autoLoadPromise)
+          .catch((error) => {
+            console.error(`[Auto-Load] Falha ao carregar ${currentOffice}:`, error);
+            showToast(`Erro ao carregar dados: ${error.message}`, 'error');
+          })
+          .finally(() => {
+            setChipLoading(btn, false);
+            updateLoadButtonState();
+          });
       } else {
         setChipLoading(btn, false);
         // Mostra mensagem se não pode carregar
@@ -580,7 +593,38 @@
       currentCargo = `${currentOffice}_ord`;
       applyDefaultVizColorStyleForCurrentCargo();
 
-      // Limpa dados do cargo anterior
+      const hasCurrentMunicipalData = !!currentDataCollection[currentCargo];
+      const uf = dom.selectUFMunicipal?.value;
+      const municipio = dom.selectMunicipio?.value;
+      const canAutoLoad = !!(uf && municipio);
+
+      if (hasCurrentMunicipalData) {
+        updateElectionTypeUI();
+        updateConditionalUI();
+        applyFiltersAndRedraw();
+        updateSelectionUI(STATE.isFilterAggregationActive);
+        updateLoadButtonState();
+        clearPendingFilterChanges();
+        return;
+      }
+
+      if (canAutoLoad) {
+        setChipLoading(btn, true);
+
+        Promise.resolve(window.onClickLoadData_Municipal())
+          .catch((error) => {
+            console.error(`[Auto-Load] Falha ao carregar ${newOffice}:`, error);
+            showToast(`Erro ao carregar dados: ${error.message}`, 'error');
+          })
+          .finally(() => {
+            setChipLoading(btn, false);
+            updateLoadButtonState();
+          });
+
+        return;
+      }
+
+      // Sem município selecionado: apenas prepara a UI para o próximo load manual/automático
       clearSelection(true);
       currentDataCollection = {};
       uniqueCidades.clear();
@@ -588,8 +632,6 @@
       STATE.candidates = {}; STATE.metrics = {}; STATE.inaptos = {};
       STATE.dataHas2T = {}; STATE.dataHasInaptos = {};
       clearVereadorData();
-
-      // Habilita botão de carregar se município estiver selecionado
       updateLoadButtonState();
       clearPendingFilterChanges();
     });

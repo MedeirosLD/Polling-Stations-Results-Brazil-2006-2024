@@ -110,10 +110,12 @@ function populateVizCandidatoDropdown(turno) {
     }
 
     const totalVotesByCand = {};
-    const ids = Array.from(selectedLocationIDs);
     const processedKeys = new Set();
 
-    const usarTodosVizDeputy = !isVereador && STATE.isFilterAggregationActive &&
+    const geojsonDep = currentDataCollection[currentCargo];
+    const ids = Array.from(selectedLocationIDs);
+    const shouldUseFilteredFeatures = ids.length === 0 && geojsonDep?.features?.length;
+    const usarTodosVizDeputy = !isVereador && !shouldUseFilteredFeatures && STATE.isFilterAggregationActive &&
       STATE.currentElectionType === 'geral' &&
       currentCidadeFilter === 'all' &&
       ids.length > 100;
@@ -126,6 +128,40 @@ function populateVizCandidatoDropdown(turno) {
           if (cid === '95' || cid === '96') continue;
           totalVotesByCand[cid] = (totalVotesByCand[cid] || 0) + (parseInt(v) || 0);
         }
+      }
+    } else if (shouldUseFilteredFeatures) {
+      const savedPerformanceFilter = performanceFilterMinPct;
+      performanceFilterMinPct = 0;
+
+      try {
+        geojsonDep.features.forEach((feature) => {
+          if (typeof filterFeature === 'function' && !filterFeature(feature)) return;
+
+          const p = feature.properties;
+          const z = getProp(p, 'nr_zona');
+          const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
+          const m = getProp(p, 'cd_localidade_tse') || getProp(p, 'CD_MUNICIPIO');
+          if (!z || !l) return;
+
+          const key = isVereador
+            ? `${parseInt(z)}_${parseInt(l)}`
+            : `${parseInt(z)}_${parseInt(m)}_${parseInt(l)}`;
+
+          if (!key || processedKeys.has(key)) return;
+          processedKeys.add(key);
+
+          const locData = resultStore[key];
+          if (!locData) return;
+          const votes = locData[typeKey];
+          if (!votes) return;
+
+          for (const [cid, v] of Object.entries(votes)) {
+            if (cid === '95' || cid === '96') continue;
+            totalVotesByCand[cid] = (totalVotesByCand[cid] || 0) + (parseInt(v) || 0);
+          }
+        });
+      } finally {
+        performanceFilterMinPct = savedPerformanceFilter;
       }
     } else {
       for (let i = 0; i < ids.length; i++) {
@@ -630,19 +666,19 @@ function filterFeature(feature) {
   if (currentVizMode.startsWith('desempenho') && performanceFilterMinPct > 0) {
     const candidatoKey = dom.selectVizCandidato?.value;
     if (candidatoKey) {
-      if (currentCargo.startsWith('deputado')) {
-        // Para deputados, buscar votos em STATE.deputyResults
-        const candParsed = parseCandidateKey(candidatoKey);
-        const candNome = candParsed.nome.toUpperCase().trim();
-        const isEstadual = currentCargo.includes('estadual');
-        const typeKey = isEstadual ? 'e' : 'f';
-        const candId = getDeputyIdByName(candNome);
+      if (currentCargo.startsWith('deputado') || currentCargo.startsWith('vereador')) {
+        const isVereador = currentCargo.startsWith('vereador');
+        const typeKey = isVereador ? 'v' : (currentCargo.includes('estadual') ? 'e' : 'f');
+        const candId = resolveVisualizationCandidateId(candidatoKey, currentCargo);
         if (candId) {
           const z = parseInt(getProp(props, 'nr_zona'));
           const l = parseInt(getProp(props, 'nr_locvot') || getProp(props, 'nr_local_votacao'));
           const m = parseInt(getProp(props, 'cd_localidade_tse') || getProp(props, 'CD_MUNICIPIO'));
-          if (!isNaN(z) && !isNaN(l) && !isNaN(m)) {
-            const allRes = STATE.deputyResults[`${z}_${m}_${l}`];
+          const hasValidKey = !isNaN(z) && !isNaN(l) && (isVereador || !isNaN(m));
+          if (hasValidKey) {
+            const resultKey = isVereador ? `${z}_${l}` : `${z}_${m}_${l}`;
+            const resultStore = isVereador ? STATE.vereadorResults : STATE.deputyResults;
+            const allRes = resultStore[resultKey];
             const votes = allRes?.[typeKey];
             if (votes) {
               let total = 0;
@@ -1075,8 +1111,7 @@ function getFeatureStyle(feature) {
     } else if (currentVizMode.startsWith('desempenho')) {
       const candidatoKey = dom.selectVizCandidato.value;
       if (candidatoKey && depData.votes) {
-        let candId = dom.selectVizCandidato.dataset.selectedDeputyId || null;
-        if (!candId) { const cp = parseCandidateKey(candidatoKey); candId = getDeputyIdByName(cp.nome.toUpperCase().trim()); }
+        const candId = resolveVisualizationCandidateId(candidatoKey, currentCargo);
         if (candId && depData.votes[candId] !== undefined) {
           const cv = parseInt(depData.votes[candId]) || 0;
           pctVal = (total > 0) ? (cv / total) * 100 : 0;
@@ -1137,11 +1172,7 @@ function getFeatureStyle(feature) {
     } else if (currentVizMode.startsWith('desempenho')) {
       const candidatoKey = dom.selectVizCandidato.value;
       if (candidatoKey && depData.votes) {
-        let candId = dom.selectVizCandidato.dataset.selectedDeputyId || null;
-        if (!candId) {
-          const candParsed = parseCandidateKey(candidatoKey);
-          candId = getDeputyIdByName(candParsed.nome.toUpperCase().trim());
-        }
+        const candId = resolveVisualizationCandidateId(candidatoKey, currentCargo);
 
         if (candId && depData.votes[candId] !== undefined) {
           const candVotes = parseInt(depData.votes[candId]) || 0;
