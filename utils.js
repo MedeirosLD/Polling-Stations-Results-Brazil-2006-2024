@@ -46,6 +46,17 @@ if (typeof window !== 'undefined') {
 }
 
 const norm = s => (s || "").normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/'/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
 function colorForParty(sg) { return PARTY_COLORS.get((sg || '').toUpperCase()) || DEFAULT_SWATCH; }
 function fmtPct(x) { return isFinite(x) ? (x * 100).toFixed(2).replace('.', ',') + "%" : "-"; }
 function fmtInt(n) { return (n || 0).toLocaleString('pt-BR'); }
@@ -190,6 +201,76 @@ function getUniversalGradientColor(baseColorHex, pct) {
 
 // Calcula min/max/média de votos para o candidato selecionado no modo Desempenho
 // IMPORTANTE: Ignora o filtro de desempenho para calcular stats de TODOS os locais
+function resolveVisualizationCandidateId(candidatoKey, cargo = currentCargo) {
+  if (!candidatoKey) return null;
+
+  const isVereador = String(cargo || '').startsWith('vereador');
+  const metaStore = isVereador ? (STATE.vereadorMetadata || {}) : (STATE.deputyMetadata || {});
+  const prefixCache = isVereador ? (STATE._vereadorPartyPrefixCache || {}) : (STATE._partyPrefixCache || {});
+
+  const selectedOption = dom.selectVizCandidato?.selectedOptions?.[0];
+  const optionCandidateId = selectedOption?.dataset?.candidateId;
+  if (optionCandidateId && Object.prototype.hasOwnProperty.call(metaStore, optionCandidateId)) return optionCandidateId;
+
+  const optionByValue = Array.from(dom.selectVizCandidato?.options || []).find((opt) => opt.value === candidatoKey);
+  const optionByValueCandidateId = optionByValue?.dataset?.candidateId;
+  if (optionByValueCandidateId && Object.prototype.hasOwnProperty.call(metaStore, optionByValueCandidateId)) {
+    return optionByValueCandidateId;
+  }
+
+  const selectedDatasetId = dom.selectVizCandidato?.dataset?.selectedDeputyId;
+  if (selectedDatasetId && Object.prototype.hasOwnProperty.call(metaStore, selectedDatasetId)) return selectedDatasetId;
+
+  const parsed = parseCandidateKey(candidatoKey);
+  const normalizedName = norm(parsed.nome);
+  const normalizedValue = norm(candidatoKey);
+
+  for (const [id, meta] of Object.entries(metaStore)) {
+    if (norm(meta?.[0] || id) === normalizedName) return id;
+    if (id.length <= 2) {
+      const resolvedParty = normalizePartyAlias((prefixCache[id] || meta?.[1] || '').toUpperCase());
+      const legendLabel = norm(`Voto de Legenda — ${resolvedParty}`);
+      if (legendLabel === normalizedName || legendLabel === normalizedValue) return id;
+    }
+  }
+
+  if (!isVereador) {
+    const byDeputyName = getDeputyIdByName(parsed.nome.toUpperCase().trim());
+    if (byDeputyName && metaStore[byDeputyName]) return byDeputyName;
+  }
+
+  return null;
+}
+
+function resolveCandidateVoteKey(votesMap, candidateId) {
+  if (!votesMap || candidateId === null || candidateId === undefined) return null;
+
+  const rawId = String(candidateId).trim();
+  if (!rawId) return null;
+
+  if (Object.prototype.hasOwnProperty.call(votesMap, rawId)) return rawId;
+
+  const parsedRawId = parseInt(rawId, 10);
+  const numericId = Number.isFinite(parsedRawId) ? String(parsedRawId) : null;
+  if (numericId && Object.prototype.hasOwnProperty.call(votesMap, numericId)) return numericId;
+
+  for (const key of Object.keys(votesMap)) {
+    const trimmedKey = String(key).trim();
+    if (trimmedKey === rawId) return key;
+
+    const parsedKey = parseInt(trimmedKey, 10);
+    if (numericId && Number.isFinite(parsedKey) && String(parsedKey) === numericId) return key;
+  }
+
+  return null;
+}
+
+function getCandidateVotesFromMap(votesMap, candidateId) {
+  const resolvedKey = resolveCandidateVoteKey(votesMap, candidateId);
+  if (!resolvedKey) return null;
+  return parseInt(votesMap[resolvedKey], 10) || 0;
+}
+
 function calculateCandidateStats(candidatoKey) {
   const geojson = currentDataCollection[currentCargo];
   if (!geojson || !candidatoKey) return null;
@@ -204,13 +285,7 @@ function calculateCandidateStats(candidatoKey) {
     const isVer = currentCargo.startsWith('vereador');
     const typeKey = isVer ? 'v' : (currentCargo.includes('estadual') ? 'e' : 'f');
     const resultStore = isVer ? STATE.vereadorResults : STATE.deputyResults;
-    const metaStore = isVer ? STATE.vereadorMetadata : STATE.deputyMetadata;
-
-    const candParsed = parseCandidateKey(candidatoKey);
-    const candNome = candParsed.nome.toUpperCase().trim();
-
-    let candId = dom.selectVizCandidato?.dataset?.selectedDeputyId || null;
-    if (!candId) candId = getDeputyIdByName(candNome);
+    const candId = resolveVisualizationCandidateId(candidatoKey, currentCargo);
 
     if (candId) {
       geojson.features.forEach(f => {
@@ -230,7 +305,8 @@ function calculateCandidateStats(candidatoKey) {
           if (cid !== '95' && cid !== '96') total += parseInt(v) || 0;
         }
         if (total === 0) return;
-        const pct = ((parseInt(votes[candId]) || 0) / total) * 100;
+        const candidateVotes = getCandidateVotesFromMap(votes, candId) || 0;
+        const pct = (candidateVotes / total) * 100;
         if (pct < minPct) minPct = pct;
         if (pct > maxPct) maxPct = pct;
         totalPct += pct;
@@ -405,4 +481,12 @@ function updatePerformanceStatsUI() {
       applyFiltersAndRedraw();
     });
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.escapeHtml = escapeHtml;
+  window.escapeAttribute = escapeAttribute;
+  window.resolveVisualizationCandidateId = resolveVisualizationCandidateId;
+  window.resolveCandidateVoteKey = resolveCandidateVoteKey;
+  window.getCandidateVotesFromMap = getCandidateVotesFromMap;
 }

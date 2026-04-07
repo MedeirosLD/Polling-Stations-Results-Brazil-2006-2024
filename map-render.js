@@ -65,6 +65,21 @@ function getResolvedVisualizationCandidateId(candidatoKey, cargo = currentCargo)
   return null;
 }
 
+function getCandidateVotesForVisualization(votesMap, candidateId) {
+  if (typeof getCandidateVotesFromMap === 'function') {
+    return getCandidateVotesFromMap(votesMap, candidateId);
+  }
+  if (typeof window !== 'undefined' && typeof window.getCandidateVotesFromMap === 'function') {
+    return window.getCandidateVotesFromMap(votesMap, candidateId);
+  }
+  if (!votesMap || candidateId === null || candidateId === undefined) return null;
+  const rawId = String(candidateId).trim();
+  if (Object.prototype.hasOwnProperty.call(votesMap, rawId)) {
+    return parseInt(votesMap[rawId], 10) || 0;
+  }
+  return null;
+}
+
 function populateVizCandidatoDropdown(turno) {
   const previousValue = dom.selectVizCandidato.value;
   const previousDeputyId = dom.selectVizCandidato.dataset.selectedDeputyId || '';
@@ -696,7 +711,8 @@ function filterFeature(feature) {
                 if (cid !== '95' && cid !== '96') total += parseInt(v) || 0;
               }
               if (total > 0) {
-                const pctCand = ((parseInt(votes[candId]) || 0) / total) * 100;
+                const candidateVotes = getCandidateVotesForVisualization(votes, candId) || 0;
+                const pctCand = (candidateVotes / total) * 100;
                 if (pctCand < performanceFilterMinPct) return false;
               }
             }
@@ -1122,8 +1138,8 @@ function getFeatureStyle(feature) {
       const candidatoKey = dom.selectVizCandidato.value;
       if (candidatoKey && depData.votes) {
         const candId = getResolvedVisualizationCandidateId(candidatoKey, currentCargo);
-        if (candId && depData.votes[candId] !== undefined) {
-          const cv = parseInt(depData.votes[candId]) || 0;
+        const cv = candId ? getCandidateVotesForVisualization(depData.votes, candId) : null;
+        if (candId && cv !== null) {
           pctVal = (total > 0) ? (cv / total) * 100 : 0;
           const isLegendaCand = candId.length <= 2;
           if (isLegendaCand) {
@@ -1183,9 +1199,9 @@ function getFeatureStyle(feature) {
       const candidatoKey = dom.selectVizCandidato.value;
       if (candidatoKey && depData.votes) {
         const candId = getResolvedVisualizationCandidateId(candidatoKey, currentCargo);
+        const candVotes = candId ? getCandidateVotesForVisualization(depData.votes, candId) : null;
 
-        if (candId && depData.votes[candId] !== undefined) {
-          const candVotes = parseInt(depData.votes[candId]) || 0;
+        if (candId && candVotes !== null) {
           pctVal = (depData.total > 0) ? (candVotes / depData.total) * 100 : 0;
 
           const isLegendaCand = candId.length <= 2;
