@@ -354,9 +354,31 @@ function getDefaultVizColorStyleForOffice(office = currentOffice) {
   return ['presidente', 'governador', 'senador', 'prefeito'].includes(office) ? 'gradient' : 'static';
 }
 
+function isGradientVizBlockedForCurrentCargo() {
+  return currentOffice === 'deputado' || currentOffice === 'vereador';
+}
+
+function syncVizColorStyleControl() {
+  if (!dom.selectVizColorStyle) return;
+
+  const gradientOption = dom.selectVizColorStyle.querySelector('option[value="gradient"]');
+  const gradientBlocked = isGradientVizBlockedForCurrentCargo();
+
+  if (gradientOption) {
+    gradientOption.hidden = gradientBlocked;
+    gradientOption.disabled = gradientBlocked;
+  }
+
+  if (gradientBlocked && currentVizColorStyle === 'gradient') {
+    currentVizColorStyle = 'static';
+  }
+
+  dom.selectVizColorStyle.value = currentVizColorStyle;
+}
+
 function applyDefaultVizColorStyleForCurrentCargo() {
   currentVizColorStyle = getDefaultVizColorStyleForOffice(currentOffice);
-  if (dom.selectVizColorStyle) dom.selectVizColorStyle.value = currentVizColorStyle;
+  syncVizColorStyleControl();
 }
 
 function isLimitedCensusYear2006() {
@@ -410,6 +432,7 @@ function updateCensusControlsForYear() {
 function updateConditionalUI() {
   const show2T = STATE.dataHas2T[currentCargo] || false;
   updateCensusControlsForYear();
+  syncVizColorStyleControl();
   // Turn visibility is handled by setupTurnTabs now.
 }
 

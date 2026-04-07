@@ -27,7 +27,7 @@ function populateVizCandidatoDropdown(turno) {
         STATE[lookupCargoKey] = currentCargo;
         geojsonDep.features.forEach(f => {
           const p = f.properties;
-          const id = String(getProp(p, 'local_id') || getProp(p, 'nr_locvot'));
+          const id = getFeatureSelectionId(p);
           const z = getProp(p, 'nr_zona');
           const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
           const m = getProp(p, 'cd_localidade_tse') || getProp(p, 'CD_MUNICIPIO');
@@ -377,6 +377,12 @@ function applyFiltersAndRedraw() {
   const geojson = currentDataCollection[currentCargo];
   if (!geojson) {
     return;
+  }
+
+  // O renderer canvas do Leaflet pode ter sido desalojado durante trocas
+  // rápidas de eleição/cargo. Se ele ficou órfão, recriamos antes de renderizar.
+  if (!mapCanvasRenderer || mapCanvasRenderer._map !== map) {
+    mapCanvasRenderer = L.canvas({ padding: 0.5, tolerance: 10 });
   }
 
   // Recalcular estatísticas do candidato se estiver no modo Desempenho
@@ -943,8 +949,8 @@ function getFeatureStyle(feature) {
     if (currentVizColorStyle === 'gradient' && currentVizMode.startsWith('vencedor'))
       fillColor = getUniversalGradientColor(fillColor, pctVal);
 
-    const localId = getProp(props, 'local_id') || getProp(props, 'nr_locvot');
-    if (selectedLocationIDs.has(String(localId)) && !STATE.isFilterAggregationActive)
+    const localId = getFeatureSelectionId(props);
+    if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive)
       return { stroke: false, fillColor: 'var(--accent)', fillOpacity: 1, opacity: 1 };
     return { stroke: false, fillColor, fillOpacity, opacity: 1 };
   }
@@ -1019,8 +1025,8 @@ function getFeatureStyle(feature) {
       fillColor = getUniversalGradientColor(fillColor, pctVal);
     }
 
-    const localId = getProp(props, 'local_id') || getProp(props, 'nr_locvot');
-    if (selectedLocationIDs.has(String(localId)) && !STATE.isFilterAggregationActive) {
+    const localId = getFeatureSelectionId(props);
+    if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive) {
       return { stroke: false, fillColor: 'var(--accent)', fillOpacity: 1, opacity: 1 };
     }
 
@@ -1068,9 +1074,9 @@ function getFeatureStyle(feature) {
     }
   }
 
-  const localId = getProp(props, 'local_id') || getProp(props, 'nr_locvot');
+  const localId = getFeatureSelectionId(props);
 
-  if (selectedLocationIDs.has(String(localId)) && !STATE.isFilterAggregationActive) {
+  if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive) {
     return {
       stroke: false,
       fillColor: 'var(--accent)',
@@ -1157,7 +1163,7 @@ function onEachFeature(feature, layer) {
 function onFeatureClick(e) {
   const layer = e.target;
   const props = layer.feature.properties;
-  const id = String(getProp(props, 'local_id') || getProp(props, 'nr_locvot'));
+  const id = getFeatureSelectionId(props);
 
   const isShiftClick = e.originalEvent.shiftKey;
 
@@ -1217,7 +1223,7 @@ function syncResultsPanelToCurrentView() {
 
   selectedLocationIDs.clear();
   visibleFeatures.forEach((feature) => {
-    const id = String(getProp(feature.properties, 'local_id') || getProp(feature.properties, 'nr_locvot') || '');
+    const id = getFeatureSelectionId(feature.properties);
     if (id) selectedLocationIDs.add(id);
   });
 
@@ -1368,7 +1374,7 @@ function selectFeaturesInBounds(bounds) {
       if (bounds.contains(layerNode.getLatLng())) {
         const props = layerNode.feature && layerNode.feature.properties;
         if (props) {
-          const id = String(getProp(props, 'local_id') || getProp(props, 'nr_locvot'));
+          const id = getFeatureSelectionId(props);
           if (id) {
             selectedLocationIDs.add(id);
             addedCount++;

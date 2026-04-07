@@ -82,7 +82,7 @@
     // Limpar TODAS as camadas do mapa (exceto a base)
     if (map) {
       map.eachLayer((layer) => {
-        if (layer !== STATE.mapTileLayer) {
+        if (layer !== STATE.mapTileLayer && layer !== mapCanvasRenderer) {
           try {
             // Remove event listeners
             if (typeof layer.off === 'function') {
@@ -126,9 +126,17 @@
     if (STATE.currentElectionType === 'geral') {
       dom.loaderBoxGeneral.classList.remove('section-hidden');
       dom.loaderBoxMunicipal.classList.add('section-hidden');
-      currentOffice = dom.cargoChipsGeneral.querySelector('.active').dataset.value;
-      currentSubType = 'ord';
-      currentCargo = `${currentOffice}_ord`;
+      const activeGeneralChip = dom.cargoChipsGeneral.querySelector('.active');
+      const activeGeneralValue = activeGeneralChip?.dataset?.value || 'presidente';
+      if (activeGeneralValue.startsWith('deputado_')) {
+        currentOffice = 'deputado';
+        currentSubType = activeGeneralChip?.dataset?.subtype || activeGeneralValue.split('_')[1] || 'federal';
+        currentCargo = `deputado_${currentSubType}`;
+      } else {
+        currentOffice = activeGeneralValue;
+        currentSubType = 'ord';
+        currentCargo = `${currentOffice}_${currentSubType}`;
+      }
       dom.cargoBoxMunicipal.classList.add('section-hidden');
       dom.summaryBoxContainer.classList.add('section-hidden');
     } else {
@@ -429,7 +437,7 @@
 
           selectedLocationIDs.clear();
           allFiltered.forEach(f => {
-            const id = String(getProp(f.properties, 'local_id') || getProp(f.properties, 'nr_locvot'));
+            const id = getFeatureSelectionId(f.properties);
             selectedLocationIDs.add(id);
           });
 
@@ -465,6 +473,11 @@
     applyFiltersAndRedraw();
   });
   dom.selectVizColorStyle.addEventListener('change', (e) => {
+    if (typeof isGradientVizBlockedForCurrentCargo === 'function' && isGradientVizBlockedForCurrentCargo() && e.target.value === 'gradient') {
+      currentVizColorStyle = 'static';
+      e.target.value = 'static';
+      return;
+    }
     currentVizColorStyle = e.target.value;
     applyFiltersAndRedraw();
   });
