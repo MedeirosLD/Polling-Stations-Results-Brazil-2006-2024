@@ -281,7 +281,8 @@ function processAgeLegacy(p, buckets) {
 
 
 function updateApplyButtonText() {
-  let btnDisabled = false;
+  const hasLoadedData = !!currentDataCollection[currentCargo];
+  let btnDisabled = !hasLoadedData;
   let btnText = 'Analisar/Agregar';
 
   const isGeral = (STATE.currentElectionType === 'geral');
@@ -306,8 +307,14 @@ function updateApplyButtonText() {
     }
   }
 
+  if (STATE.hasPendingFilterChanges && hasLoadedData) {
+    btnText = `${btnText} • Aplicar`;
+  }
+
   dom.btnApplyFilters.textContent = btnText;
   dom.btnApplyFilters.disabled = btnDisabled;
+  dom.btnApplyFilters.classList.toggle('cta-ready', hasLoadedData);
+  dom.btnApplyFilters.classList.toggle('pending-action', hasLoadedData && STATE.hasPendingFilterChanges);
 
   // REMOVIDO O BLOCO QUE CAUSAVA O ERRO (dom.btnShowByBairro)
 }

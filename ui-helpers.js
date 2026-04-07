@@ -23,6 +23,7 @@ function getAutoLoadSignature() {
 }
 
 function scheduleAutoLoadCurrentSelection(delay = 80) {
+  if (!STATE.autoLoadEnabled) return;
   clearTimeout(autoLoadTimer);
   const sequence = ++autoLoadSequence;
 

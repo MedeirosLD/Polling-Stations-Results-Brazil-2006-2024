@@ -419,6 +419,10 @@ function applyFiltersAndRedraw() {
   }
 
   syncResultsPanelToCurrentView();
+
+  if (STATE.isLoadingDataset) {
+    clearPendingFilterChanges();
+  }
 }
 
 

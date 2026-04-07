@@ -20,24 +20,41 @@
 
   const updateLoadButtonState = () => {
     if (!dom.btnLoadData) return;
+    let disabled = false;
+    let label = 'Carregar dados';
 
-    dom.btnLoadData.style.display = 'none';
-    dom.btnLoadData.disabled = true;
-    return;
-    /*
-      // ELEIÇÕES GERAIS: Esconde o botão
-      dom.btnLoadData.style.display = 'none';
-      disabled = true; // Não importa porque está escondido
+    dom.btnLoadData.style.display = 'block';
+
+    if (STATE.currentElectionType === 'geral') {
+      const year = STATE.currentElectionYear;
+      const uf = dom.selectUFGeneral.value;
+
+      if (currentOffice === 'presidente') {
+        label = `Carregar Presidente (${year})`;
+      } else if (currentOffice === 'deputado') {
+        disabled = !(uf && uf !== 'BR');
+        label = uf && uf !== 'BR'
+          ? `Carregar ${currentCargo === 'deputado_estadual' ? 'Dep. Estadual' : 'Dep. Federal'} (${uf}, ${year})`
+          : 'Selecione uma UF para carregar';
+      } else {
+        disabled = !(uf && uf !== 'BR');
+        label = uf && uf !== 'BR'
+          ? `Carregar ${currentOffice} (${uf}, ${year})`
+          : 'Selecione uma UF para carregar';
+      }
     } else {
-      // ELEIÇÕES MUNICIPAIS: Mostra o botão
-      dom.btnLoadData.style.display = 'block';
       const uf = dom.selectUFMunicipal.value;
       const municipio = dom.selectMunicipio.value;
+      const year = STATE.currentElectionYear;
       disabled = !(uf && municipio);
+      label = (!uf || !municipio)
+        ? 'Selecione UF e município'
+        : `Carregar ${currentOffice} (${municipio}/${uf}, ${year})`;
     }
 
+    dom.btnLoadData.textContent = label;
     dom.btnLoadData.disabled = disabled;
-    */
+    dom.btnLoadData.classList.toggle('cta-ready', !disabled);
   };
 
   // MUDANÇA DE ELEIÇÃO (ANO/TIPO)
@@ -130,7 +147,7 @@
     }
     applyDefaultVizColorStyleForCurrentCargo();
     updateLoadButtonState();
-    scheduleAutoLoadCurrentSelection(120);
+    clearPendingFilterChanges();
   });
 
   // BOTÃƒO CARREGAR
@@ -263,7 +280,6 @@
 
       if (canLoad) {
         console.log(`[Auto-Load] Carregando ${currentOffice} automaticamente...`);
-        scheduleAutoLoadCurrentSelection(80);
         setTimeout(() => setChipLoading(btn, false), 120);
       } else {
         setChipLoading(btn, false);
@@ -282,23 +298,12 @@
   // LISTENER DE MUDANÇA DE UF - Carrega automaticamente nas eleições gerais
   dom.selectUFGeneral.addEventListener('change', () => {
     updateLoadButtonState();
-
-    // Auto-load se estiver em eleições gerais e tiver um cargo selecionado
-    if (STATE.currentElectionType === 'geral' && currentOffice) {
-      const uf = dom.selectUFGeneral.value;
-      const canLoad = (currentOffice === 'presidente') || (currentOffice === 'deputado' && uf && uf !== 'BR') || (uf && uf !== 'BR');
-
-      if (canLoad) {
-        console.log(`[Auto-Load UF] Carregando ${currentOffice} para ${uf}...`);
-        scheduleAutoLoadCurrentSelection(80);
-      }
-    }
   });
 
   dom.selectYearGeneral?.addEventListener('change', () => {
     STATE.currentElectionYear = dom.selectYearGeneral.value;
     updateLoadButtonState();
-    scheduleAutoLoadCurrentSelection(80);
+    clearPendingFilterChanges();
   });
 
   // SELEÇÃO MUNICIPAL
@@ -326,13 +331,12 @@
   });
   dom.selectMunicipio.addEventListener('change', () => {
     updateLoadButtonState();
-    scheduleAutoLoadCurrentSelection(80);
   });
 
   dom.selectYearMunicipal?.addEventListener('change', () => {
     STATE.currentElectionYear = dom.selectYearMunicipal.value;
     updateLoadButtonState();
-    scheduleAutoLoadCurrentSelection(80);
+    clearPendingFilterChanges();
   });
 
 
@@ -356,7 +360,7 @@
     dom.searchLocal.disabled = false;
 
     clearSelection(false);
-    applyFiltersAndRedraw();
+    markFiltersDirty();
 
     // CORREÇÃO: Chama a nova função de texto que libera o botão
     updateApplyButtonText();
@@ -369,15 +373,15 @@
   }, (val) => {
     currentBairroFilter = val;
     clearSelection(false);
-    applyFiltersAndRedraw();
+    markFiltersDirty();
     updateApplyButtonText();
   });
 
-  const debouncedRedraw = debounce(() => applyFiltersAndRedraw(), 250);
+  const debouncedFilterDirty = debounce(() => markFiltersDirty(), 180);
   dom.searchLocal.addEventListener('keyup', (e) => {
     currentLocalFilter = norm(e.target.value);
     clearSelection(false);
-    debouncedRedraw();
+    debouncedFilterDirty();
     updateApplyButtonText();
   });
 
@@ -400,9 +404,14 @@
   addSearchFilter(dom.searchMunicipio, dom.selectMunicipio);
 
   dom.btnApplyFilters.addEventListener('click', () => {
+    if (!currentDataCollection[currentCargo]) return;
+
+    setButtonLoading(dom.btnApplyFilters, true);
+    setSectionLoading(dom.resultsBox, true);
+    if (dom.resultsContent) showSkeletonCards(dom.resultsContent, 4);
+    showMapLoading('Aplicando filtros e atualizando mapa...');
+
     clearSelection(false);
-    currentLocalFilter = '';
-    if (dom.searchLocal) dom.searchLocal.value = '';
 
     if (STATE.currentElectionType === 'municipal') {
       currentCidadeFilter = 'all';
@@ -410,21 +419,30 @@
       if (cidadeCombobox) cidadeCombobox.setValue('Todos os municípios');
     }
 
-    applyFiltersAndRedraw();
+    requestAnimationFrame(() => {
+      try {
+        applyFiltersAndRedraw();
 
-    // CORREÇÃO: Usar agregação direta dos dados filtrados
-    const geojson = currentDataCollection[currentCargo];
-    if (geojson) {
-      const allFiltered = getAllFeaturesForAggregation();
+        const geojson = currentDataCollection[currentCargo];
+        if (geojson) {
+          const allFiltered = getAllFeaturesForAggregation();
 
-      selectedLocationIDs.clear();
-      allFiltered.forEach(f => {
-        const id = String(getProp(f.properties, 'local_id') || getProp(f.properties, 'nr_locvot'));
-        selectedLocationIDs.add(id);
-      });
+          selectedLocationIDs.clear();
+          allFiltered.forEach(f => {
+            const id = String(getProp(f.properties, 'local_id') || getProp(f.properties, 'nr_locvot'));
+            selectedLocationIDs.add(id);
+          });
 
-      updateSelectionUI(true);
-    }
+          updateSelectionUI(true);
+        }
+
+        clearPendingFilterChanges();
+      } finally {
+        setSectionLoading(dom.resultsBox, false);
+        setButtonLoading(dom.btnApplyFilters, false);
+        setTimeout(() => hideMapLoading(), 180);
+      }
+    });
   });
 
   dom.btnToggleInaptos.addEventListener('click', () => {
@@ -545,7 +563,7 @@
 
       // Habilita botão de carregar se município estiver selecionado
       updateLoadButtonState();
-      scheduleAutoLoadCurrentSelection(80);
+      clearPendingFilterChanges();
     });
   }
 
@@ -719,9 +737,9 @@ function setupTabs() {
 // ====== SLIDERS LOGIC ======
 function setupSliders() {
   // Definimos a função de redesenho PRIMEIRO para evitar erros de referência
-  const debouncedRedraw = debounce(() => {
+  const debouncedMarkDirty = debounce(() => {
     clearSelection(false);
-    applyFiltersAndRedraw();
+    markFiltersDirty();
   }, 100);
 
   // 1. DUAL SLIDER (RENDA)
@@ -757,7 +775,7 @@ function setupSliders() {
   function updateRendaState() {
     STATE.censusFilters.rendaMin = valMin > 0 ? valMin : null;
     STATE.censusFilters.rendaMax = valMax < MAX_VAL ? valMax : null;
-    debouncedRedraw(); // Agora funciona pois debouncedRedraw foi definido no topo
+    debouncedMarkDirty();
     updateApplyButtonText();
   }
 
@@ -827,7 +845,7 @@ function setupSliders() {
       if (valDisp) valDisp.textContent = `${val}%`;
 
       STATE.censusFilters[stateKeyVal] = val > 0 ? val : null;
-      debouncedRedraw();
+      debouncedMarkDirty();
       updateApplyButtonText();
     });
 
@@ -845,7 +863,7 @@ function setupSliders() {
 
       // Se houver valor de filtro aplicado, redesenha o mapa
       if (STATE.censusFilters[stateKeyVal] !== null) {
-        debouncedRedraw();
+        debouncedMarkDirty();
       }
     });
   }

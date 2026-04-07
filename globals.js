@@ -65,6 +65,9 @@ function forEachCacheEntry(cacheLike, callback) {
 // ====== LOADING HELPERS ======
 function setButtonLoading(btn, isLoading) {
   if (!btn) return;
+  if (dom.btnLoadData && btn === dom.btnLoadData) {
+    STATE.isLoadingDataset = !!isLoading;
+  }
   if (isLoading) {
     btn.classList.add('loading');
     btn.disabled = true;
@@ -133,6 +136,54 @@ function showToast(message, type = 'info', duration = 3000) {
     toast.classList.remove('visible');
     setTimeout(() => toast.remove(), 300);
   }, duration);
+}
+
+function showMapLoading(message = 'Carregando dados...', progress = null) {
+  if (!dom.mapLoader) return;
+  dom.mapLoader.textContent = message;
+  dom.mapLoader.classList.add('visible');
+  if (progress === null || progress === undefined) {
+    dom.mapLoader.dataset.progressMode = 'indeterminate';
+    dom.mapLoader.style.removeProperty('--loader-progress');
+    return;
+  }
+  const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
+  dom.mapLoader.dataset.progressMode = 'determinate';
+  dom.mapLoader.style.setProperty('--loader-progress', `${safeProgress}%`);
+}
+
+function updateMapLoading(message, progress = null) {
+  if (!dom.mapLoader) return;
+  if (message) dom.mapLoader.textContent = message;
+  if (progress === null || progress === undefined) {
+    dom.mapLoader.dataset.progressMode = 'indeterminate';
+    dom.mapLoader.style.removeProperty('--loader-progress');
+    return;
+  }
+  const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
+  dom.mapLoader.dataset.progressMode = 'determinate';
+  dom.mapLoader.style.setProperty('--loader-progress', `${safeProgress}%`);
+}
+
+function hideMapLoading() {
+  if (!dom.mapLoader) return;
+  dom.mapLoader.classList.remove('visible');
+  dom.mapLoader.dataset.progressMode = 'indeterminate';
+  dom.mapLoader.style.removeProperty('--loader-progress');
+}
+
+function markFiltersDirty() {
+  STATE.hasPendingFilterChanges = true;
+  if (typeof updateApplyButtonText === 'function') {
+    updateApplyButtonText();
+  }
+}
+
+function clearPendingFilterChanges() {
+  STATE.hasPendingFilterChanges = false;
+  if (typeof updateApplyButtonText === 'function') {
+    updateApplyButtonText();
+  }
 }
 
 function clearZipCache() {
@@ -371,6 +422,9 @@ let autoLoadRunningSequence = 0;
 
 const STATE = {
   mapTileLayer: null,
+  autoLoadEnabled: false,
+  hasPendingFilterChanges: false,
+  isLoadingDataset: false,
   filterInaptos: false,
   isFilterAggregationActive: false,
   dataHas2T: {},
