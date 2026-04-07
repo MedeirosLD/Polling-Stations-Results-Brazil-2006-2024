@@ -11,6 +11,40 @@ function getProp(properties, key) {
   }
   return null;
 }
+
+function getFeatureSelectionId(properties) {
+  if (!properties) return '';
+
+  const explicitId = getProp(properties, 'id_unico')
+    || getProp(properties, 'local_id');
+  if (explicitId !== null && explicitId !== undefined && String(explicitId).trim() !== '') {
+    return String(explicitId).trim();
+  }
+
+  const uf = getProp(properties, 'sg_uf') || getProp(properties, 'SG_UF') || '';
+  const municipio = getProp(properties, 'cd_localidade_tse')
+    || getProp(properties, 'CD_MUNICIPIO')
+    || getProp(properties, 'cod_localidade_ibge')
+    || '';
+  const zona = getProp(properties, 'nr_zona') || getProp(properties, 'NR_ZONA') || '';
+  const local = getProp(properties, 'nr_locvot')
+    || getProp(properties, 'nr_local_votacao')
+    || getProp(properties, 'NR_LOCAL_VOTACAO')
+    || '';
+
+  const parts = [uf, municipio, zona, local]
+    .map(part => String(part || '').trim())
+    .filter(Boolean);
+
+  if (parts.length > 0) return parts.join('_');
+  return '';
+}
+
+if (typeof window !== 'undefined') {
+  window.getProp = getProp;
+  window.getFeatureSelectionId = getFeatureSelectionId;
+}
+
 const norm = s => (s || "").normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/'/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
 function colorForParty(sg) { return PARTY_COLORS.get((sg || '').toUpperCase()) || DEFAULT_SWATCH; }
 function fmtPct(x) { return isFinite(x) ? (x * 100).toFixed(2).replace('.', ',') + "%" : "-"; }
@@ -372,4 +406,3 @@ function updatePerformanceStatsUI() {
     });
   }
 }
-

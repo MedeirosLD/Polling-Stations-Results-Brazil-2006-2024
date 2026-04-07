@@ -1,4 +1,38 @@
 ﻿
+function resolveFeatureSelectionId(properties) {
+  if (typeof getFeatureSelectionId === 'function') {
+    return getFeatureSelectionId(properties);
+  }
+
+  if (typeof window !== 'undefined' && typeof window.getFeatureSelectionId === 'function') {
+    return window.getFeatureSelectionId(properties);
+  }
+
+  if (!properties) return '';
+
+  const readProp = (key) => {
+    if (typeof getProp === 'function') return getProp(properties, key);
+    if (typeof window !== 'undefined' && typeof window.getProp === 'function') {
+      return window.getProp(properties, key);
+    }
+    return properties[key] ?? properties[String(key).toLowerCase()] ?? properties[String(key).toUpperCase()] ?? null;
+  };
+
+  const explicitId = readProp('id_unico') || readProp('local_id');
+  if (explicitId !== null && explicitId !== undefined && String(explicitId).trim() !== '') {
+    return String(explicitId).trim();
+  }
+
+  const parts = [
+    readProp('sg_uf') || readProp('SG_UF') || '',
+    readProp('cd_localidade_tse') || readProp('CD_MUNICIPIO') || readProp('cod_localidade_ibge') || '',
+    readProp('nr_zona') || readProp('NR_ZONA') || '',
+    readProp('nr_locvot') || readProp('nr_local_votacao') || readProp('NR_LOCAL_VOTACAO') || ''
+  ].map(part => String(part || '').trim()).filter(Boolean);
+
+  return parts.join('_');
+}
+
 function populateVizCandidatoDropdown(turno) {
   dom.selectVizCandidato.innerHTML = '';
 
@@ -27,7 +61,7 @@ function populateVizCandidatoDropdown(turno) {
         STATE[lookupCargoKey] = currentCargo;
         geojsonDep.features.forEach(f => {
           const p = f.properties;
-          const id = getFeatureSelectionId(p);
+          const id = resolveFeatureSelectionId(p);
           const z = getProp(p, 'nr_zona');
           const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
           const m = getProp(p, 'cd_localidade_tse') || getProp(p, 'CD_MUNICIPIO');
@@ -949,7 +983,7 @@ function getFeatureStyle(feature) {
     if (currentVizColorStyle === 'gradient' && currentVizMode.startsWith('vencedor'))
       fillColor = getUniversalGradientColor(fillColor, pctVal);
 
-    const localId = getFeatureSelectionId(props);
+    const localId = resolveFeatureSelectionId(props);
     if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive)
       return { stroke: false, fillColor: 'var(--accent)', fillOpacity: 1, opacity: 1 };
     return { stroke: false, fillColor, fillOpacity, opacity: 1 };
@@ -1025,7 +1059,7 @@ function getFeatureStyle(feature) {
       fillColor = getUniversalGradientColor(fillColor, pctVal);
     }
 
-    const localId = getFeatureSelectionId(props);
+    const localId = resolveFeatureSelectionId(props);
     if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive) {
       return { stroke: false, fillColor: 'var(--accent)', fillOpacity: 1, opacity: 1 };
     }
@@ -1074,7 +1108,7 @@ function getFeatureStyle(feature) {
     }
   }
 
-  const localId = getFeatureSelectionId(props);
+  const localId = resolveFeatureSelectionId(props);
 
   if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive) {
     return {
@@ -1163,7 +1197,7 @@ function onEachFeature(feature, layer) {
 function onFeatureClick(e) {
   const layer = e.target;
   const props = layer.feature.properties;
-  const id = getFeatureSelectionId(props);
+  const id = resolveFeatureSelectionId(props);
 
   const isShiftClick = e.originalEvent.shiftKey;
 
@@ -1223,7 +1257,7 @@ function syncResultsPanelToCurrentView() {
 
   selectedLocationIDs.clear();
   visibleFeatures.forEach((feature) => {
-    const id = getFeatureSelectionId(feature.properties);
+    const id = resolveFeatureSelectionId(feature.properties);
     if (id) selectedLocationIDs.add(id);
   });
 
@@ -1374,7 +1408,7 @@ function selectFeaturesInBounds(bounds) {
       if (bounds.contains(layerNode.getLatLng())) {
         const props = layerNode.feature && layerNode.feature.properties;
         if (props) {
-          const id = getFeatureSelectionId(props);
+          const id = resolveFeatureSelectionId(props);
           if (id) {
             selectedLocationIDs.add(id);
             addedCount++;
