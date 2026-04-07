@@ -55,6 +55,16 @@ function formatVizCandidateLabel(candidateData) {
   return `${toTitleCase(candidateData.nome)} (${candidateData.partido}) • Nº ${candidateData.numero}`;
 }
 
+function getResolvedVisualizationCandidateId(candidatoKey, cargo = currentCargo) {
+  if (typeof resolveVisualizationCandidateId === 'function') {
+    return resolveVisualizationCandidateId(candidatoKey, cargo);
+  }
+  if (typeof window !== 'undefined' && typeof window.resolveVisualizationCandidateId === 'function') {
+    return window.resolveVisualizationCandidateId(candidatoKey, cargo);
+  }
+  return null;
+}
+
 function populateVizCandidatoDropdown(turno) {
   const previousValue = dom.selectVizCandidato.value;
   const previousDeputyId = dom.selectVizCandidato.dataset.selectedDeputyId || '';
@@ -669,7 +679,7 @@ function filterFeature(feature) {
       if (currentCargo.startsWith('deputado') || currentCargo.startsWith('vereador')) {
         const isVereador = currentCargo.startsWith('vereador');
         const typeKey = isVereador ? 'v' : (currentCargo.includes('estadual') ? 'e' : 'f');
-        const candId = resolveVisualizationCandidateId(candidatoKey, currentCargo);
+        const candId = getResolvedVisualizationCandidateId(candidatoKey, currentCargo);
         if (candId) {
           const z = parseInt(getProp(props, 'nr_zona'));
           const l = parseInt(getProp(props, 'nr_locvot') || getProp(props, 'nr_local_votacao'));
@@ -1111,7 +1121,7 @@ function getFeatureStyle(feature) {
     } else if (currentVizMode.startsWith('desempenho')) {
       const candidatoKey = dom.selectVizCandidato.value;
       if (candidatoKey && depData.votes) {
-        const candId = resolveVisualizationCandidateId(candidatoKey, currentCargo);
+        const candId = getResolvedVisualizationCandidateId(candidatoKey, currentCargo);
         if (candId && depData.votes[candId] !== undefined) {
           const cv = parseInt(depData.votes[candId]) || 0;
           pctVal = (total > 0) ? (cv / total) * 100 : 0;
@@ -1172,7 +1182,7 @@ function getFeatureStyle(feature) {
     } else if (currentVizMode.startsWith('desempenho')) {
       const candidatoKey = dom.selectVizCandidato.value;
       if (candidatoKey && depData.votes) {
-        const candId = resolveVisualizationCandidateId(candidatoKey, currentCargo);
+        const candId = getResolvedVisualizationCandidateId(candidatoKey, currentCargo);
 
         if (candId && depData.votes[candId] !== undefined) {
           const candVotes = parseInt(depData.votes[candId]) || 0;
