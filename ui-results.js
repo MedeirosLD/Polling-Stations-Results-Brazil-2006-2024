@@ -346,6 +346,9 @@ function updateVizModeUI() {
       };
       console.log('📊 Modo Desempenho ativado - Stats:', performanceModeStats);
       updatePerformanceStatsUI();
+    } else {
+      performanceModeStats = { candidato: null, minPct: 0, maxPct: 0, avgPct: 0, totalLocais: 0 };
+      updatePerformanceStatsUI();
     }
   } else {
     dom.vizCandidatoBox.classList.add('section-hidden');
@@ -445,6 +448,7 @@ function updateConditionalUI() {
   const show2T = STATE.dataHas2T[currentCargo] || false;
   updateCensusControlsForYear();
   syncVizColorStyleControl();
+  if (currentVizMode.startsWith('desempenho')) updateVizModeUI();
   // Turn visibility is handled by setupTurnTabs now.
 }
 

@@ -33,8 +33,32 @@ function resolveFeatureSelectionId(properties) {
   return parts.join('_');
 }
 
-function populateVizCandidatoDropdown(turno) {
+function clearVizCandidateSelectionState() {
+  if (!dom.selectVizCandidato) return;
+
   dom.selectVizCandidato.innerHTML = '';
+  dom.selectVizCandidato.value = '';
+  delete dom.selectVizCandidato.dataset.selectedDeputyId;
+
+  const deputySearchInput = document.getElementById('deputySearchInput');
+  const deputySearchResults = document.getElementById('deputySearchResults');
+  if (deputySearchInput) deputySearchInput.value = '';
+  if (deputySearchResults) {
+    deputySearchResults.innerHTML = '';
+    deputySearchResults.classList.remove('visible');
+  }
+}
+
+function formatVizCandidateLabel(candidateData) {
+  if (!candidateData) return '';
+  if (candidateData.isLegenda) return `Voto de Legenda — ${candidateData.partido}`;
+  return `${toTitleCase(candidateData.nome)} (${candidateData.partido}) • Nº ${candidateData.numero}`;
+}
+
+function populateVizCandidatoDropdown(turno) {
+  const previousValue = dom.selectVizCandidato.value;
+  const previousDeputyId = dom.selectVizCandidato.dataset.selectedDeputyId || '';
+  clearVizCandidateSelectionState();
 
   const deputySearchBox = document.getElementById('deputySearchBox');
   const deputySearchInput = document.getElementById('deputySearchInput');
@@ -163,6 +187,16 @@ function populateVizCandidatoDropdown(turno) {
         opt.dataset.candidateId = c.id;
         dom.selectVizCandidato.appendChild(opt);
       });
+
+      const selectedCandidate = deputySearchCandList.find(c =>
+        c.id === previousDeputyId || `${c.nome} (${c.partido})` === previousValue
+      ) || deputySearchCandList[0];
+
+      if (selectedCandidate) {
+        dom.selectVizCandidato.value = `${selectedCandidate.nome} (${selectedCandidate.partido})`;
+        dom.selectVizCandidato.dataset.selectedDeputyId = selectedCandidate.id;
+        if (deputySearchInput) deputySearchInput.value = formatVizCandidateLabel(selectedCandidate);
+      }
     }
 
     // Inicializar event listeners para pesquisa (apenas uma vez)
@@ -190,6 +224,11 @@ function populateVizCandidatoDropdown(turno) {
     opt.textContent = `${cand.nome} (${cand.partido})`;
     dom.selectVizCandidato.appendChild(opt);
   });
+
+  if (dom.selectVizCandidato.options.length > 0) {
+    const hasPrevious = Array.from(dom.selectVizCandidato.options).some(opt => opt.value === previousValue);
+    dom.selectVizCandidato.value = hasPrevious ? previousValue : dom.selectVizCandidato.options[0].value;
+  }
 }
 
 // ====== DEPUTY SEARCH LOGIC ======
@@ -899,6 +938,18 @@ function getDeputyFeatureData(props) {
 }
 
 function getVereadorFeatureData(props) {
+  if (!STATE._vereadorPartyPrefixCache) {
+    STATE._vereadorPartyPrefixCache = {};
+    for (const [cid, cmeta] of Object.entries(STATE.vereadorMetadata || {})) {
+      if (cid.length > 2 && cmeta && cmeta[1] && !cmeta[1].toUpperCase().startsWith('PARTIDO ')) {
+        const prefix = cid.substring(0, 2);
+        if (!STATE._vereadorPartyPrefixCache[prefix]) {
+          STATE._vereadorPartyPrefixCache[prefix] = cmeta[1];
+        }
+      }
+    }
+  }
+
   // Usa valores precomputados por precomputeVereadorWinners
   const total = props['_VTOTAL_'] !== undefined ? parseInt(props['_VTOTAL_']) : undefined;
   const winner = props['_VWINNER_'] !== undefined ? props['_VWINNER_'] : undefined;
@@ -915,14 +966,36 @@ function getVereadorFeatureData(props) {
     if (!locData || !locData[TYPE_KEY]) return null;
     const votes = locData[TYPE_KEY];
     let tot = 0, win = null, winV = -1;
+    const partyVotes = {};
+    let maxPartyV = -1;
+    let winningParty = null;
     for (const [cid, v] of Object.entries(votes)) {
       if (cid === '95' || cid === '96') continue;
       if (STATE.filterInaptos && (STATE.inaptos['vereador_ord']?.['1T'] || []).includes(cid)) continue;
       const vi = parseInt(v) || 0;
       tot += vi;
-      if (vi > winV) { winV = vi; win = cid; }
+      if (cid.length > 2 && vi > winV) { winV = vi; win = cid; }
+
+      const meta = STATE.vereadorMetadata[cid];
+      if (meta) {
+        let party = meta[1];
+        if (party && party.toUpperCase().startsWith('PARTIDO ')) {
+          const prefix = cid.substring(0, 2);
+          if (STATE._vereadorPartyPrefixCache[prefix]) {
+            party = STATE._vereadorPartyPrefixCache[prefix];
+          }
+        }
+        partyVotes[party] = (partyVotes[party] || 0) + vi;
+      }
     }
-    return { total: tot, winner: win, winnerVotes: winV, votes };
+
+    for (const [party, v] of Object.entries(partyVotes)) {
+      if (v > maxPartyV) {
+        maxPartyV = v;
+        winningParty = party;
+      }
+    }
+    return { total: tot, winner: win, winnerVotes: winV, winningParty, votes };
   }
 
   // Recupera votes map para modo desempenho
@@ -935,7 +1008,38 @@ function getVereadorFeatureData(props) {
     if (locData && locData['v']) votes = locData['v'];
   }
 
-  return { total, winner, winnerVotes, votes };
+  let winningParty = null;
+  if (votes) {
+    const partyVotes = {};
+    let maxPartyV = -1;
+
+    for (const [cid, v] of Object.entries(votes)) {
+      if (cid === '95' || cid === '96') continue;
+      if (STATE.filterInaptos && (STATE.inaptos['vereador_ord']?.['1T'] || []).includes(cid)) continue;
+
+      const meta = STATE.vereadorMetadata[cid];
+      if (!meta) continue;
+
+      let party = meta[1];
+      if (party && party.toUpperCase().startsWith('PARTIDO ')) {
+        const prefix = cid.substring(0, 2);
+        if (STATE._vereadorPartyPrefixCache[prefix]) {
+          party = STATE._vereadorPartyPrefixCache[prefix];
+        }
+      }
+
+      partyVotes[party] = (partyVotes[party] || 0) + (parseInt(v) || 0);
+    }
+
+    for (const [party, v] of Object.entries(partyVotes)) {
+      if (v > maxPartyV) {
+        maxPartyV = v;
+        winningParty = party;
+      }
+    }
+  }
+
+  return { total, winner, winnerVotes, winningParty, votes };
 }
 
 
@@ -954,11 +1058,16 @@ function getFeatureStyle(feature) {
     if (!depData || depData.total === 0) {
       return { stroke: false, fillColor: '#888888', fillOpacity: 0.2, opacity: 1 };
     }
-    const { total, winner, winnerVotes } = depData;
+    const { total, winner, winnerVotes, winningParty } = depData;
     let fillColor = DEFAULT_SWATCH, fillOpacity = 1, pctVal = 0;
 
     if (currentVizMode.startsWith('vencedor')) {
-      if (winner) {
+      if (STATE.vereadorViewMode === 'party') {
+        if (winningParty) {
+          fillColor = colorForParty(winningParty);
+          pctVal = 100;
+        }
+      } else if (winner) {
         const meta = STATE.vereadorMetadata[winner];
         fillColor = getColorForCandidate(meta ? meta[0] : '', meta ? meta[1] : '');
         pctVal = (total > 0) ? (winnerVotes / total) * 100 : 0;
@@ -971,8 +1080,14 @@ function getFeatureStyle(feature) {
         if (candId && depData.votes[candId] !== undefined) {
           const cv = parseInt(depData.votes[candId]) || 0;
           pctVal = (total > 0) ? (cv / total) * 100 : 0;
-          const meta = STATE.vereadorMetadata[candId];
-          fillColor = getColorForCandidate(meta ? meta[0] : '', meta ? meta[1] : '');
+          const isLegendaCand = candId.length <= 2;
+          if (isLegendaCand) {
+            const partidoReal = STATE._vereadorPartyPrefixCache?.[candId] || '';
+            fillColor = colorForParty(normalizePartyAlias(partidoReal.toUpperCase())) || DEFAULT_SWATCH;
+          } else {
+            const meta = STATE.vereadorMetadata[candId];
+            fillColor = getColorForCandidate(meta ? meta[0] : '', meta ? meta[1] : '');
+          }
           if (performanceModeStats.candidato) {
             fillColor = getRelativeGradientColor(fillColor, pctVal, performanceModeStats.minPct, performanceModeStats.maxPct);
             fillOpacity = cv > 0 ? 1 : 0.1;
