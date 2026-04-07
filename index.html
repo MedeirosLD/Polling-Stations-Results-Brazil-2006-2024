@@ -2,631 +2,1619 @@
 <html lang="pt-BR">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visualizador Eleitoral v 1.0 </title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visualizador Eleitoral v 2.0</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/unzipit@1.4.0/dist/unzipit.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/unzipit@1.4.0/dist/unzipit.min.js"></script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css" />
 </head>
 
-<body data-theme="dark">
-  <div class="app">
-    <div class="panel" id="mapPanel">
-      <div id="map"></div>
-      <div class="loader-overlay" id="mapLoader">
-        Carregando dados...
-      </div>
-    </div>
+<body data-theme="light">
+    <div class="app">
 
-    <div class="panel side">
-      <div class="head">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div class="title" id="panelTitle">Visualizador Eleitoral v 1.0</div>
-          <button id="btnAppGuide" class="button ghost" title="Guia de Uso"
-            style="padding: 0; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-          </button>
-        </div>
-        <button id="themeToggle" class="button ghost" title="Mudar tema" style="padding: 6px 10px;">☀️</button>
-      </div>
+        <!-- PAINEL ESQUERDO: CARREGAR DADOS + FILTROS -->
+        <div class="panel side side-left" id="sideLeftPanel">
 
-      <div class="body">
-
-        <div class="section" id="loaderBox">
-          <h3>Carregar Dados</h3>
-
-          <div class="ctrl" style="grid-column: 1 / -1; margin-bottom: 12px;">
-            <label>Tipo de Eleição</label>
-            <div class="chip-group" id="electionChips">
-              <button class="chip-button active" data-value="2022" data-type="geral">Gerais 2022</button>
-              <button class="chip-button" data-value="2018" data-type="geral">Gerais 2018</button>
-              <button class="chip-button" data-value="2014" data-type="geral">Gerais 2014</button>
-              <button class="chip-button" data-value="2010" data-type="geral">Gerais 2010</button>
-              <button class="chip-button" data-value="2006" data-type="geral">Gerais 2006</button>
-
-              <div style="width:100%; height:1px; background:var(--border-color); margin: 4px 0;"></div>
-
-              <button class="chip-button" data-value="2024" data-type="municipal">Mun. 2024</button>
-              <button class="chip-button" data-value="2020" data-type="municipal">Mun. 2020</button>
-              <button class="chip-button" data-value="2016" data-type="municipal">Mun. 2016</button>
-              <button class="chip-button" data-value="2012" data-type="municipal">Mun. 2012</button>
-              <button class="chip-button" data-value="2008" data-type="municipal">Mun. 2008</button>
-            </div>
-          </div>
-
-          <div id="loaderBoxGeneral"
-            style="padding: 0 0 0 10px; border-left: 2px solid var(--border-color); margin-left:2px;">
-            <div class="row">
-              <div class="ctrl" style="grid-column: 1 / -1;">
-                <label>Cargo</label>
-                <div class="chip-group" id="cargoChipsGeneral">
-                  <button class="chip-button active" data-value="presidente">Presidente</button>
-                  <button class="chip-button" data-value="governador">Governador</button>
-                  <button class="chip-button" data-value="senador">Senador</button>
+            <!-- Cabeçalho -->
+            <div class="head">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="title" id="panelTitle">Visualizador Eleitoral v 2.0</div>
+                    <button id="btnAppGuide" class="button ghost" title="Guia de Uso"
+                        style="padding:0; width:24px; height:24px; border-radius:50%;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </button>
                 </div>
-              </div>
-              <div class="ctrl" style="grid-column: 1 / -1;">
-                <label for="selectUFGeneral">Estado (UF)</label>
-                <select id="selectUFGeneral" class="select">
-                  <option value="" disabled selected>Selecione...</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div id="loaderBoxMunicipal" class="section-hidden"
-            style="padding: 0 0 0 10px; border-left: 2px solid var(--border-color); margin-left:2px;">
-            <div class="row">
-              <div class="ctrl">
-                <label for="selectUFMunicipal">Estado (UF)</label>
-                <select id="selectUFMunicipal" class="select">
-                  <option value="" disabled selected>Selecione...</option>
-                </select>
-              </div>
-              <div class="ctrl">
-                <label for="selectMunicipio">Município</label>
-                <select id="selectMunicipio" class="select" disabled>
-                  <option value="" disabled selected>Selecione UF...</option>
-                </select>
-                <input id="searchMunicipio" class="search-input" placeholder="Buscar município..."
-                  style="margin-top: 6px;" disabled>
-              </div>
-            </div>
-          </div>
-
-          <button id="btnLoadData" class="button primary" style="width:100%; margin-top: 12px;" disabled>Carregar
-            Dados</button>
-        </div>
-
-        <div class="section section-hidden" id="filterBox">
-          <h3>Filtros da Visualização</h3>
-
-          <div class="ctrl section-hidden" id="cargoBoxMunicipal" style="margin-bottom: 10px;">
-            <label>Tipo de Eleição</label>
-            <div class="chip-group" id="cargoChipsMunicipal">
-            </div>
-          </div>
-
-          <div class="row" style="grid-template-columns: 1fr 1fr;">
-            <div class="ctrl">
-              <label for="inputCidade">Município</label>
-              <div class="combobox-container" id="boxCidade">
-                <input type="text" class="combobox-input" id="inputCidade" placeholder="Selecionar município..."
-                  autocomplete="off" disabled>
-                <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-                <div class="combobox-dropdown" id="listCidade"></div>
-              </div>
-            </div>
-            <div class="ctrl">
-              <label for="inputBairro">Bairro</label>
-              <div class="combobox-container" id="boxBairro">
-                <input type="text" class="combobox-input" id="inputBairro" placeholder="Selecionar bairro..."
-                  autocomplete="off" disabled>
-                <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-                <div class="combobox-dropdown" id="listBairro"></div>
-              </div>
-            </div>
-            <div class="ctrl" style="grid-column: 1 / -1;">
-              <label for="searchLocal">Buscar por Local de Votação (mín. 3 letras)</label>
-              <div class="searchwrap">
-                <input id="searchLocal" class="select" placeholder="Digite o nome do local..." disabled />
-              </div>
-            </div>
-          </div>
-
-          <!-- FILTROS CENSITÁRIOS (REFORMULADO) -->
-          <div class="filter-group" id="demographicFilters">
-            <h4 style="margin: 0 0 12px 0; font-size:0.9rem;">Filtros Demográficos (Censo)</h4>
-
-            <div class="filter-tabs">
-              <button class="tab-btn active" data-tab="tab-renda">RENDA</button>
-              <button class="tab-btn" data-tab="tab-raca">COR/RAÇA</button>
-              <button class="tab-btn" data-tab="tab-idade">IDADE</button>
-              <button class="tab-btn" data-tab="tab-genero">GÊNERO</button>
-              <button class="tab-btn" data-tab="tab-saneamento">SANEAMENTO</button>
-            </div>
-
-            <!-- RENDA TAB -->
-            <div class="tab-content" id="tab-renda">
-              <label class="slider-label">Renda Média (R$)</label>
-
-              <div class="dual-slider-container" id="sliderRendaContainer">
-                <div class="dual-track"></div>
-                <!-- Availability Bar (Fixed) -->
-                <div class="availability-bar" id="availRenda"></div>
-                <div class="dual-range" id="rendaRange"></div>
-                <div class="dual-thumb left" id="rendaThumbMin" tabindex="0"></div>
-                <div class="dual-thumb right" id="rendaThumbMax" tabindex="0"></div>
-              </div>
-
-              <div class="dual-values">
-                <span id="dispRendaMin">R$ 0</span>
-                <span id="dispRendaMax">R$ 10.000+</span>
-              </div>
-            </div>
-
-            <!-- IDADE TAB -->
-            <div class="tab-content hidden" id="tab-idade">
-              <div class="slider-box">
-                <div class="slider-header" style="align-items: center; margin-bottom: 6px;">
-                  <select id="selectIdade" class="select" style="width: auto; padding: 2px 6px; font-size: 0.85rem;">
-                    <option value="16-24">16 a 24 anos</option>
-                    <option value="25-34">25 a 34 anos</option>
-                    <option value="35-44">35 a 44 anos</option>
-                    <option value="45-59">45 a 59 anos</option>
-                    <option value="60-74">60 a 74 anos</option>
-                    <option value="75-100">75+ anos</option>
-                  </select>
-                  <span class="slider-value" id="dispIdosos">0%</span>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button id="themeToggle" class="button ghost" title="Mudar tema"
+                        style="padding:6px 10px;">🌙</button>
+                    <button id="btnCollapseLeft" class="panel-collapse-btn" title="Minimizar painel"
+                        onclick="togglePanel('left')">‹</button>
                 </div>
-                <div class="slider-wrapper">
-                  <div class="availability-bar" id="availIdade"></div>
-                  <input type="range" class="simple-slider" min="0" max="100" value="0" id="sliderIdosos">
-                </div>
-                <small style="color:var(--muted); font-size:0.75rem; margin-top:4px; display:block;">
-                  Filtra locais onde mais de <span id="valDispIdosos">0%</span> do grupo selecionado
-                  reside.
-                </small>
-              </div>
             </div>
 
-            <!-- RAÇA TAB -->
-            <div class="tab-content hidden" id="tab-raca">
-              <div class="slider-box">
-                <div class="slider-header" style="align-items: center; margin-bottom: 6px;">
-                  <select id="selectRaca" class="select" style="width: auto; padding: 2px 6px; font-size: 0.85rem;">
-                    <option value="Pct Preta" selected>População Preta</option>
-                    <option value="Pct Parda">População Parda</option>
-                    <option value="Pct Branca">População Branca</option>
-                    <option value="Pct Amarela">População Amarela</option>
-                    <option value="Pct Indigena">População Indígena</option>
-                  </select>
-                  <span class="slider-value" id="dispRaca">0%</span>
-                </div>
-                <div class="slider-wrapper">
-                  <div class="availability-bar" id="availRaca"></div>
-                  <input type="range" class="simple-slider" min="0" max="100" value="0" id="sliderRaca">
-                </div>
-                <small style="color:var(--muted); font-size:0.75rem; margin-top:4px; display:block;">
-                  Maior que <span id="valDispRaca">0%</span>
-                </small>
-              </div>
-            </div>
+            <!-- Corpo Scroll -->
+            <div class="body" id="sideLeftBody">
 
-            <!-- GÊNERO TAB -->
-            <div class="tab-content hidden" id="tab-genero">
-              <div class="slider-box">
-                <div class="slider-header" style="align-items: center; margin-bottom: 6px;">
-                  <select id="selectGenero" class="select" style="width: auto; padding: 2px 6px; font-size: 0.85rem;">
-                    <option value="Pct Mulheres" selected>Mulheres</option>
-                    <option value="Pct Homens">Homens</option>
-                  </select>
-                  <span class="slider-value" id="dispGenero">0%</span>
-                </div>
-                <div class="slider-wrapper">
-                  <div class="availability-bar" id="availGenero"></div>
-                  <input type="range" class="simple-slider" min="0" max="100" value="0" id="sliderGenero">
-                </div>
-                <small style="color:var(--muted); font-size:0.75rem; margin-top:4px; display:block;">
-                  Maior que <span id="valDispGenero">0%</span>
-                </small>
-              </div>
-            </div>
+                <!-- SEÇÃO: CARREGAR DADOS -->
+                <div class="section" id="loaderBox">
+                    <h3>Carregar Dados</h3>
 
-            <!-- SANEAMENTO TAB -->
-            <div class="tab-content hidden" id="tab-saneamento">
-              <div class="slider-box">
-                <div class="slider-header" style="align-items: center; margin-bottom: 6px;">
-                  <select id="selectSaneamento" class="select"
-                    style="width: auto; padding: 2px 6px; font-size: 0.85rem;">
-                    <option value="Pct Esgoto Inadequado" selected>Esgoto Inadequado</option>
-                    <option value="Pct Esgoto Rede Geral">Rede Geral</option>
-                    <option value="Pct Fossa Septica">Fossa Séptica</option>
-                  </select>
-                  <span class="slider-value" id="dispSaneamento">0%</span>
-                </div>
-                <div class="slider-wrapper">
-                  <div class="availability-bar" id="availSaneamento"></div>
-                  <input type="range" class="simple-slider" min="0" max="100" value="0" id="sliderSaneamento">
-                </div>
-                <small style="color:var(--muted); font-size:0.75rem; margin-top:4px; display:block;">
-                  Mais de <span id="valDispSaneamento">0%</span> com este tipo de saneamento.
-                </small>
-              </div>
-            </div>
+                    <!-- Botão Limpar Cache -->
+                    <button id="btnClearCache" class="button ghost"
+                        style="width: 100%; margin-bottom: 12px; font-size: 12px; padding: 8px;"
+                        title="Limpa todos os dados em memória">
+                        🧹 Limpar Cache (Liberar Memória)
+                    </button>
 
-            <!-- Extra Filters (Esgoto moved to a small utils section or keep hidden/remove? User prompt said preserve functionality but focus on the new UI. 
-                 Since Esgoto was there, I should probably keep it somewhere or add a tab? 
-                 The prompt lists: RENDA | COR/RAÇA | IDADE | GÊNERO.
-                 I'll hide Esgoto for now to fit the design or add it to "Saneamento" tab if user requested?
-                 User listed "Saneamento" in "Sliders Simples para Porcentagens: ... SANEAMENTO".
-                 So I should add a Saneamento tab or include it in one. I'll add a 5th tab or just put it below properly.
-                 Wait, the requested tabs are: [ RENDA ] [ COR/RAÇA ] [ IDADE ] [ GÊNERO ].
-                 The prompt says: "Para as abas COR/RAÇA, IDADE, GÊNERO, SANEAMENTO: Use sliders simples".
-                 So SANEAMENTO IS REQUESTED. I missed it in the Tabs list instruction but it's in the behavior description.
-                 I will add a Saneamento Tab.
-            -->
-          </div>
-
-          <!-- SANEAMENTO TAB (Appended logic) -->
-          <script>
-            // Need to append Saneamento tab button via JS or just rewrite the block above?
-            // I'll rewrite the block above to include SANEAMENTO.
-          </script>
-
-          <div class="toolbar" style="margin-top: 10px;">
-            <button id="btnApplyFilters" class="button" style="flex: 1;" disabled>Analisar/Agregar</button>
-            <button id="btnToggleInaptos" class="button toggle" title="Mostrar/Ocular Inaptos" disabled>
-              Filtrar Inaptos
-            </button>
-          </div>
-        </div>
-
-        <div class="section section-hidden" id="vizBox">
-          <h3>Visualização do Mapa</h3>
-          <div class="ctrl">
-            <label>Modo de Cor</label>
-            <div class="chip-group" id="vizModeChips">
-              <button class="chip-button active" data-value="vencedor">Vencedor (1T)</button>
-              <button class="chip-button hidden" data-value="vencedor_2t">Vencedor (2T)</button>
-              <button class="chip-button" data-value="desempenho_1t">Desempenho (1T)</button>
-              <button class="chip-button hidden" data-value="desempenho_2t">Desempenho (2T)</button>
-            </div>
-          </div>
-          <div class="ctrl section-hidden" id="vizCandidatoBox" style="margin-top: 10px;">
-            <label for="selectVizCandidato">Candidato (para modo Desempenho)</label>
-            <select id="selectVizCandidato" class="select" disabled>
-            </select>
-          </div>
-          <div class="ctrl" style="margin-top: 10px;">
-            <label for="selectVizSize">Modo de Tamanho</label>
-            <select id="selectVizSize" class="select" disabled>
-              <option value="fixo">Tamanho Fixo</option>
-              <option value="comparecimento">Proporcional (Comparecimento)</option>
-            </select>
-          </div>
-          <div class="ctrl" style="margin-top: 10px;">
-            <label for="selectVizColorStyle">Estilo de Cor</label>
-            <select id="selectVizColorStyle" class="select" disabled>
-              <option value="static">Cor Estática (Sólida)</option>
-              <option value="gradient">Degradê (Luminosidade)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="section section-hidden" id="resultsBox">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
-            <div>
-              <h3 id="resultsTitle" style="margin:0; font-size: 1rem; line-height: 1.3;">Resultados</h3>
-              <small id="resultsSubtitle"
-                style="color:var(--muted); font-size:0.8rem; display:block; margin-top:2px;"></small>
-            </div>
-            <button id="btnClearSelection" class="button ghost"
-              style="padding: 6px; width: 28px; height: 28px; display:flex; align-items:center; justify-content:center; border-radius:50%;"
-              title="Limpar seleção">
-              ✕
-            </button>
-          </div>
-
-          <!-- UNIFIED VIEW CONTAINER -->
-          <div id="unifiedResultsContainer" class="animation-fade">
-
-            <!-- ELECTION RESULTS -->
-            <div class="tabs" id="turnTabs" style="margin-bottom:12px;"></div>
-            <div id="resultsContent">
-              <div style="text-align:center; padding: 20px; color:var(--muted);">
-                <p style="margin-bottom:8px">👆</p>
-                Clique no mapa ou use filtros para ver resultados.
-              </div>
-            </div>
-            <div class="footer" id="resultsMetrics" style="margin-bottom: 20px;"></div>
-
-            <!-- NEIGHBORHOOD PROFILE (ALWAYS VISIBLE IF DATA EXISTS) -->
-            <div id="neighborhoodProfile"
-              style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
-              <div class="profile-header" style="position: relative;">
-                <button id="btnInfoCensus" class="info-button blinking" title="Informações sobre os dados">i</button>
-                <span style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom: 4px;">PERFIL
-                  DA
-                  VIZINHANÇA</span>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:0.8rem; color:var(--muted);">Renda Média</span>
-                  <div id="profileRendaVal" class="profile-renda" style="font-size: 1rem;">R$ --</div>
-                </div>
-              </div>
-
-              <div class="profile-section">
-                <h4>Demografia (Raça/Cor)</h4>
-                <div id="profileRacaChart"></div>
-              </div>
-              <div class="profile-section">
-                <h4>Gênero</h4>
-                <div id="profileGeneroChart"></div>
-              </div>
-              <div class="profile-section">
-                <h4>Faixa Etária</h4>
-                <div id="profileIdadeChart"></div>
-              </div>
-              <div class="profile-section">
-                <h4>Saneamento</h4>
-                <div class="saneamento-grid" id="profileSaneamentoChart"></div>
-              </div>
-              <div class="profile-section">
-                <h4>Alfabetização</h4>
-                <div class="bar-chart-row">
-                  <div class="bar-track" style="background:var(--chip-b); height:16px;">
-                    <div id="profileAlfabetizacaoBar" class="bar-fill" style="width:0%; background:var(--accent);">
+                    <!-- Chips de Eleição -->
+                    <div class="ctrl" style="margin-bottom:12px;">
+                        <label>Tipo de Eleição</label>
+                        <div class="chip-group" id="electionChips">
+                            <button class="chip-button active" data-value="2022" data-type="geral">Gerais 2022</button>
+                            <button class="chip-button" data-value="2018" data-type="geral">Gerais 2018</button>
+                            <button class="chip-button" data-value="2014" data-type="geral">Gerais 2014</button>
+                            <button class="chip-button" data-value="2010" data-type="geral">Gerais 2010</button>
+                            <button class="chip-button" data-value="2006" data-type="geral">Gerais 2006</button>
+                            <div style="width:100%; height:1px; background:var(--border); margin:4px 0;"></div>
+                            <button class="chip-button" data-value="2024" data-type="municipal">Mun. 2024</button>
+                            <button class="chip-button" data-value="2020" data-type="municipal">Mun. 2020</button>
+                            <button class="chip-button" data-value="2016" data-type="municipal">Mun. 2016</button>
+                            <button class="chip-button" data-value="2012" data-type="municipal">Mun. 2012</button>
+                            <button class="chip-button" data-value="2008" data-type="municipal">Mun. 2008</button>
+                        </div>
                     </div>
-                  </div>
-                  <div id="profileAlfabetizacaoVal" class="bar-value" style="width:auto; margin-left:6px;">--%</div>
+
+                    <!-- Loader Geral -->
+                    <div id="loaderBoxGeneral"
+                        style="padding:0 0 0 10px; border-left:2px solid var(--border); margin-left:2px;">
+                        <div class="row">
+                            <div class="ctrl" style="grid-column:1/-1;">
+                                <label>Cargo</label>
+                                <div class="chip-group" id="cargoChipsGeneral">
+                                    <button class="chip-button active" data-value="presidente">Presidente</button>
+                                    <button class="chip-button" data-value="governador">Governador</button>
+                                    <button class="chip-button" data-value="senador">Senador</button>
+                                    <button class="chip-button" data-value="deputado_federal"
+                                        data-subtype="federal">Dep. Federal</button>
+                                    <button class="chip-button" data-value="deputado_estadual"
+                                        data-subtype="estadual">Dep. Estadual</button>
+                                </div>
+                            </div>
+                            <div class="ctrl" style="grid-column:1/-1;">
+                                <label>Estado (UF)</label>
+                                <div class="combobox-container" id="boxUFGeneral">
+                                    <input type="text" class="combobox-input" id="comboUFGeneral"
+                                        placeholder="Selecione UF..." autocomplete="off" readonly>
+                                    <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                    <div class="combobox-dropdown" id="listUFGeneral"></div>
+                                </div>
+                                <!-- select original mantido para app.js -->
+                                <select id="selectUFGeneral" style="display:none;">
+                                    <option value="" disabled selected>Selecione...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loader Municipal -->
+                    <div id="loaderBoxMunicipal" class="section-hidden"
+                        style="padding:0 0 0 10px; border-left:2px solid var(--border); margin-left:2px;">
+
+                        <!-- Chips de Cargo: Prefeito / Vereador -->
+                        <div class="ctrl" id="cargoBoxMunicipalCargo" style="margin-bottom:10px;">
+                            <label>Cargo</label>
+                            <div class="chip-group" id="cargoChipsMunicipalCargo">
+                                <button class="chip-button active" data-value="prefeito">Prefeito</button>
+                                <button class="chip-button" data-value="vereador">Vereador</button>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="ctrl">
+                                <label>Estado (UF)</label>
+                                <div class="combobox-container" id="boxUFMunicipal">
+                                    <input type="text" class="combobox-input" id="comboUFMunicipal"
+                                        placeholder="Selecione UF..." autocomplete="off" readonly>
+                                    <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                    <div class="combobox-dropdown" id="listUFMunicipal"></div>
+                                </div>
+                                <select id="selectUFMunicipal" style="display:none;">
+                                    <option value="" disabled selected>Selecione...</option>
+                                </select>
+                            </div>
+                            <div class="ctrl">
+                                <label>Município</label>
+                                <div class="combobox-container" id="boxMunicipio">
+                                    <input type="text" class="combobox-input" id="comboMunicipio"
+                                        placeholder="Selecione UF..." autocomplete="off" readonly disabled>
+                                    <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                    <div class="combobox-dropdown" id="listMunicipio"></div>
+                                </div>
+                                <select id="selectMunicipio" style="display:none;" disabled>
+                                    <option value="" disabled selected>Selecione UF...</option>
+                                </select>
+                                <input id="searchMunicipio" class="search-input" placeholder="Buscar município..."
+                                    disabled style="display:none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botão Carregar Dados - APENAS para eleições municipais -->
+                    <button id="btnLoadData" class="button primary" style="width:100%; margin-top:12px; display:none;"
+                        disabled>
+                        Carregar Dados
+                    </button>
                 </div>
-              </div>
+
+                <!-- SEÇÃO: FILTROS (Colapsável) -->
+                <div class="section section-collapsible section-hidden" id="filterBox">
+                    <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                        <h3>Filtros da Visualização</h3>
+                    </div>
+                    <div class="section-body">
+
+                        <!-- Cargo Municipal (quando aplicável) -->
+                        <div class="ctrl section-hidden" id="cargoBoxMunicipal" style="margin-bottom:10px;">
+                            <label>Tipo de Eleição</label>
+                            <div class="chip-group" id="cargoChipsMunicipal"></div>
+                        </div>
+
+                        <div class="row" style="grid-template-columns:1fr 1fr;">
+                            <div class="ctrl">
+                                <label for="inputCidade">Município</label>
+                                <div class="combobox-container" id="boxCidade">
+                                    <input type="text" class="combobox-input" id="inputCidade"
+                                        placeholder="Selecionar município..." autocomplete="off" disabled>
+                                    <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                    <div class="combobox-dropdown" id="listCidade"></div>
+                                </div>
+                            </div>
+                            <div class="ctrl">
+                                <label for="inputBairro">Bairro</label>
+                                <div class="combobox-container" id="boxBairro">
+                                    <input type="text" class="combobox-input" id="inputBairro"
+                                        placeholder="Selecionar bairro..." autocomplete="off" disabled>
+                                    <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                    <div class="combobox-dropdown" id="listBairro"></div>
+                                </div>
+                            </div>
+                            <div class="ctrl" style="grid-column:1/-1;">
+                                <label for="searchLocal">Buscar por Local de Votação (mín. 3 letras)</label>
+                                <input id="searchLocal" class="select" placeholder="Digite o nome do local..."
+                                    disabled />
+                            </div>
+                        </div>
+
+                        <!-- FILTROS DEMOGRÁFICOS -->
+                        <div class="filter-group" id="demographicFilters">
+                            <h4>Filtros Demográficos (Censo)</h4>
+
+                            <div class="filter-tabs">
+                                <button class="tab-btn active" data-tab="tab-renda">RENDA</button>
+                                <button class="tab-btn" data-tab="tab-raca">COR/RAÇA</button>
+                                <button class="tab-btn" data-tab="tab-idade">IDADE</button>
+                                <button class="tab-btn" data-tab="tab-genero">GÊNERO</button>
+                                <button class="tab-btn" data-tab="tab-escolaridade">ESCOLAR.</button>
+                                <button class="tab-btn" data-tab="tab-estadocivil">EST. CIVIL</button>
+                                <button class="tab-btn" data-tab="tab-saneamento">SANEA.</button>
+                            </div>
+
+                            <!-- TAB: RENDA -->
+                            <div class="tab-content" id="tab-renda">
+                                <label class="slider-label">Renda Média (R$)</label>
+                                <div class="dual-slider-container" id="sliderRendaContainer">
+                                    <div class="dual-track"></div>
+                                    <div class="availability-bar" id="availRenda"></div>
+                                    <div class="dual-range" id="rendaRange"></div>
+                                    <div class="dual-thumb left" id="rendaThumbMin" tabindex="0"></div>
+                                    <div class="dual-thumb right" id="rendaThumbMax" tabindex="0"></div>
+                                </div>
+                                <div class="dual-values">
+                                    <span id="dispRendaMin">R$ 0</span>
+                                    <span id="dispRendaMax">R$ 10.000+</span>
+                                </div>
+                            </div>
+
+                            <!-- TAB: IDADE -->
+                            <div class="tab-content hidden" id="tab-idade">
+                                <div class="slider-box">
+                                    <div class="slider-header">
+                                        <select id="selectIdade" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="16-24">16 a 24 anos</option>
+                                            <option value="25-34">25 a 34 anos</option>
+                                            <option value="35-44">35 a 44 anos</option>
+                                            <option value="45-59">45 a 59 anos</option>
+                                            <option value="60-74">60 a 74 anos</option>
+                                            <option value="75-100">75+ anos</option>
+                                        </select>
+                                        <span class="slider-value" id="dispIdosos">0%</span>
+                                    </div>
+                                    <div class="slider-wrapper">
+                                        <div class="availability-bar" id="availIdade"></div>
+                                        <input type="range" class="simple-slider" min="0" max="100" value="0"
+                                            id="sliderIdosos">
+                                    </div>
+                                    <small style="color:var(--muted); font-size:11px; margin-top:4px; display:block;">
+                                        Filtra locais onde mais de <span id="valDispIdosos">0%</span> do grupo
+                                        selecionado
+                                        reside.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- TAB: RAÇA -->
+                            <div class="tab-content hidden" id="tab-raca">
+                                <div class="slider-box">
+                                    <div class="slider-header">
+                                        <select id="selectRaca" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="Pct Preta" selected>População Preta</option>
+                                            <option value="Pct Parda">População Parda</option>
+                                            <option value="Pct Branca">População Branca</option>
+                                            <option value="Pct Amarela">População Amarela</option>
+                                            <option value="Pct Indigena">População Indígena</option>
+                                        </select>
+                                        <span class="slider-value" id="dispRaca">0%</span>
+                                    </div>
+                                    <div class="slider-wrapper">
+                                        <div class="availability-bar" id="availRaca"></div>
+                                        <input type="range" class="simple-slider" min="0" max="100" value="0"
+                                            id="sliderRaca">
+                                    </div>
+                                    <small style="color:var(--muted); font-size:11px; margin-top:4px; display:block;">
+                                        Maior que <span id="valDispRaca">0%</span>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- TAB: GÊNERO -->
+                            <div class="tab-content hidden" id="tab-genero">
+                                <div class="slider-box">
+                                    <div class="slider-header">
+                                        <select id="selectGenero" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="Pct Mulheres" selected>Mulheres</option>
+                                            <option value="Pct Homens">Homens</option>
+                                        </select>
+                                        <span class="slider-value" id="dispGenero">0%</span>
+                                    </div>
+                                    <div class="slider-wrapper">
+                                        <div class="availability-bar" id="availGenero"></div>
+                                        <input type="range" class="simple-slider" min="0" max="100" value="0"
+                                            id="sliderGenero">
+                                    </div>
+                                    <small style="color:var(--muted); font-size:11px; margin-top:4px; display:block;">
+                                        Maior que <span id="valDispGenero">0%</span>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- TAB: ESCOLARIDADE -->
+                            <div class="tab-content hidden" id="tab-escolaridade">
+                                <div class="slider-box">
+                                    <div class="slider-header">
+                                        <select id="selectEscolaridade" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="Superior Completo">Superior Completo</option>
+                                            <option value="Superior Incompleto">Superior Incompleto</option>
+                                            <option value="Médio Completo">Médio Completo</option>
+                                            <option value="Médio Incomp.">Médio Incomp.</option>
+                                            <option value="Fund. Completo">Fund. Completo</option>
+                                            <option value="Fund. Incomp.">Fund. Incomp.</option>
+                                            <option value="Lê e Escreve">Lê e Escreve</option>
+                                            <option value="Analfabeto">Analfabeto</option>
+                                        </select>
+                                        <span class="slider-value" id="dispEscolaridade">0%</span>
+                                    </div>
+                                    <div class="slider-wrapper">
+                                        <div class="availability-bar" id="availEscolaridade"></div>
+                                        <input type="range" class="simple-slider" min="0" max="100" value="0"
+                                            id="sliderEscolaridade">
+                                    </div>
+                                    <small style="color:var(--muted); font-size:11px; margin-top:4px; display:block;">
+                                        Maior que <span id="valDispEscolaridade">0%</span>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- TAB: ESTADO CIVIL -->
+                            <div class="tab-content hidden" id="tab-estadocivil">
+                                <div class="slider-box">
+                                    <div class="slider-header">
+                                        <select id="selectEstadoCivil" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="Solteiro">Solteiro</option>
+                                            <option value="Casado">Casado</option>
+                                            <option value="Divorciado">Divorciado</option>
+                                            <option value="Viúvo">Viúvo</option>
+                                            <option value="Separado">Separado</option>
+                                        </select>
+                                        <span class="slider-value" id="dispEstadoCivil">0%</span>
+                                    </div>
+                                    <div class="slider-wrapper">
+                                        <div class="availability-bar" id="availEstadoCivil"></div>
+                                        <input type="range" class="simple-slider" min="0" max="100" value="0"
+                                            id="sliderEstadoCivil">
+                                    </div>
+                                    <small style="color:var(--muted); font-size:11px; margin-top:4px; display:block;">
+                                        Maior que <span id="valDispEstadoCivil">0%</span>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- TAB: SANEAMENTO -->
+                            <div class="tab-content hidden" id="tab-saneamento">
+                                <div class="slider-box">
+                                    <div class="slider-header">
+                                        <select id="selectSaneamento" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="Pct Esgoto Inadequado" selected>Esgoto Inadequado</option>
+                                            <option value="Pct Esgoto Rede Geral">Rede Geral</option>
+                                            <option value="Pct Fossa Septica">Fossa Séptica</option>
+                                        </select>
+                                        <span class="slider-value" id="dispSaneamento">0%</span>
+                                    </div>
+                                    <div class="slider-wrapper">
+                                        <div class="availability-bar" id="availSaneamento"></div>
+                                        <input type="range" class="simple-slider" min="0" max="100" value="0"
+                                            id="sliderSaneamento">
+                                    </div>
+                                    <small style="color:var(--muted); font-size:11px; margin-top:4px; display:block;">
+                                        Mais de <span id="valDispSaneamento">0%</span> com este tipo de saneamento.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="toolbar" style="margin-top:10px;">
+                            <button id="btnApplyFilters" class="button" style="flex:1;"
+                                disabled>Analisar/Agregar</button>
+                            <button id="btnToggleInaptos" class="button toggle" title="Mostrar/Ocular Inaptos" disabled>
+                                Filtrar Inaptos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO: VISUALIZAÇÃO (Colapsável, começa fechada) -->
+                <div class="section section-collapsible section-hidden collapsed" id="vizBox">
+                    <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                        <h3>Visualização do Mapa</h3>
+                    </div>
+                    <div class="section-body">
+                        <div class="ctrl">
+                            <label>Modo de Cor</label>
+                            <div class="chip-group" id="vizModeChips">
+                                <button class="chip-button active" data-value="vencedor">Vencedor</button>
+                                <button class="chip-button" data-value="desempenho">Desempenho</button>
+                            </div>
+                        </div>
+                        <div class="ctrl section-hidden" id="vizCandidatoBox" style="margin-top:10px;">
+                            <label for="selectVizCandidato">Candidato (para modo Desempenho)</label>
+                            <!-- Original select for non-deputy -->
+                            <select id="selectVizCandidato" class="select" disabled></select>
+
+                            <!-- Deputy search UI (hidden by default) -->
+                            <div id="deputySearchBox" class="deputy-search-box" style="display:none;">
+                                <div class="search-input-wrapper">
+                                    <input type="text" id="deputySearchInput" class="search-input"
+                                        placeholder="Buscar por nome ou número..." autocomplete="off">
+                                    <div id="deputySearchResults" class="search-results"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div><!-- end .body sideLeft -->
+        </div><!-- end side-left panel -->
+
+        <!-- RESIZE HANDLE LEFT -->
+        <div class="resize-handle" id="resizeHandleLeft" title="Arraste para redimensionar"></div>
+
+        <!-- MAPA -->
+        <div class="panel" id="mapPanel">
+            <div id="map"></div>
+
+            <!-- CONTROLES FLUTUANTES NO MAPA -->
+            <div id="mapFloatingControls"
+                style="position:absolute; top:12px; left:424px; right:auto; z-index:1000; display:flex; gap:8px;">
+                <select id="selectVizSize" class="select" disabled
+                    style="background-color:var(--surface); box-shadow:var(--shadow); width:auto; padding:6px 28px 6px 10px; border-radius:var(--radius); border:1px solid var(--border); font-size:12px; cursor:pointer;">
+                    <option value="fixo">Tamanho Fixo</option>
+                    <option value="comparecimento" selected>Por Comparecimento</option>
+                </select>
+                <select id="selectVizColorStyle" class="select" disabled
+                    style="background-color:var(--surface); box-shadow:var(--shadow); width:auto; padding:6px 28px 6px 10px; border-radius:var(--radius); border:1px solid var(--border); font-size:12px; cursor:pointer;">
+                    <option value="static">Cor Sólida</option>
+                    <option value="gradient">Degradê</option>
+                </select>
             </div>
-          </div>
 
+            <div class="loader-overlay" id="mapLoader">Carregando dados...</div>
         </div>
 
-        <div class="section section-hidden" id="summaryBoxContainer">
-          <h3 style="font-size: 0.9rem;">Comparativo 2022</h3>
-          <div class="summary-grid" id="summaryGrid">
-          </div>
+        <!-- EXPAND TABS (visible when panels are collapsed) -->
+        <div class="panel-expand-tab" id="expandTabLeft" onclick="togglePanel('left')" title="Abrir painel esquerdo">›
         </div>
-      </div>
-    </div>
-  </div>
+        <div class="panel-expand-tab" id="expandTabRight" onclick="togglePanel('right')" title="Abrir painel direito">‹
+        </div>
 
+        <!-- RESIZE HANDLE RIGHT -->
+        <div class="resize-handle" id="resizeHandleRight" title="Arraste para redimensionar"></div>
 
-  <svg width="0" height="0" style="display:none;">
-    <symbol id="svg-check" viewBox="0 0 16 16">
-      <polyline points="3 8 6 11 13 4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
-        stroke-linejoin="round" />
-    </symbol>
-    <symbol id="svg-arrow" viewBox="0 0 16 16">
-      <polyline points="6 4 10 8 6 12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
-        stroke-linejoin="round" />
-    </symbol>
-    <symbol id="svg-x" viewBox="0 0 16 16">
-      <line x1="4" y1="4" x2="12" y2="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-      <line x1="12" y1="4" x2="4" y2="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-    </symbol>
-    <symbol id="svg-info" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
-      <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" stroke-width="2" />
-      <line x1="12" y1="8" x2="12.01" y2="8" stroke="currentColor" stroke-width="2" />
-    </symbol>
-  </svg>
+        <!-- PAINEL DIREITO: RESULTADOS + ISE + COMPARATIVO -->
+        <div class="panel side side-right" id="sideRightPanel">
+            <div class="head">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="title">Resultados</div>
+                </div>
+                <button id="btnCollapseRight" class="panel-collapse-btn" title="Minimizar painel"
+                    onclick="togglePanel('right')">›</button>
+            </div>
+            <div class="body" id="sideRightBody">
 
-  <div class="info-overlay" id="infoOverlay">
-    <div class="info-modal">
-      <button class="info-close" id="btnCloseInfo">✕</button>
-      <h3>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                <!-- SEÇÃO: RESULTADOS -->
+                <div class="section section-hidden" id="resultsBox">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                        <div>
+                            <h3 id="resultsTitle" style="margin:0; font-size:14px; line-height:1.3;">Resultados</h3>
+                            <small id="resultsSubtitle"
+                                style="color:var(--muted); font-size:12px; display:block; margin-top:2px;"></small>
+                        </div>
+                        <button id="btnClearSelection" class="button ghost"
+                            style="padding:6px; width:28px; height:28px; border-radius:50%;"
+                            title="Limpar seleção">✕</button>
+                    </div>
+
+                    <div id="unifiedResultsContainer" class="animation-fade">
+                        <!-- Tabs de Turno -->
+                        <div class="tabs" id="turnTabs" style="margin-bottom:12px;"></div>
+
+                        <!-- Conteúdo dos Resultados -->
+                        <div id="resultsContent" class="fade-content">
+                            <div style="text-align:center; padding:20px; color:var(--muted);">
+                                <p style="margin-bottom:6px;">👆</p>
+                                Clique no mapa ou use filtros para ver resultados.
+                            </div>
+                        </div>
+
+                        <!-- Métricas -->
+                        <div class="footer" id="resultsMetrics" style="margin-bottom:16px;"></div>
+
+                        <!-- PERFIL DA VIZINHANÇA (Colapsável) -->
+                        <div id="neighborhoodProfile" class="section-collapsible collapsed"
+                            style="border-top:1px solid var(--border); margin-top:16px;">
+                            <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')"
+                                style="padding:12px 14px;">
+                                <h3 style="margin:0; display:flex; align-items:center; width:100%;">
+                                    <span style="font-size:8px; margin-right:8px;">▼</span>
+                                    PERFIL DA VIZINHANÇA
+
+                                    <button id="btnInfoCensus" class="info-button"
+                                        style="margin-left:8px; position:static; margin-top:0;"
+                                        title="Informações sobre os dados" onclick="event.stopPropagation()">i</button>
+
+                                    <div class="profile-renda-box"
+                                        style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                                        <span
+                                            style="font-size:10px; color:var(--muted); font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">RENDA
+                                            MÉDIA</span>
+                                        <span id="profileRendaVal"
+                                            style="font-size:14px; font-weight:700; color:var(--ok);">R$ --</span>
+                                    </div>
+                                </h3>
+                            </div>
+                            <div class="section-body" style="padding:0;">
+
+                                <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Demografia (Raça/Cor)
+                                    </h4>
+                                    <div class="profile-content" id="profileRacaChart"></div>
+                                </div>
+                                <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Gênero</h4>
+                                    <div class="profile-content" id="profileGeneroChart"></div>
+                                </div>
+                                <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Faixa Etária</h4>
+                                    <div class="profile-content" id="profileIdadeChart"></div>
+                                </div>
+                                <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Escolaridade</h4>
+                                    <div class="profile-content" id="profileEscolaridadeChart"></div>
+                                </div>
+                                <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Estado Civil</h4>
+                                    <div class="profile-content" id="profileEstadoCivilChart"></div>
+                                </div>
+                                <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Saneamento</h4>
+                                    <div class="profile-content saneamento-grid" id="profileSaneamentoChart"></div>
+                                </div>
+                                <div class="profile-section collapsed" id="profileAlfabetizacaoSection"
+                                    style="display:none;">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Alfabetização</h4>
+                                    <div class="profile-content">
+                                        <div class="bar-chart-row">
+                                            <div class="bar-track" style="height:14px;">
+                                                <div id="profileAlfabetizacaoBar" class="bar-fill"
+                                                    style="width:0%; background:var(--accent);">
+                                                </div>
+                                            </div>
+                                            <div id="profileAlfabetizacaoVal" class="bar-value">--%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO: ÍNDICE SOCIOECONÔMICO (ISE) -->
+                    <div class="section section-collapsible collapsed" id="iseBoxContainer" style="margin-top:16px;">
+                        <div class="section-header" onclick="
+                            this.parentElement.classList.toggle('collapsed');
+                            if (!this.parentElement.classList.contains('collapsed') && typeof window.updateISEPanel === 'function') {
+                                const p = window._isePendingArgs || {};
+                                window.updateISEPanel(
+                                    p.currentLayer || window.currentLayer,
+                                    p.currentCargo || window.currentCargo,
+                                    p.currentTurno || window.currentTurno || 1
+                                );
+                            }" style="padding:12px 14px;">
+                            <h3 style="margin:0; display:flex; align-items:center; width:100%;">
+                                <span style="font-size:8px; margin-right:8px;">▼</span>
+                                ANÁLISE SOCIOECONÔMICA (ISE)
+                            </h3>
+                        </div>
+                        <div class="section-body" style="padding: 12px 0;">
+                            <div class="method-card"
+                                style="margin: 0 16px 16px 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <h4 style="margin:0; font-size:13px;">Metodologia do Índice</h4>
+                                    <!-- Info Button for ISE -->
+                                    <button class="icon-btn"
+                                        onclick="document.getElementById('iseInfoOverlay').classList.add('visible')"
+                                        title="Sobre a Metodologia ISE"
+                                        style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:4px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p
+                                    style="font-size: 11px; color: var(--muted); margin-bottom: 8px; margin-top:0; line-height:1.4;">
+                                    Calcula uma nota absoluta (0-100) baseada em 4 variáveis da vizinhança. Faixas de
+                                    classificação calibradas: <strong>Baixa (0-30)</strong>, <strong>Média
+                                        (30-60)</strong> e <strong>Alta (60+)</strong>.</p>
+                                <div>
+                                    <div class="weight-bar"
+                                        style="display:flex; font-size:11px; align-items:center; margin-bottom:4px;">
+                                        <span class="weight-label" style="width:130px; color:var(--muted);">Renda
+                                            (Censo)</span>
+                                        <div class="weight-track"
+                                            style="flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin:0 8px;">
+                                            <div class="weight-fill"
+                                                style="width:40%; height:100%; background:var(--accent); border-radius:2px;">
+                                            </div>
+                                        </div><span class="weight-pct" style="width:30px; text-align:right;">40%</span>
+                                    </div>
+                                    <div class="weight-bar"
+                                        style="display:flex; font-size:11px; align-items:center; margin-bottom:4px;">
+                                        <span class="weight-label" style="width:130px; color:var(--muted);">Super. Comp.
+                                            (TSE)</span>
+                                        <div class="weight-track"
+                                            style="flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin:0 8px;">
+                                            <div class="weight-fill"
+                                                style="width:40%; height:100%; background:var(--accent); border-radius:2px;">
+                                            </div>
+                                        </div><span class="weight-pct" style="width:30px; text-align:right;">40%</span>
+                                    </div>
+                                    <div class="weight-bar"
+                                        style="display:flex; font-size:11px; align-items:center; margin-bottom:4px;">
+                                        <span class="weight-label" style="width:130px; color:var(--muted);">Rede Esgoto
+                                            (Censo)</span>
+                                        <div class="weight-track"
+                                            style="flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin:0 8px;">
+                                            <div class="weight-fill"
+                                                style="width:15%; height:100%; background:var(--accent); border-radius:2px;">
+                                            </div>
+                                        </div><span class="weight-pct" style="width:30px; text-align:right;">15%</span>
+                                    </div>
+                                    <div class="weight-bar" style="display:flex; font-size:11px; align-items:center;">
+                                        <span class="weight-label" style="width:130px; color:var(--muted);">25–59 anos
+                                            (TSE)</span>
+                                        <div class="weight-track"
+                                            style="flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin:0 8px;">
+                                            <div class="weight-fill"
+                                                style="width:5%; height:100%; background:var(--accent); border-radius:2px;">
+                                            </div>
+                                        </div><span class="weight-pct" style="width:30px; text-align:right;">5%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Seletor de modo de análise: ISE ou Fator Demográfico -->
+                            <div style="display:flex; gap:6px; margin: 0 16px 12px 16px;">
+                                <div class="ise-mode-pills" style="width:100%;">
+                                    <button class="ise-mode-pill active" id="iseAnalysisModeISE"
+                                        onclick="window.setIseAnalysisMode('ise')" style="flex:1;">
+                                        ✦ Índice ISE
+                                    </button>
+                                    <button class="ise-mode-pill" id="iseAnalysisModeFactor"
+                                        onclick="window.setIseAnalysisMode('factor')" style="flex:1;">
+                                        Fator Demog. do Eleitorado
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Seletor de fator (só visível no modo Fator) -->
+                            <div id="iseFactorSelectorBox" style="display:none; margin: 0 16px 12px 16px;">
+                                <div style="display:flex; flex-wrap:wrap; gap:6px;" id="iseFactorGroups"></div>
+                            </div>
+
+                            <!-- Botões de abas especiais de análise -->
+                            <div class="tabs" id="iseTurnTabs" style="margin: 0 16px 12px 16px;"></div>
+
+                            <!-- Filtro de Candidatos ISE -->
+                            <div class="ise-candidate-filter" id="iseCandidateFilter" style="display:none;">
+                                <div class="ise-candidate-filter-header">
+                                    <span class="ise-candidate-filter-label">Candidatos exibidos</span>
+                                    <div class="ise-mode-pills">
+                                        <button class="ise-mode-pill active" id="iseModeSelect"
+                                            onclick="window.setIseMode('select')">Selecionar</button>
+                                        <button class="ise-mode-pill" id="iseModeVsVs"
+                                            onclick="window.setIseMode('vsVs')">Mano a Mano</button>
+                                    </div>
+                                </div>
+                                <div class="ise-candidate-chips" id="iseCandidateChips"></div>
+                                <!-- Campo para adicionar candidatos extras (modo Selecionar) -->
+                                <div id="iseAddCandBox" style="display:none; position:relative;">
+                                    <input type="text" id="iseAddCandInput" class="search-input"
+                                        placeholder="Adicionar candidato..." autocomplete="off"
+                                        style="font-size:12px; padding:6px 10px;">
+                                    <div id="iseAddCandResults" class="search-results"></div>
+                                </div>
+                            </div>
+
+                            <!-- Os gráficos serão renderizados aqui pelo ise.js -->
+                            <div id="iseChartsContent" style="padding: 0 16px;">
+                                <div style="text-align:center; padding:20px; color:var(--muted); font-size:13px;">
+                                    Realize uma análise (Geral ou Municipal) e selecione pelo menos um bairro/cidade com
+                                    dados do Censo para visualizar os gráficos de correlação socioeconômica.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO: COMPARATIVO -->
+                    <div class="section section-hidden" id="summaryBoxContainer">
+                        <h3>Comparativo 2022</h3>
+                        <div class="summary-grid" id="summaryGrid"></div>
+                    </div>
+
+                </div><!-- end resultsBox inner -->
+            </div><!-- end .body sideRight -->
+        </div><!-- end side-right panel -->
+
+        <!-- SVG SYMBOLS -->
+        <svg width="0" height="0" style="display:none;">
+            <symbol id="svg-check" viewBox="0 0 16 16">
+                <polyline points="3 8 6 11 13 4" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round" />
+            </symbol>
+            <symbol id="svg-arrow" viewBox="0 0 16 16">
+                <polyline points="6 4 10 8 6 12" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round" />
+            </symbol>
+            <symbol id="svg-x" viewBox="0 0 16 16">
+                <line x1="4" y1="4" x2="12" y2="12" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" />
+                <line x1="12" y1="4" x2="4" y2="12" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" />
+            </symbol>
+            <symbol id="svg-info" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+                <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" stroke-width="2" />
+                <line x1="12" y1="8" x2="12.01" y2="8" stroke="currentColor" stroke-width="2" />
+            </symbol>
         </svg>
-        Sobre os Dados Demográficos
-      </h3>
-      <p>
-        As informações apresentadas não se baseiam no perfil dos eleitores do local de votação, mas sim nas
-        características da vizinhança onde esse local está inserido. Os dados utilizados são provenientes do Censo
-        Demográfico, seja o de 2010 ou o de 2022, conforme a disponibilidade.
-      </p>
-      <p>
-        O critério adotado considera as informações demográficas do setor censitário em que se localiza o ponto de
-        votação, bem como dos setores censitários vizinhos, de modo a traçar um retrato socioeconômico do entorno
-        imediato.
-      </p>
-      <p>
-        É importante ressaltar que, ao somar um estado inteiro, um município ou um bairro, quando é exibido o “perfil da
-        vizinhança” do local, esse perfil não se refere à totalidade da área filtrada.
-        Assim, por exemplo, os dados do município de São Paulo divulgados pelo IBGE não necessariamente coincidirão com
-        os dados apresentados aqui.
-        O que é exibido corresponde à média (e à soma) dos dados demográficos de todos os locais de votação
-        selecionados.
-      </p>
-      <p>
-        Há casos específicos em que os locais de votação estão situados em presídios, unidades de internação,
-        internatos, Fundação CASA e instituições similares. Por razões evidentes, esses locais não são removidos do
-        mapa, sendo possível visualizar seus resultados eleitorais. No entanto, o perfil demográfico da vizinhança
-        desses pontos deve ser totalmente desconsiderado, uma vez que não representa, de forma alguma, o público
-        efetivamente votante nessas unidades.
-      </p>
-    </div>
-  </div>
 
-  <div class="info-overlay" id="guideOverlay">
-    <div class="info-modal wide-modal">
-      <button class="info-close" id="btnCloseGuide">✕</button>
-      <div class="guide-content">
-        <h3>Visualizador Eleitoral V. 1.0: Apresentação e Guia de Uso</h3>
-        <p>
-          Seja bem-vindo ao <strong>Visualizador Eleitoral V. 1.0</strong>. Esta ferramenta foi desenvolvida para
-          permitir a consulta detalhada dos resultados das eleições brasileiras ocorridas entre <strong>2006 e
-            2024</strong>. A plataforma abrange tanto as eleições gerais (Presidência da República, Governos Estaduais e
-          Senado Federal) quanto as eleições municipais (Prefeituras) das mais de 5.500 cidades brasileiras.
-        </p>
+        <!-- MODAL: INFORMAÇÕES CENSO -->
+        <div class="info-overlay" id="infoOverlay">
+            <div class="info-modal">
+                <button class="info-close" id="btnCloseInfo">×</button>
+                <h3>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    Sobre os Dados Demográficos
+                </h3>
 
-        <h4>Agradecimentos</h4>
-        <p>
-          É fundamental expressar um agradecimento especial ao usuário <strong>fdhidalgo</strong>. Seu trabalho exímio
-          no georreferenciamento da vasta maioria dos quase 90 mil locais de votação do Brasil — de 2006 aos dias atuais
-          — foi o alicerce deste projeto. Sem o seu esforço, a realização deste visualizador não seria possível.
-        </p>
+                <p>
+                    As informações apresentadas são provenientes de diferentes fontes. Os dados de renda, saneamento
+                    básico e demografia (cor/raça) têm como base o Censo Demográfico do IBGE (2010 ou 2022, conforme
+                    disponibilidade), refletindo as características socioeconômicas da vizinhança onde o local de
+                    votação está inserido.
+                </p>
 
-        <h4>Funcionalidades e Visualização de Dados</h4>
-        <p>O visualizador oferece flexibilidade na análise dos dados, permitindo observar os resultados através de
-          diferentes recortes geográficos:</p>
-        <ul>
-          <li><strong>Locais de Votação:</strong> Visualização granular ponto a ponto.</li>
-          <li><strong>Municípios:</strong> Visão consolidada por cidade.</li>
-          <li><strong>Bairros:</strong> Agrupamento baseado nos dados fornecidos pelo Tribunal Superior Eleitoral (TSE).
-            <br><em>Nota: A precisão da localização dos bairros depende da base de dados oficial, podendo haver pequenas
-              variações.</em>
-          </li>
-        </ul>
+                <p>
+                    Já as informações relativas à faixa etária, estado civil e nível de escolaridade são obtidas a
+                    partir da base de dados do Tribunal Superior Eleitoral (TSE), considerando o perfil do eleitorado
+                    vinculado ao respectivo local de votação.
+                </p>
 
-        <h4>Modos de Visualização e Cores</h4>
-        <p>
-          O visualizador disponibiliza dois modos de representação cromática para facilitar a análise dos resultados no
-          mapa:
-        </p>
-        <ul>
-          <li><strong>Cor Estática:</strong> Neste modo, os locais de votação são indicados por cores sólidas que
-            correspondem exclusivamente ao partido vencedor naquela seção. O esquema de cores segue o padrão amplamente
-            reconhecido (similar ao utilizado na Wikipédia) para garantir fácil identificação: por exemplo, vitórias do
-            PT são marcadas em vermelho, do PL em azul, e assim sucessivamente.</li>
-          <li><strong>Degradê:</strong> Esta opção oferece uma camada de profundidade à análise, baseada na escala de
-            votos. A cor do ponto continua indicando o partido vencedor, porém a tonalidade varia conforme a intensidade
-            da vitória. Tons mais claros representam vitórias com percentuais menores ou margens estreitas (ex: 30% dos
-            votos), enquanto tons mais escuros e saturados indicam vitórias expressivas ou hegemônicas (ex: 90% dos
-            votos).</li>
-        </ul>
+                <p>
+                    O critério adotado combina essas duas fontes de informação para construir um retrato mais completo
+                    do contexto local. Enquanto os dados do Censo representam o ambiente ao redor do ponto de votação,
+                    os dados do TSE refletem diretamente o perfil dos eleitores que votam naquele local.
+                </p>
 
+                <p>
+                    É importante ressaltar que, ao agregar dados de múltiplos locais de votação (como em municípios,
+                    estados ou recortes maiores), os resultados apresentados correspondem a médias e somatórios das
+                    áreas analisadas, não necessariamente coincidindo com dados oficiais agregados de outras fontes.
+                </p>
 
-        <h4>Interação e Detalhes dos Resultados</h4>
-        <ul>
-          <li><strong>Exibição de Candidatos:</strong> Ao selecionar um local de votação para visualizar os detalhes, o
-            sistema listará apenas os candidatos que obtiveram votos naquela seção específica. A ausência de
-            determinados candidatos na lista indica que estes não receberam nenhum voto naquele local.</li>
-          <li><strong>Personalização de Cores:</strong> A paleta de cores padrão segue as convenções utilizadas na
-            Wikipédia. No entanto, caso haja similaridade excessiva entre as cores de diferentes candidatos ou partidos,
-            o usuário possui total liberdade para alterá-las. Basta clicar na caixa de cor ao lado do nome do candidato
-            no painel de resultados e selecionar a tonalidade de sua preferência.</li>
-          <li><strong>Nomenclatura Oficial:</strong> Os nomes apresentados no visualizador correspondem fielmente ao
-            "nome de urna" registrado oficialmente para aquela eleição específica. É importante notar que, em pleitos
-            anteriores, era comum o uso de nomes simplificados ou monônimos. Por exemplo, candidatas como Marta Suplicy
-            ou Dilma Rousseff podem aparecer listadas apenas como "Marta" ou "Dilma", respeitando o registro original da
-            época.</li>
-        </ul>
+                <p>
+                    Há casos específicos em que os locais de votação estão situados em presídios, unidades de
+                    internação, internatos, Fundação CASA e instituições similares. Por razões evidentes, esses locais
+                    não são removidos do mapa, sendo possível visualizar seus resultados eleitorais. No entanto, o
+                    perfil demográfico da vizinhança desses pontos deve ser interpretado com cautela, uma vez que não
+                    representa, de forma alguma, o público efetivamente votante nessas unidades.
+                </p>
 
-        <h4>Abrangência: Eleições Ordinárias e Suplementares</h4>
-        <p>
-          A ferramenta contempla tanto os pleitos regulares (ordinários) quanto as eleições suplementares (realizadas
-          para substituir mandatos cassados ou vacantes).
-        </p>
-        <p>
-          <em>Exemplo prático:</em> Ao acessar o ano de 2014, na eleição para governador do estado do Amazonas, o
-          usuário encontrará não apenas a eleição geral daquele ano,
-          mas também dados de pleito suplementar ocorrido em 2017, por motivo da cassação do mandato do governador
-          eleito em 2014 no estado.
-          O mesmo se aplica a eleições municipais suplementares decorrentes de cassações de prefeitos.
-        </p>
+            </div>
+        </div>
 
-        <h4>Ferramentas de Interação e Filtros</h4>
-        <ul>
-          <li><strong>Soma de Votos:</strong> O usuário pode somar os votos de múltiplas seções interativamente. Utilize
-            a tecla <strong>Shift + Botão Direito</strong> do mouse para arrastar e selecionar uma área, ou
-            <strong>Shift + Clique</strong> para selecionar locais individuais consecutivamente. O sistema calculará o
-            total automaticamente.
-          </li>
-          <li><strong>Filtros Demográficos:</strong> É possível refinar a visualização com base em indicadores
-            socioeconômicos do entorno dos locais de votação, incluindo: Renda, Cor/Raça, Faixa Etária, Gênero e Nível
-            de Saneamento.</li>
-          <li><em>Exemplo de uso:</em> Analisar como áreas de alta renda em São Paulo votaram para presidente, ou o
-            comportamento eleitoral em bairros com predominância feminina.</li>
-          <li><strong>Metodologia:</strong> Para detalhes sobre como o perfil de vizinhança foi construído, clique no
-            botão azul com o ícone "i" na interface.</li>
-        </ul>
+        <!-- MODAL: ISE (Índice SocioEconômico) -->
+        <div class="info-overlay" id="iseInfoOverlay"
+            onclick="if(event.target===this) this.classList.remove('visible')">
+            <div class="info-modal">
+                <button class="info-close"
+                    onclick="document.getElementById('iseInfoOverlay').classList.remove('visible')">✕</button>
+                <h3>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    Sobre o Índice Socioeconômico (ISE)
+                </h3>
+                <p>O <strong>Índice Socioeconômico (ISE)</strong> é uma métrica sintética criada para avaliar a
+                    correlação entre voto e extração social da vizinhança do local de votação. A metodologia calcula uma
+                    nota absoluta de 0 a 100 baseada nestas características:</p>
+                <ul
+                    style="color: var(--muted); margin-bottom: 16px; font-size: 13px; line-height: 1.5; padding-left: 20px;">
+                    <li><strong>Renda (Censo - Peso 40%):</strong> Considera a renda média domiciliar. Para calibrar a
+                        métrica de forma realista com os subsetores de riqueza no Brasil, o "teto" nota máxima de renda
+                        está ancorado em <strong>R$ 6.000</strong> (rendas médias acima desse valor já são consideradas
+                        elite extrema e ganham nota 100).</li>
+                    <li><strong>Ensino Superior (TSE - Peso 40%):</strong> Percentual de eleitores do local com ensino
+                        superior completo — historicamente um dos melhores proxies de estratificação de consumo e acesso
+                        no Brasil.</li>
+                    <li><strong>Rede de Esgoto (Censo - Peso 15%):</strong> Presença estrutural de infraestrutura básica
+                        se reflete de forma unificada no índice do local.</li>
+                    <li><strong>Idade Produtiva 25-59 (TSE - Peso 5%):</strong> Proporção da população em idade de plena
+                        atividade laborativa local.</li>
+                </ul>
+                <p><strong>Faixas Absolutas Calibradas (O Meio Termo)</strong><br>
+                    Forçar que 33% dos locais sempre sejam "Classe Alta" causaria anomalias onde locais muito carentes
+                    fossem classificados como ricos. Por outro lado, um parâmetro absoluto extremo jogaria o país
+                    inteiro na classe baixa.</p>
+                <p>A solução do painel foi adotar as seguintes <strong>faixas fixas calibradas para o panorama
+                        real</strong>:</p>
+                <p>1. <strong>Classe Baixa (0 a 30 pontos):</strong> Vizinhanças periféricas típicas, com ausência de
+                    diplomas universitários e infraestrutura e rendas precarizadas (Engloba a base piramidal enorme das
+                    regiões mais pobres e periferias dos grandes centros).</p>
+                <p>2. <strong>Classe Média (30 a 60 pontos):</strong> Centros e sub-centros comerciais, periferias
+                    consolidadas, áreas com mais infraestrutura e penetração razoável de formação superior.</p>
+                <p>3. <strong>Classe Alta (Acima de 60 pontos):</strong> Vizinhanças ricas de eixos nobres (com rendas
+                    elevadas que beiram ou superam o teto do modelo, altíssimos índices de esgoto e onde a esmagadora
+                    maioria tem ensino superior).</p>
+                <p><strong>O que significam as porcentagens no rodapé do gráfico?</strong><br>
+                    Exibem o desempenho real do candidato dentro daquela classe. Se a Classe Baixa marca
+                    <strong>22%</strong>, isso significa que de cada 100 votos válidos depositados nas urnas de Classe
+                    Baixa, 22 foram para este candidato (Votos Totais do Candidato na Classe ÷ Votos Válidos Totais na
+                    Classe).
+                </p>
+                <p style="font-size: 12px; color: var(--accent); margin-top:20px;"><em>A regressão linear em cada
+                        gráfico mapeia a correlação: se positiva, o candidato ganha os votos à medida que a classe
+                        social sobe; se negativa, ele é mais votado entre parcelas mais pobres.</em></p>
 
-        <h4>Perguntas Frequentes (FAQ)</h4>
-        <p><strong>1. Encontrei um local de votação com a localização errada.</strong><br>
-          Inconsistências geográficas podem ocorrer, especialmente em dados mais antigos (2006, 2008 e 2010). É possível
-          que um local esteja atribuído ao bairro correto, mas posicionado geograficamente de forma imprecisa (ex: um
-          local na Barra da Tijuca aparecendo em Honório Gurgel). Caso identifique um erro, por favor, preencha este
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSe0_gp18fih6RZ_8Zos7GK9pxsh2xalsexJvW5mrJtW0KoBYA/viewform?usp=dialog"
-            target="_blank" rel="noopener noreferrer">Formulário de correção</a>. O ajuste será implementado na próxima
-          atualização.
-        </p>
+                <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
 
-        <p><strong>2. A soma total dos votos no site é inferior ao resultado oficial.</strong><br>
-          Sim, isso é esperado. O total apresentado no visualizador é a soma exclusiva dos locais de votação mapeados.
-          As divergências ocorrem por dois motivos principais:<br>
-          - <strong>Voto no Exterior:</strong> Os votos da diáspora brasileira não estão contemplados no mapa. (no caso
-          das eleições presidenciais)<br>
-          - <strong>Cobertura:</strong> Aproximadamente 1% a 2% dos locais de votação ainda não foram georreferenciados,
-          então obviamente há eleições com votos a menos.
-          O objetivo é reduzir essa margem em atualizações futuras.</p>
+                <h3 style="font-size:16px;margin-bottom:10px;">
+                    Fator Demográfico do Eleitorado
+                </h3>
+                <p>O módulo <strong>Fator Demográfico do Eleitorado</strong> substitui o eixo X composto do ISE por uma
+                    variável demográfica direta e singular. Em vez de perguntar <em>"como o candidato se sai em bairros
+                        mais ricos?"</em>, ele permite perguntar <em>"como o candidato se sai em locais com mais
+                        mulheres?"</em> ou <em>"como vai entre eleitores mais velhos?"</em> — cruzando o comportamento
+                    de voto com o perfil real do eleitorado daquele local.</p>
 
-        <p><strong>3. Por que não há resultados da eleição suplementar para o Governo do Tocantins (2018)?</strong><br>
-          Os dados desta eleição foram disponibilizados pelo TRE local em formato não estruturado (PDFs individuais por
-          município e turno), o que dificulta o processamento automatizado. A inclusão deste pleito está nos planos
-          futuros.<br>
-          <strong>Colaboração:</strong> Caso algum usuário possua esses dados tabulados (planilha ou .txt) por seção ou
-          local de votação, o envio para o e-mail medeirosld28@gmail.com seria de grande valia.
-        </p>
+                <p><strong>Como funciona o eixo X neste modo?</strong><br>
+                    Cada ponto do gráfico representa um local de votação. O eixo X passa a exibir o percentual daquele
+                    fator específico naquele local — por exemplo, se o fator é <em>Mulheres</em>, o eixo X mostra
+                    quantos % do eleitorado local são mulheres (tipicamente entre 48% e 52%). O eixo Y continua sendo o
+                    percentual de votos válidos do candidato naquele local.</p>
 
-        <p><strong>4. Por que as eleições suplementares municipais de 2013 a 2016 não aparecem?</strong><br>
-          O TSE não disponibiliza os dados detalhados para as eleições suplementares ocorridas especificamente durante o
-          mandato 2013-2016 (ex: Criciúma/2013 ou Mossoró/2014). Por essa limitação da fonte oficial, não é possível
-          exibir esses mapas.</p>
+                <p><strong>Grupos de fatores disponíveis:</strong></p>
+                <ul style="color:var(--muted);font-size:13px;line-height:1.6;padding-left:20px;margin-bottom:14px;">
+                    <li><strong>Gênero:</strong> Mulheres / Homens — proporção de cada gênero no eleitorado do local
+                        (TSE).</li>
+                    <li><strong>Cor/Raça:</strong> Branca, Preta, Parda, Amarela, Indígena — com base nos dados do Censo
+                        para a vizinhança do local.</li>
+                    <li><strong>Faixa Etária:</strong> Seis faixas de 16–24 até 75+ anos — distribuição etária dos
+                        eleitores registrados (TSE).</li>
+                    <li><strong>Escolaridade:</strong> Oito níveis, de Analfabeto a Superior Completo — perfil de
+                        instrução dos eleitores (TSE).</li>
+                    <li><strong>Estado Civil:</strong> Solteiro, Casado, Divorciado, Separado, Viúvo (TSE).</li>
+                    <li><strong>Saneamento:</strong> Rede Geral, Fossa Séptica, Esgoto Inadequado — infraestrutura da
+                        vizinhança (Censo).</li>
+                </ul>
 
-        <p><strong>5. Por que não consigo visualizar o resultado de todo o Brasil para presidente por local de votação,
-            apenas dividido por estado?</strong><br>
-          A renderização simultânea de mais de 90 mil locais de votação na tela exigiria uma capacidade de processamento
-          que comprometeria a performance e a acessibilidade do site. Para garantir que a navegação permaneça fluida e
-          leve nesta primeira versão (V. 1.0), optou-se pela visualização segmentada por estados. A implementação de uma
-          visualização nacional completa é complexa, mas está nos planos de desenvolvimento para futuras atualizações.
-        </p>
+                <p><strong>Lendo a regressão neste modo:</strong><br>
+                    Um β <strong>positivo</strong> indica que o candidato tende a receber mais votos em locais onde
+                    aquele fator é mais prevalente — por exemplo, β = +1.8 para "Mulheres" significa que, para cada 1% a
+                    mais de mulheres no eleitorado local, o candidato tende a ganhar ~1.8pp a mais de votos. Um β
+                    <strong>negativo</strong> indica a tendência inversa.
+                </p>
 
-        <h4>Reporte de Erros e Contato</h4>
-        <p>
-          Este site foi desenvolvido de forma independente, com auxílio de Inteligência Artificial, e não por uma equipe
-          profissional de programação. Portanto, bugs e erros podem ocorrer.
-          Tal quual pode haver um ou outro caso de uma eleição não estar disponivel no site sendo que era para essa
-          eleição estar disponivel.
-        </p>
-        <p>
-          Para reportar problemas, enviar sugestões ou tirar dúvidas, entre em contato através dos canais:<br>
-          <strong>X (antigo Twitter):</strong> <a href="https://x.com/luizdaniel__" target="_blank"
-            rel="noopener noreferrer">@luizdaniel__</a> (via DM)<br>
-          <strong>E-mail:</strong> medeirosld28@gmail.com
-        </p>
-      </div>
-    </div>
-  </div>
+                <p><strong>Tercis neste modo:</strong><br>
+                    Os locais são divididos em três grupos iguais (baixo / médio / alto) com base no valor do próprio
+                    fator — não no ISE. Assim, "↓ Mulheres" engloba os locais com menor proporção de mulheres, e "↑
+                    Mulheres" os com maior proporção. As porcentagens no rodapé mostram o desempenho médio do candidato
+                    em cada tercil.</p>
 
-  <script src="app.js"></script>
+                <p style="font-size:12px;color:var(--accent);margin-top:16px;"><em>Este modo é complementar ao ISE:
+                        enquanto o índice composto revela a relação com classe social, o Fator Demográfico permite
+                        isolar variáveis específicas do eleitorado e verificar se existe correlação direta com o
+                        comportamento de voto.</em></p>
+            </div>
+        </div>
+
+        <!-- MODAL: GUIA DE USO -->
+        <div class="info-overlay" id="guideOverlay">
+            <div class="info-modal wide-modal">
+                <button class="info-close" id="btnCloseGuide">✕</button>
+                <div class="guide-content">
+                    <h3>Visualizador Eleitoral V. 2.0: Apresentação e Guia de Uso</h3>
+                    <p>Seja bem-vindo ao <strong>Visualizador Eleitoral V. 2.0</strong>. Esta ferramenta foi
+                        desenvolvida
+                        para
+                        permitir a consulta detalhada dos resultados das eleições brasileiras ocorridas entre
+                        <strong>2006 e
+                            2024</strong>. A plataforma abrange tanto as eleições gerais (Presidência da República,
+                        Governos
+                        Estaduais e
+                        Senado Federal) quanto as eleições municipais (Prefeituras) das mais de 5.500 cidades
+                        brasileiras.
+                    </p>
+
+                    <h4>Agradecimentos</h4>
+                    <p>É fundamental expressar um agradecimento especial ao usuário <strong>fdhidalgo</strong>. Seu
+                        trabalho
+                        exímio
+                        no georreferenciamento da vasta maioria dos quase 90 mil locais de votação do Brasil — de 2006
+                        aos
+                        dias atuais
+                        — foi o alicerce deste projeto. Sem o seu esforço, a realização deste visualizador não seria
+                        possível.</p>
+
+                    <h4>Funcionalidades e Visualização de Dados</h4>
+                    <p>O visualizador oferece flexibilidade na análise dos dados, permitindo observar os resultados
+                        através
+                        de
+                        diferentes recortes geográficos:</p>
+                    <ul>
+                        <li><strong>Locais de Votação:</strong> Visualização granular ponto a ponto.</li>
+                        <li><strong>Municípios:</strong> Visão consolidada por cidade.</li>
+                        <li><strong>Bairros:</strong> Agrupamento baseado nos dados fornecidos pelo Tribunal Superior
+                            Eleitoral
+                            (TSE).<br><em>Nota: A precisão da localização dos bairros depende da base de dados oficial,
+                                podendo haver
+                                pequenas variações.</em></li>
+                    </ul>
+
+                    <h4>Modos de Visualização e Cores</h4>
+                    <p>O visualizador disponibiliza dois modos de representação cromática para facilitar a análise dos
+                        resultados no
+                        mapa:</p>
+                    <ul>
+                        <li><strong>Cor Estática:</strong> Os locais de votação são indicados por cores sólidas que
+                            correspondem
+                            exclusivamente ao partido vencedor naquela seção. O esquema de cores segue o padrão
+                            amplamente
+                            reconhecido
+                            (similar ao utilizado na Wikipédia) para garantir fácil identificação: por exemplo, vitórias
+                            do
+                            PT são
+                            marcadas em vermelho, do PL em azul, e assim sucessivamente.</li>
+                        <li><strong>Degradê:</strong> Esta opção oferece uma camada de profundidade à análise, baseada
+                            na
+                            escala de
+                            votos. A cor do ponto continua indicando o partido vencedor, porém a tonalidade varia
+                            conforme a
+                            intensidade
+                            da vitória. Tons mais claros representam vitórias com percentuais menores ou margens
+                            estreitas
+                            (ex: 30% dos
+                            votos), enquanto tons mais escuros e saturados indicam vitórias expressivas ou hegemônicas
+                            (ex:
+                            90% dos
+                            votos).</li>
+                    </ul>
+
+                    <h4>Interação e Detalhes dos Resultados</h4>
+                    <ul>
+                        <li><strong>Exibição de Candidatos:</strong> Ao selecionar um local de votação para visualizar
+                            os
+                            detalhes, o
+                            sistema listará apenas os candidatos que obtiveram votos naquela seção específica. A
+                            ausência de
+                            determinados candidatos na lista indica que estes não receberam nenhum voto naquele local.
+                        </li>
+                        <li><strong>Personalização de Cores:</strong> A paleta de cores padrão segue as convenções
+                            utilizadas na
+                            Wikipédia. No entanto, caso haja similaridade excessiva entre as cores de diferentes
+                            candidatos
+                            ou partidos,
+                            o usuário possui total liberdade para alterá-las. Basta clicar na caixa de cor ao lado do
+                            nome
+                            do candidato
+                            no painel de resultados e selecionar a tonalidade de sua preferência.</li>
+                        <li><strong>Nomenclatura Oficial:</strong> Os nomes apresentados no visualizador correspondem
+                            fielmente ao
+                            "nome de urna" registrado oficialmente para aquela eleição específica. É importante notar
+                            que,
+                            em pleitos
+                            anteriores, era comum o uso de nomes simplificados ou monônimos. Por exemplo, candidatas
+                            como
+                            Marta Suplicy
+                            ou Dilma Rousseff podem aparecer listadas apenas como "Marta" ou "Dilma", respeitando o
+                            registro
+                            original da
+                            época.</li>
+                    </ul>
+
+                    <h4>Abrangência: Eleições Ordinárias e Suplementares</h4>
+                    <p>A ferramenta contempla tanto os pleitos regulares (ordinários) quanto as eleições suplementares
+                        (realizadas
+                        para substituir mandatos cassados ou vacantes).</p>
+                    <p><em>Exemplo prático:</em> Ao acessar o ano de 2014, na eleição para governador do estado do
+                        Amazonas,
+                        o
+                        usuário encontrará não apenas a eleição geral daquele ano, mas também dados de pleito
+                        suplementar
+                        ocorrido em
+                        2017, por motivo da cassação do mandato do governador eleito em 2014 no estado. O mesmo se
+                        aplica a
+                        eleições
+                        municipais suplementares decorrentes de cassações de prefeitos.</p>
+
+                    <h4>Ferramentas de Interação e Filtros</h4>
+                    <ul>
+                        <li><strong>Soma de Votos:</strong> O usuário pode somar os votos de múltiplas seções
+                            interativamente. Utilize
+                            a tecla <strong>Shift + Botão Direito</strong> do mouse para arrastar e selecionar uma área,
+                            ou
+                            <strong>Shift + Clique</strong> para selecionar locais individuais consecutivamente. O
+                            sistema
+                            calculará o
+                            total automaticamente.
+                        </li>
+                        <li><strong>Filtros Demográficos:</strong> É possível refinar a visualização com base em
+                            indicadores
+                            socioeconômicos do entorno dos locais de votação, incluindo: Renda, Cor/Raça, Faixa Etária,
+                            Gênero e Nível
+                            de Saneamento.</li>
+                        <li><em>Exemplo de uso:</em> Analisar como áreas de alta renda em São Paulo votaram para
+                            presidente,
+                            ou o
+                            comportamento eleitoral em bairros com predominância feminina.</li>
+                        <li><strong>Metodologia:</strong> Para detalhes sobre como o perfil de vizinhança foi
+                            construído,
+                            clique no
+                            botão azul com o ícone "i" na interface.</li>
+                    </ul>
+
+                    <h4>Perguntas Frequentes (FAQ)</h4>
+                    <p><strong>1. Encontrei um local de votação com a localização errada.</strong><br>
+                        Inconsistências geográficas podem ocorrer, especialmente em dados mais antigos (2006, 2008 e
+                        2010).
+                        É possível
+                        que um local esteja atribuído ao bairro correto, mas posicionado geograficamente de forma
+                        imprecisa.
+                        Caso
+                        identifique um erro, por favor, preencha este <a
+                            href="https://docs.google.com/forms/d/e/1FAIpQLSe0_gp18fih6RZ_8Zos7GK9pxsh2xalsexJvW5mrJtW0KoBYA/viewform?usp=dialog"
+                            target="_blank" rel="noopener noreferrer">Formulário de correção</a>. O ajuste será
+                        implementado
+                        na próxima
+                        atualização.</p>
+
+                    <p><strong>2. A soma total dos votos no site é inferior ao resultado oficial.</strong><br>
+                        Sim, isso é esperado. O total apresentado no visualizador é a soma exclusiva dos locais de
+                        votação
+                        mapeados.
+                        As divergências ocorrem por dois motivos principais:<br>
+                        - <strong>Voto no Exterior:</strong> Os votos da diáspora brasileira não estão contemplados no
+                        mapa.
+                        (no caso
+                        das eleições presidenciais)<br>
+                        - <strong>Cobertura:</strong> Aproximadamente 1% a 2% dos locais de votação ainda não foram
+                        georreferenciados,
+                        então obviamente há eleições com votos a menos. O objetivo é reduzir essa margem em atualizações
+                        futuras.</p>
+
+                    <p><strong>3. Por que não há resultados da eleição suplementar para o Governo do Tocantins
+                            (2018)?</strong><br>
+                        Os dados desta eleição foram disponibilizados pelo TRE local em formato não estruturado (PDFs
+                        individuais por
+                        município e turno), o que dificulta o processamento automatizado. A inclusão deste pleito está
+                        nos
+                        planos
+                        futuros.<br>
+                        <strong>Colaboração:</strong> Caso algum usuário possua esses dados tabulados (planilha ou .txt)
+                        por
+                        seção ou
+                        local de votação, ou queira reportar erros nesses dados, o envio para o e-mail <a
+                            href="mailto:medeirosld28@gmail.com">medeirosld28@gmail.com</a>
+                        seria de grande valia.
+                    </p>
+
+                    <p><strong>4. Por que as eleições suplementares municipais de 2013 a 2016 não aparecem?</strong><br>
+                        O TSE não disponibiliza os dados detalhados para as eleições suplementares ocorridas
+                        especificamente
+                        durante o
+                        mandato 2013-2016 (ex: Criciúma/2013 ou Mossoró/2014). Por essa limitação da fonte oficial, não
+                        é
+                        possível
+                        exibir esses mapas.</p>
+
+                    <p><strong>5. Por que não consigo visualizar o resultado de todo o Brasil para presidente por local
+                            de
+                            votação,
+                            apenas dividido por estado?</strong><br>
+                        A renderização simultânea de mais de 90 mil locais de votação na tela exigiria uma capacidade de
+                        processamento
+                        que comprometeria a performance e a acessibilidade do site. Para garantir que a navegação
+                        permaneça
+                        fluida e
+                        leve nesta primeira versão (V. 1.0), optou-se pela visualização segmentada por estados. A
+                        implementação de uma
+                        visualização nacional completa é complexa, mas está nos planos de desenvolvimento para futuras
+                        atualizações.
+                    </p>
+
+                    <h4>Reporte de Erros e Contato</h4>
+                    <p>Este site foi desenvolvido de forma independente, com auxílio de Inteligência Artificial, e não
+                        por
+                        uma
+                        equipe profissional de programação. Portanto, bugs e erros podem ocorrer. Tal qual pode haver um
+                        ou
+                        outro caso
+                        de uma eleição não estar disponível no site sendo que era para essa eleição estar disponível.
+                    </p>
+                    <p>Para reportar problemas, enviar sugestões ou tirar dúvidas, entre em contato através dos
+                        canais:<br>
+                        <strong>X (antigo Twitter):</strong> <a href="https://x.com/luizdaniel__" target="_blank"
+                            rel="noopener noreferrer">@luizdaniel__</a> (via DM)<br>
+                        <strong>E-mail para reportar erros:</strong> <a
+                            href="mailto:medeirosld28@gmail.com">medeirosld28@gmail.com</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Combobox UF/Município bridge -->
+        <script>
+            (function () {
+                function initBridgeCombobox(comboInputId, listId, nativeSelectId, comboContainerId) {
+                    const input = document.getElementById(comboInputId);
+                    const list = document.getElementById(listId);
+                    const native = document.getElementById(nativeSelectId);
+                    const container = document.getElementById(comboContainerId);
+                    if (!input || !list || !native) return;
+
+                    let lastConfirmedText = '';
+
+                    function getAllOptions() {
+                        return Array.from(native.options).filter(o => o.value);
+                    }
+
+                    function buildDropdown(filter) {
+                        const query = (filter || '').toLowerCase().trim();
+                        const opts = getAllOptions().filter(o =>
+                            !query || o.text.toLowerCase().includes(query)
+                        );
+                        list.innerHTML = '';
+                        if (opts.length === 0) {
+                            const empty = document.createElement('div');
+                            empty.className = 'combobox-item';
+                            empty.style.color = 'var(--muted)';
+                            empty.style.cursor = 'default';
+                            empty.textContent = 'Nenhum resultado';
+                            list.appendChild(empty);
+                            return;
+                        }
+                        opts.forEach(opt => {
+                            const item = document.createElement('div');
+                            item.className = 'combobox-item' + (opt.selected ? ' selected' : '');
+                            item.textContent = opt.text;
+                            item.dataset.value = opt.value;
+                            item.addEventListener('mousedown', function (e) {
+                                e.preventDefault();
+                                native.value = opt.value;
+                                input.value = opt.text;
+                                lastConfirmedText = opt.text;
+                                list.classList.remove('active');
+                                native.dispatchEvent(new Event('change', { bubbles: true }));
+                            });
+                            list.appendChild(item);
+                        });
+                    }
+
+                    function openDropdown() {
+                        if (input.disabled) return;
+                        buildDropdown(input.value);
+                        list.classList.add('active');
+                    }
+
+                    input.removeAttribute('readonly');
+
+                    input.addEventListener('focus', openDropdown);
+
+                    input.addEventListener('input', function () {
+                        buildDropdown(input.value);
+                        list.classList.add('active');
+                    });
+
+                    input.addEventListener('blur', function () {
+                        // If user typed but didn't pick, restore last confirmed
+                        setTimeout(function () {
+                            if (!list.classList.contains('active')) {
+                                const current = getAllOptions().find(o => o.selected && o.value);
+                                input.value = current ? current.text : '';
+                                lastConfirmedText = input.value;
+                            }
+                        }, 200);
+                    });
+
+                    document.addEventListener('click', function (e) {
+                        if (container && !container.contains(e.target)) {
+                            list.classList.remove('active');
+                            // Restore if user typed without confirming
+                            const current = getAllOptions().find(o => o.selected && o.value);
+                            input.value = current ? current.text : '';
+                        }
+                    });
+
+                    // Mirror native → visual (app.js populates options, changes value, disables)
+                    const observer = new MutationObserver(syncFromNative);
+                    observer.observe(native, { childList: true, attributes: true, subtree: true });
+
+                    function syncFromNative() {
+                        input.disabled = native.disabled;
+                        const sel = getAllOptions().find(o => o.selected);
+                        input.value = (sel && sel.value) ? sel.text : '';
+                        lastConfirmedText = input.value;
+                        if (!sel || !sel.value) {
+                            input.placeholder = native.options[0] ? native.options[0].text : 'Selecione...';
+                        }
+                    }
+
+                    syncFromNative();
+                }
+
+                window.addEventListener('load', function () {
+                    initBridgeCombobox('comboUFGeneral', 'listUFGeneral', 'selectUFGeneral', 'boxUFGeneral');
+                    initBridgeCombobox('comboUFMunicipal', 'listUFMunicipal', 'selectUFMunicipal', 'boxUFMunicipal');
+                    initBridgeCombobox('comboMunicipio', 'listMunicipio', 'selectMunicipio', 'boxMunicipio');
+                });
+            })();
+        </script>
+
+        <!-- Panel toggle logic -->
+        <script>
+            function togglePanel(side) {
+                if (side === 'left') {
+                    const panel = document.getElementById('sideLeftPanel');
+                    const btn = document.getElementById('btnCollapseLeft');
+                    panel.classList.toggle('panel-collapsed');
+                    const collapsed = panel.classList.contains('panel-collapsed');
+                    btn.textContent = collapsed ? '›' : '‹';
+                    if (collapsed) {
+                        panel.style.width = '';
+                        panel.style.flex = '';
+                    }
+                    // Update resize handle position
+                    updateResizeHandlePositions();
+                } else {
+                    const panel = document.getElementById('sideRightPanel');
+                    const btn = document.getElementById('btnCollapseRight');
+                    panel.classList.toggle('panel-collapsed');
+                    const collapsed = panel.classList.contains('panel-collapsed');
+                    btn.textContent = collapsed ? '‹' : '›';
+                    if (collapsed) {
+                        panel.style.width = '';
+                        panel.style.flex = '';
+                    }
+                    // Update resize handle position
+                    updateResizeHandlePositions();
+                }
+                // Invalidate map size after panel transition
+                setTimeout(() => {
+                    if (typeof map !== 'undefined' && map) map.invalidateSize();
+                }, 350);
+            }
+
+            function updateResizeHandlePositions() {
+                const leftPanel = document.getElementById('sideLeftPanel');
+                const rightPanel = document.getElementById('sideRightPanel');
+                const handleLeft = document.getElementById('resizeHandleLeft');
+                const handleRight = document.getElementById('resizeHandleRight');
+                const floatingControls = document.getElementById('mapFloatingControls');
+                if (leftPanel && handleLeft && !leftPanel.classList.contains('panel-collapsed')) {
+                    const w = leftPanel.getBoundingClientRect().width;
+                    handleLeft.style.left = (12 + w) + 'px';
+                    if (floatingControls) {
+                        floatingControls.style.left = (24 + w) + 'px';
+                        floatingControls.style.right = 'auto';
+                    }
+                } else if (floatingControls) {
+                    floatingControls.style.left = '12px';
+                    floatingControls.style.right = 'auto';
+                }
+                if (rightPanel && handleRight && !rightPanel.classList.contains('panel-collapsed')) {
+                    const w = rightPanel.getBoundingClientRect().width;
+                    handleRight.style.right = (12 + w) + 'px';
+                }
+            }
+        </script>
+
+        <!-- Panel resize logic -->
+        <script>
+            (function () {
+                function applyDefaultDesktopPanelWidths() {
+                    if (window.innerWidth <= 768) return;
+                    const rightPanel = document.getElementById('sideRightPanel');
+                    if (rightPanel && !rightPanel.classList.contains('panel-collapsed') && !rightPanel.style.width) {
+                        rightPanel.style.width = '600px';
+                    }
+                }
+
+                function makeResizable(handleId, panelId, side) {
+                    const handle = document.getElementById(handleId);
+                    if (!handle) return;
+                    let dragging = false;
+                    let startX = 0;
+                    let startW = 0;
+
+                    handle.addEventListener('mousedown', function (e) {
+                        const panel = document.getElementById(panelId);
+                        if (panel.classList.contains('panel-collapsed')) return;
+                        dragging = true;
+                        startX = e.clientX;
+                        startW = panel.getBoundingClientRect().width;
+                        document.body.style.cursor = 'col-resize';
+                        document.body.style.userSelect = 'none';
+                        e.preventDefault();
+                    });
+
+                    document.addEventListener('mousemove', function (e) {
+                        if (!dragging) return;
+                        const panel = document.getElementById(panelId);
+                        const delta = e.clientX - startX;
+                        let newW;
+                        if (side === 'left') {
+                            newW = Math.max(280, Math.min(600, startW + delta));
+                        } else {
+                            newW = Math.max(280, Math.min(600, startW - delta));
+                        }
+                        panel.style.width = newW + 'px';
+                        // Move resize handle to follow the panel edge
+                        if (side === 'left') {
+                            handle.style.left = (12 + newW) + 'px';
+                        } else {
+                            handle.style.right = (12 + newW) + 'px';
+                        }
+                    });
+
+                    document.addEventListener('mouseup', function () {
+                        if (!dragging) return;
+                        dragging = false;
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        if (typeof map !== 'undefined' && map) map.invalidateSize();
+                    });
+                }
+
+                makeResizable('resizeHandleLeft', 'sideLeftPanel', 'left');
+                makeResizable('resizeHandleRight', 'sideRightPanel', 'right');
+
+                // Position handles correctly on load
+                window.addEventListener('load', function () {
+                    applyDefaultDesktopPanelWidths();
+                    if (typeof updateResizeHandlePositions === 'function') updateResizeHandlePositions();
+                });
+                window.addEventListener('resize', function () {
+                    applyDefaultDesktopPanelWidths();
+                    if (typeof updateResizeHandlePositions === 'function') updateResizeHandlePositions();
+                });
+            })();
+        </script>
+
+        <script>
+            (function () {
+                function enableDragScroll(containerId) {
+                    const el = document.getElementById(containerId);
+                    if (!el) return;
+
+                    let isDragging = false;
+                    let startY = 0;
+                    let startScrollTop = 0;
+
+                    const interactiveSelector = 'input, select, button, a, label, textarea, .chip-button, .tab-btn, .nav-tab-btn, .dual-thumb, .combobox-item, .combobox-input, .search-input, .select';
+
+                    el.classList.add('drag-scroll-enabled');
+
+                    el.addEventListener('mousedown', function (e) {
+                        if (window.innerWidth <= 768) return;
+                        if (e.button !== 0) return;
+                        if (e.target.closest(interactiveSelector)) return;
+
+                        isDragging = true;
+                        startY = e.clientY;
+                        startScrollTop = el.scrollTop;
+                        el.classList.add('dragging-scroll');
+                        document.body.style.userSelect = 'none';
+                        e.preventDefault();
+                    });
+
+                    window.addEventListener('mousemove', function (e) {
+                        if (!isDragging) return;
+                        const deltaY = e.clientY - startY;
+                        el.scrollTop = startScrollTop - deltaY;
+                    });
+
+                    window.addEventListener('mouseup', function () {
+                        if (!isDragging) return;
+                        isDragging = false;
+                        el.classList.remove('dragging-scroll');
+                        document.body.style.userSelect = '';
+                    });
+
+                    el.addEventListener('mouseleave', function () {
+                        if (!isDragging) return;
+                        isDragging = false;
+                        el.classList.remove('dragging-scroll');
+                        document.body.style.userSelect = '';
+                    });
+                }
+
+                window.addEventListener('load', function () {
+                    enableDragScroll('sideLeftBody');
+                });
+            })();
+        </script>
+
+        <!-- MOBILE NAVIGATION BAR -->
+        <nav class="mobile-nav" id="mobileNav">
+            <button class="mobile-nav-btn" data-panel="left" onclick="mobileShowPanel('left')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                <span>Controles</span>
+            </button>
+            <button class="mobile-nav-btn active" data-panel="map" onclick="mobileShowPanel('map')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    <line x1="8" y1="2" x2="8" y2="18"></line>
+                    <line x1="16" y1="6" x2="16" y2="22"></line>
+                </svg>
+                <span>Mapa</span>
+            </button>
+            <button class="mobile-nav-btn" data-panel="right" onclick="mobileShowPanel('right')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                <span>Resultados</span>
+            </button>
+        </nav>
+
+        <!-- Mobile bottom sheet logic -->
+        <script>
+            (function () {
+                let currentMobilePanel = 'map';
+
+                window.mobileShowPanel = function (panel) {
+                    if (window.innerWidth > 768) return;
+
+                    const leftPanel = document.getElementById('sideLeftPanel');
+                    const rightPanel = document.getElementById('sideRightPanel');
+                    const navBtns = document.querySelectorAll('.mobile-nav-btn');
+
+                    // Update active button
+                    navBtns.forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.panel === panel);
+                    });
+
+                    currentMobilePanel = panel;
+
+                    if (panel === 'left') {
+                        leftPanel.classList.add('mobile-sheet-open');
+                        leftPanel.classList.remove('panel-collapsed');
+                        rightPanel.classList.remove('mobile-sheet-open');
+                    } else if (panel === 'right') {
+                        rightPanel.classList.add('mobile-sheet-open');
+                        rightPanel.classList.remove('panel-collapsed');
+                        leftPanel.classList.remove('mobile-sheet-open');
+                    } else {
+                        leftPanel.classList.remove('mobile-sheet-open');
+                        rightPanel.classList.remove('mobile-sheet-open');
+                    }
+
+                    // Refresh map after panel change
+                    setTimeout(() => {
+                        if (typeof map !== 'undefined' && map) map.invalidateSize();
+                    }, 350);
+                };
+
+                // Swipe to close bottom sheet
+                let touchStartY = 0;
+                let touchDeltaY = 0;
+                let swipeTarget = null;
+
+                document.addEventListener('touchstart', function (e) {
+                    if (window.innerWidth > 768) return;
+                    const panel = e.target.closest('.side.mobile-sheet-open .head');
+                    if (panel) {
+                        touchStartY = e.touches[0].clientY;
+                        swipeTarget = e.target.closest('.side.mobile-sheet-open');
+                    }
+                }, { passive: true });
+
+                document.addEventListener('touchmove', function (e) {
+                    if (!swipeTarget || window.innerWidth > 768) return;
+                    touchDeltaY = e.touches[0].clientY - touchStartY;
+                    if (touchDeltaY > 0) {
+                        swipeTarget.style.transform = `translateY(${touchDeltaY}px)`;
+                    }
+                }, { passive: true });
+
+                document.addEventListener('touchend', function () {
+                    if (!swipeTarget || window.innerWidth > 768) return;
+                    if (touchDeltaY > 80) {
+                        // Close sheet
+                        mobileShowPanel('map');
+                    }
+                    if (swipeTarget) {
+                        swipeTarget.style.transform = '';
+                    }
+                    swipeTarget = null;
+                    touchDeltaY = 0;
+                }, { passive: true });
+
+                // Auto-open results on mobile when map marker is clicked
+                const observer = new MutationObserver(function (mutations) {
+                    if (window.innerWidth > 768) return;
+                    mutations.forEach(function (m) {
+                        if (m.type === 'childList' || m.type === 'attributes') {
+                            const resultsBox = document.getElementById('resultsBox');
+                            if (resultsBox && !resultsBox.classList.contains('section-hidden') && currentMobilePanel !== 'right') {
+                                mobileShowPanel('right');
+                            }
+                        }
+                    });
+                });
+
+                window.addEventListener('load', function () {
+                    const resultsBox = document.getElementById('resultsBox');
+                    if (resultsBox) {
+                        observer.observe(resultsBox, { attributes: true, attributeFilter: ['class'] });
+                    }
+                });
+            })();
+        </script>
+
+        <!-- Cache LRU -->
+        <script src="cache.js"></script>
+
+        <!-- SQLite em WASM para ler a base GPKG -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+
+        <!-- ===== App modular (substitui app.js) ===== -->
+
+        <!-- 1. Variáveis globais, caches, STATE, cores, partidos -->
+        <script src="globals.js"></script>
+
+        <!-- 2. Utilitários puros: getProp, norm, gradiente, parseCandidateKey -->
+        <script src="utils.js"></script>
+
+        <!-- 3. Init, loadMunicipalIndex, toggleCandidateDetails, scheduleAutoLoad -->
+        <script src="ui-helpers.js"></script>
+
+        <!-- 4. setupControls, setupTabs, setupSliders, updateElectionTypeUI -->
+        <script src="ui-controls.js"></script>
+
+        <!-- 5. Tooltip, neighborhood profile, updateConditionalUI, updateApplyButtonText -->
+        <script src="ui-results.js"></script>
+
+        <!-- 6. Helpers ZIP/GPKG, SQLite, buildMunicipalFeature*, turnout functions -->
+        <script src="data-zip.js"></script>
+
+        <!-- 7. discoverCandidates, mergeCensusData, createCombobox, populateCidade/Bairro -->
+        <script src="data-process.js"></script>
+
+        <!-- 8. Eleições municipais: loadCenso, loadMunicipalBase, loadMunicipal*Prefeito/Vereador -->
+        <script src="data-municipal.js"></script>
+
+        <!-- 9. Eleições gerais por ano -->
+        <script src="data-geral-2006.js"></script>
+        <script src="data-geral-2010.js"></script>
+        <script src="data-geral-2014.js"></script>
+        <script src="data-geral-2018.js"></script>
+        <script src="data-geral-2022.js"></script>
+
+        <!-- 10. Router municipal e stubs legados -->
+        <script src="data-router.js"></script>
+
+        <!-- 11. onClickLoadData_General e onClickLoadData_Deputies -->
+        <script src="data-loader.js"></script>
+
+        <!-- 12. Renderização do mapa, filtros, seleção por box -->
+        <script src="map-render.js"></script>
+
+        <!-- 13. Painel de resultados, modais, precomputeWinners, exports window.* -->
+        <script src="results-panel.js"></script>
+
+        <!-- ===== Análise Socioeconômica (ISE) ===== -->
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script src="ise.js"></script>
 </body>
 
 </html>
