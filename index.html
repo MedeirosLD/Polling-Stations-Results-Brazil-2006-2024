@@ -1470,6 +1470,48 @@
         <script>
             (function () {
                 let currentMobilePanel = 'map';
+                let swipeTarget = null;
+                let touchStartY = 0;
+                let touchDeltaY = 0;
+                let dragStartHeight = 0;
+
+                function getMobileSheetMaxHeight() {
+                    const nav = document.getElementById('mobileNav');
+                    const navHeight = nav ? nav.getBoundingClientRect().height : 60;
+                    return Math.max(260, window.innerHeight - navHeight - 8);
+                }
+
+                function getMobileSnapHeights() {
+                    const max = getMobileSheetMaxHeight();
+                    return [
+                        Math.round(max * 0.34),
+                        Math.round(max * 0.58),
+                        Math.round(max * 0.86)
+                    ];
+                }
+
+                function setMobileSheetHeight(height) {
+                    const max = getMobileSheetMaxHeight();
+                    const next = Math.max(220, Math.min(max, Math.round(height)));
+                    document.documentElement.style.setProperty('--mobile-sheet-height', next + 'px');
+                    return next;
+                }
+
+                function getCurrentMobileSheetHeight() {
+                    const raw = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--mobile-sheet-height')
+                        .trim();
+                    const parsed = parseFloat(raw);
+                    return Number.isFinite(parsed) && parsed > 0 ? parsed : getMobileSnapHeights()[1];
+                }
+
+                function snapMobileSheetHeight(height) {
+                    const snaps = getMobileSnapHeights();
+                    const nearest = snaps.reduce((best, current) => {
+                        return Math.abs(current - height) < Math.abs(best - height) ? current : best;
+                    }, snaps[1]);
+                    return setMobileSheetHeight(nearest);
+                }
 
                 window.mobileShowPanel = function (panel) {
                     if (window.innerWidth > 768) return;
@@ -1477,6 +1519,7 @@
                     const leftPanel = document.getElementById('sideLeftPanel');
                     const rightPanel = document.getElementById('sideRightPanel');
                     const navBtns = document.querySelectorAll('.mobile-nav-btn');
+                    const snaps = getMobileSnapHeights();
 
                     // Update active button
                     navBtns.forEach(btn => {
@@ -1486,10 +1529,12 @@
                     currentMobilePanel = panel;
 
                     if (panel === 'left') {
+                        setMobileSheetHeight(getCurrentMobileSheetHeight() || snaps[1]);
                         leftPanel.classList.add('mobile-sheet-open');
                         leftPanel.classList.remove('panel-collapsed');
                         rightPanel.classList.remove('mobile-sheet-open');
                     } else if (panel === 'right') {
+                        setMobileSheetHeight(getCurrentMobileSheetHeight() || snaps[1]);
                         rightPanel.classList.add('mobile-sheet-open');
                         rightPanel.classList.remove('panel-collapsed');
                         leftPanel.classList.remove('mobile-sheet-open');
@@ -1504,40 +1549,56 @@
                     }, 350);
                 };
 
-                // Swipe to close bottom sheet
-                let touchStartY = 0;
-                let touchDeltaY = 0;
-                let swipeTarget = null;
-
                 document.addEventListener('touchstart', function (e) {
                     if (window.innerWidth > 768) return;
                     const panel = e.target.closest('.side.mobile-sheet-open .head');
                     if (panel) {
                         touchStartY = e.touches[0].clientY;
                         swipeTarget = e.target.closest('.side.mobile-sheet-open');
+                        dragStartHeight = swipeTarget ? swipeTarget.getBoundingClientRect().height : getCurrentMobileSheetHeight();
+                        if (swipeTarget) swipeTarget.style.transition = 'none';
                     }
                 }, { passive: true });
 
                 document.addEventListener('touchmove', function (e) {
                     if (!swipeTarget || window.innerWidth > 768) return;
                     touchDeltaY = e.touches[0].clientY - touchStartY;
-                    if (touchDeltaY > 0) {
-                        swipeTarget.style.transform = `translateY(${touchDeltaY}px)`;
-                    }
+                    const nextHeight = dragStartHeight - touchDeltaY;
+                    setMobileSheetHeight(nextHeight);
                 }, { passive: true });
 
                 document.addEventListener('touchend', function () {
                     if (!swipeTarget || window.innerWidth > 768) return;
-                    if (touchDeltaY > 80) {
-                        // Close sheet
+                    const currentHeight = swipeTarget.getBoundingClientRect().height;
+                    const snaps = getMobileSnapHeights();
+                    const closeThreshold = Math.min(140, snaps[0] * 0.45);
+
+                    if (touchDeltaY > closeThreshold && currentHeight < snaps[0] + 40) {
                         mobileShowPanel('map');
+                    } else {
+                        snapMobileSheetHeight(currentHeight);
                     }
-                    if (swipeTarget) {
-                        swipeTarget.style.transform = '';
-                    }
+
+                    if (swipeTarget) swipeTarget.style.transition = '';
+
+                    setTimeout(() => {
+                        if (typeof map !== 'undefined' && map) map.invalidateSize();
+                    }, 50);
+
                     swipeTarget = null;
                     touchDeltaY = 0;
+                    dragStartHeight = 0;
                 }, { passive: true });
+
+                window.addEventListener('resize', function () {
+                    if (window.innerWidth > 768) return;
+                    if (currentMobilePanel !== 'map') {
+                        snapMobileSheetHeight(getCurrentMobileSheetHeight());
+                    }
+                    setTimeout(() => {
+                        if (typeof map !== 'undefined' && map) map.invalidateSize();
+                    }, 50);
+                });
 
                 // Auto-open results on mobile when map marker is clicked
                 const observer = new MutationObserver(function (mutations) {
@@ -1553,6 +1614,9 @@
                 });
 
                 window.addEventListener('load', function () {
+                    if (window.innerWidth <= 768) {
+                        setMobileSheetHeight(getMobileSnapHeights()[1]);
+                    }
                     const resultsBox = document.getElementById('resultsBox');
                     if (resultsBox) {
                         observer.observe(resultsBox, { attributes: true, attributeFilter: ['class'] });

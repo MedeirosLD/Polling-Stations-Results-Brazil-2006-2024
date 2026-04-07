@@ -3792,6 +3792,12 @@ div[style*="Apoio:"] {
    ============================================ */
 @media (max-width: 768px) {
 
+    :root {
+        --mobile-nav-height: calc(60px + env(safe-area-inset-bottom, 0px));
+        --mobile-sheet-max-height: calc(100dvh - var(--mobile-nav-height) - 8px);
+        --mobile-sheet-height: min(58dvh, var(--mobile-sheet-max-height));
+    }
+
     /* ----- MOBILE NAV BAR ----- */
     .mobile-nav {
         display: flex;
@@ -3847,8 +3853,10 @@ div[style*="Apoio:"] {
     /* ----- MAP FULLSCREEN ----- */
     #mapPanel {
         position: fixed;
-        inset: 0;
-        bottom: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: var(--mobile-nav-height);
         z-index: 1;
         border-radius: 0;
         border: none;
@@ -3857,8 +3865,12 @@ div[style*="Apoio:"] {
     #map {
         height: 100%;
         width: 100%;
-        /* Make room for mobile nav at bottom */
-        padding-bottom: 60px;
+    }
+
+    #map,
+    #map .leaflet-container,
+    #mapPanel {
+        touch-action: pan-x pan-y pinch-zoom;
     }
 
     /* ----- HIDE DESKTOP ELEMENTS ----- */
@@ -3876,19 +3888,22 @@ div[style*="Apoio:"] {
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
-        height: 75vh;
-        height: 75dvh;
+        height: min(var(--mobile-sheet-height), var(--mobile-sheet-max-height));
+        max-height: var(--mobile-sheet-max-height);
         z-index: 400;
         border-radius: 16px 16px 0 0;
         box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
         transform: translateY(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            height 0.24s cubic-bezier(0.4, 0, 0.2, 1);
         /* Space for mobile nav */
-        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        pointer-events: none;
     }
 
     .side.mobile-sheet-open {
         transform: translateY(0) !important;
+        pointer-events: auto;
     }
 
     /* Override collapsed state on mobile */
@@ -3896,7 +3911,7 @@ div[style*="Apoio:"] {
         transform: translateY(100%) !important;
         width: 100% !important;
         opacity: 1;
-        pointer-events: auto;
+        pointer-events: none;
         border: 1px solid var(--border) !important;
         box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35) !important;
     }
@@ -3941,13 +3956,15 @@ div[style*="Apoio:"] {
         position: relative;
         padding-top: 16px;
         cursor: grab;
+        touch-action: none;
     }
 
     /* ----- BODY SCROLL ----- */
     .side .body {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: 80px;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        touch-action: pan-y;
     }
 
     /* ----- FLOATING MAP CONTROLS ----- */
