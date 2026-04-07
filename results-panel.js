@@ -893,9 +893,9 @@ function renderDeputyResults(cargo) {
       if (st.includes('INAPTO')) {
         statusHtml = `<span class="status-badge inapto"><svg><use href="#svg-x" /></svg> INAPTO</span>`;
         simpleStatus = 'INAPTO';
-      } else if (st === 'NÃƒO ELEITO') {
+      } else if (st.includes('NÃO ELEITO') || st.includes('NAO ELEITO') || st.includes('NÃƒO ELEITO')) {
         statusHtml = `<span class="status-badge nao-eleito"><svg><use href="#svg-x" /></svg> Não Eleito</span>`;
-        simpleStatus = 'NÃƒO ELEITO';
+        simpleStatus = 'NÃO ELEITO';
       } else if (st.includes('ELEITO') || st.includes('QP') || st.includes('MÉDIA')) {
         statusHtml = `<span class="status-badge eleito"><svg><use href="#svg-check" /></svg> ${r.status}</span>`;
         simpleStatus = 'ELEITO';
