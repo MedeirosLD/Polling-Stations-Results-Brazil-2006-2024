@@ -99,7 +99,10 @@ function updateNeighborhoodProfileUI() {
   };
 
   geojson.features.forEach(f => {
-    const id = String(getProp(f.properties, 'local_id') || getProp(f.properties, 'nr_locvot'));
+    const id = typeof getFeatureSelectionId === 'function'
+      ? getFeatureSelectionId(f.properties)
+      : String(getProp(f.properties, 'id_unico') || getProp(f.properties, 'local_id') || getProp(f.properties, 'nr_locvot') || '');
+
     if (selectedLocationIDs.has(id)) {
       count++;
       const p = f.properties;
@@ -168,7 +171,16 @@ function updateNeighborhoodProfileUI() {
     }
   });
 
-  if (count === 0) return;
+  if (count === 0) {
+    dom.profileRendaVal.textContent = 'R$ --';
+    dom.profileRacaChart.innerHTML = '';
+    dom.profileGeneroChart.innerHTML = '';
+    dom.profileIdadeChart.innerHTML = '';
+    dom.profileSaneamentoChart.innerHTML = '';
+    if (document.getElementById('profileEscolaridadeChart')) document.getElementById('profileEscolaridadeChart').innerHTML = '';
+    if (document.getElementById('profileEstadoCivilChart')) document.getElementById('profileEstadoCivilChart').innerHTML = '';
+    return;
+  }
 
   // Render Renda
   const rendaFinal = countRenda > 0 ? sumRenda / countRenda : 0;

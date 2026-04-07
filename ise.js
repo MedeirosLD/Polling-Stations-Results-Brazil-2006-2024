@@ -118,10 +118,10 @@ function showIseTT(e, d) {
     const parts = [d.cidade, d.bairro].filter(Boolean);
     ttLocation.textContent = parts.join(' · ');
     ttLocation.style.display = parts.length ? 'block' : 'none';
-    
+
     const xLabelEl = document.getElementById('ise-tt-x-label');
     if (xLabelEl) xLabelEl.textContent = 'ÍNDICE ISE';
-    
+
     ttIdx.textContent = d.x.toFixed(1);
     ttPct.textContent = d.y.toFixed(1) + '%';
     ttFaixa.textContent = ISE_LABELS[d.t] || d.t;
@@ -167,6 +167,15 @@ function getStrProp(props, candidates) {
         }
     }
     return '';
+}
+
+function getIseSelectionId(props) {
+    if (!props) return '';
+    if (typeof window.getFeatureSelectionId === 'function') {
+        return String(window.getFeatureSelectionId(props) || '');
+    }
+    const gp = window.getProp || ((p, k) => p[k]);
+    return String(gp(props, 'id_unico') || gp(props, 'local_id') || gp(props, 'nr_locvot') || '');
 }
 
 // Regression
@@ -283,7 +292,7 @@ function processISEData(features, candidatoKey, currentCargo) {
                 if (!isPrison) {
                     const locBairro = gp(p, 'ds_bairro') || gp(p, 'NM_BAIRRO') || gp(p, 'nm_bairro');
                     const locCidade = gp(p, 'nm_localidade') || gp(p, 'NM_LOCALIDADE') || gp(p, 'nm_municipio');
-                    const locId = gp(p, 'local_id') || gp(p, 'nr_locvot') || '';
+                    const locId = getIseSelectionId(p);
 
                     rawFeatures.push({
                         id: String(locId),
@@ -398,8 +407,12 @@ function drawIseChart(container, id, data, candidateName, candidateColor) {
     const x0 = xSc.domain()[0], x1 = xSc.domain()[1];
     const y0c = Math.max(0, Math.min(100, reg.slope * x0 + reg.intercept));
     const y1c = Math.max(0, Math.min(100, reg.slope * x1 + reg.intercept));
-    g.append('line').attr('class', 'trend-line')
-        .attr('x1', xSc(x0)).attr('x2', xSc(x1)).attr('y1', ySc(y0c)).attr('y2', ySc(y1c))
+    g.append('line')
+        .attr('class', 'trend-line')
+        .attr('x1', xSc(x0))
+        .attr('x2', xSc(x1))
+        .attr('y1', ySc(Math.max(0, Math.min(100, y0c))))
+        .attr('y2', ySc(Math.max(0, Math.min(100, y1c))))
         .attr('stroke', candidateColor)
         .attr('stroke-width', 2);
 
@@ -517,7 +530,7 @@ window.updateISEPanel = function (currentLayer, currentCargo, currentTurno = 1) 
         if (!p) return;
 
         const gp = window.getProp || function (p, k) { return p[k]; };
-        const localId = p['local_id'] || p['nr_locvot'] || p['NR_LOCVOT'] || p['LOCAL_ID'];
+        const localId = getIseSelectionId(p);
         const isSelected = window.selectedLocationIDs && window.selectedLocationIDs.size > 0
             ? window.selectedLocationIDs.has(String(localId))
             : true;
@@ -702,7 +715,7 @@ window.updateISEPanel = function (currentLayer, currentCargo, currentTurno = 1) 
                 const label = isA ? 'A' : isB ? 'B' : '';
                 const chip = document.createElement('div');
                 chip.className = 'ise-cand-chip' + (!isA && !isB ? ' inactive' : '');
-                chip.style.cssText = `border-color:${color}; color:${color}; background:${(isA||isB) ? color + '25' : 'transparent'}; cursor:pointer;`;
+                chip.style.cssText = `border-color:${color}; color:${color}; background:${(isA || isB) ? color + '25' : 'transparent'}; cursor:pointer;`;
                 chip.innerHTML = `${label ? `<span class="ise-mano-badge">${label}</span> ` : ''}${name}`;
                 chip.onclick = () => {
                     let [a, b] = window.ISE_CAND_STATE.vsVsPair;
@@ -736,12 +749,12 @@ window.updateISEPanel = function (currentLayer, currentCargo, currentTurno = 1) 
     // ── Sincroniza botões de modo de análise ──────────────────────────────────
     enforceIseModeAvailability();
     const analysisMode = window.ISE_FACTOR_STATE?.analysisMode || 'ise';
-    const btnISEEl    = document.getElementById('iseAnalysisModeISE');
+    const btnISEEl = document.getElementById('iseAnalysisModeISE');
     const btnFactorEl = document.getElementById('iseAnalysisModeFactor');
-    const factorBox   = document.getElementById('iseFactorSelectorBox');
-    if (btnISEEl)    btnISEEl.classList.toggle('active', analysisMode === 'ise');
+    const factorBox = document.getElementById('iseFactorSelectorBox');
+    if (btnISEEl) btnISEEl.classList.toggle('active', analysisMode === 'ise');
     if (btnFactorEl) btnFactorEl.classList.toggle('active', analysisMode === 'factor');
-    if (factorBox)   factorBox.style.display = analysisMode === 'factor' ? 'block' : 'none';
+    if (factorBox) factorBox.style.display = analysisMode === 'factor' ? 'block' : 'none';
 
     // ── Modo Fator Demográfico ────────────────────────────────────────────────
     if (analysisMode === 'factor') {
@@ -820,12 +833,12 @@ function _updateISEPanelDeputy(chartsContainer, tabsContainer, cargo) {
     // ── Sincroniza botões de modo de análise ──────────────────────────────────
     enforceIseModeAvailability();
     const analysisMode = window.ISE_FACTOR_STATE?.analysisMode || 'ise';
-    const btnISEEl    = document.getElementById('iseAnalysisModeISE');
+    const btnISEEl = document.getElementById('iseAnalysisModeISE');
     const btnFactorEl = document.getElementById('iseAnalysisModeFactor');
-    const factorBox   = document.getElementById('iseFactorSelectorBox');
-    if (btnISEEl)    btnISEEl.classList.toggle('active', analysisMode === 'ise');
+    const factorBox = document.getElementById('iseFactorSelectorBox');
+    if (btnISEEl) btnISEEl.classList.toggle('active', analysisMode === 'ise');
     if (btnFactorEl) btnFactorEl.classList.toggle('active', analysisMode === 'factor');
-    if (factorBox)   factorBox.style.display = analysisMode === 'factor' ? 'block' : 'none';
+    if (factorBox) factorBox.style.display = analysisMode === 'factor' ? 'block' : 'none';
 
     // Renderiza UI de controles do painel de deputados
     _renderDeputyISEControls(chartsContainer, tabsContainer, cargo, typeKey, analysisMode);
@@ -858,7 +871,7 @@ function _collectDeputyFeatureVotes(currentLayer, typeKey) {
         const res = cfg.resultsStore[key];
         if (!res || !res[typeKey]) return;
         const gp = window.getProp || ((p, k) => p[k]);
-        const locId = String(gp(p, 'local_id') || gp(p, 'nr_locvot') || '');
+        const locId = getIseSelectionId(p);
         // Verifica seleção
         if (window.selectedLocationIDs && window.selectedLocationIDs.size > 0) {
             if (!window.selectedLocationIDs.has(locId)) return;
@@ -910,7 +923,7 @@ function _buildISEDataDeputy(currentLayer, getVotesFn) {
     iterate((feature) => {
         if (!feature) return;
         const p = feature.properties;
-        const locId = String(gp(p, 'local_id') || gp(p, 'nr_locvot') || '');
+        const locId = getIseSelectionId(p);
         if (window.selectedLocationIDs && window.selectedLocationIDs.size > 0) {
             if (!window.selectedLocationIDs.has(locId)) return;
         }
@@ -1004,12 +1017,12 @@ function _renderDeputyISEControls(chartsContainer, tabsContainer, cargo, typeKey
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px;">
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <div class="ise-mode-pills" style="flex-shrink:0;">
-              <button class="ise-mode-pill ${s.mode==='candidate'?'active':''}" onclick="window._setDepISEMode('candidate')">Candidatos</button>
-              <button class="ise-mode-pill ${s.mode==='party'?'active':''}" onclick="window._setDepISEMode('party')">Partidos</button>
+              <button class="ise-mode-pill ${s.mode === 'candidate' ? 'active' : ''}" onclick="window._setDepISEMode('candidate')">Candidatos</button>
+              <button class="ise-mode-pill ${s.mode === 'party' ? 'active' : ''}" onclick="window._setDepISEMode('party')">Partidos</button>
             </div>
             <div class="ise-mode-pills" style="flex-shrink:0;">
-              <button class="ise-mode-pill ${s.subMode==='select'?'active':''}" onclick="window._setDepISESubMode('select')">Selecionar</button>
-              <button class="ise-mode-pill ${s.subMode==='vsVs'?'active':''}" onclick="window._setDepISESubMode('vsVs')">Mano a Mano</button>
+              <button class="ise-mode-pill ${s.subMode === 'select' ? 'active' : ''}" onclick="window._setDepISESubMode('select')">Selecionar</button>
+              <button class="ise-mode-pill ${s.subMode === 'vsVs' ? 'active' : ''}" onclick="window._setDepISESubMode('vsVs')">Mano a Mano</button>
             </div>
           </div>
           ${s.mode === 'candidate' ? _renderCandChipsHTML(typeKey) : _renderPartyChipsHTML(typeKey)}
@@ -1171,7 +1184,7 @@ function _processDeputyFactorData(currentLayer, typeKey, getVotesFn, factorDef) 
     iterate((feature) => {
         if (!feature) return;
         const p = feature.properties;
-        const locId = String(gp(p, 'local_id') || gp(p, 'nr_locvot') || '');
+        const locId = getIseSelectionId(p);
 
         // Filtro de seleção
         if (window.selectedLocationIDs && window.selectedLocationIDs.size > 0) {
@@ -1359,7 +1372,7 @@ function _drawGenericDiffChart(container, diff, metaA, metaB, xLabel) {
         <span style="color:var(--muted);font-size:12px;">vs</span>
         <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${metaB.color};"></span>${metaB.name}
       </h3>
-      <span style="font-size:12px;color:var(--muted);">Diferença A − B por ${xLabel.replace(' →','')}</span>
+      <span style="font-size:12px;color:var(--muted);">Diferença A − B por ${xLabel.replace(' →', '')}</span>
     </div>
     <div id="diff-dep-f-chart" style="position:relative;overflow:hidden;"></div>
     <div id="diff-dep-f-stats" style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--muted);justify-content:center;flex-wrap:wrap;border-top:1px dashed var(--border);padding-top:10px;"></div>`;
@@ -1378,62 +1391,62 @@ function _drawGenericDiffChart(container, diff, metaA, metaB, xLabel) {
 
     const xe = d3.extent(diff, d => d.x);
     const ye = d3.extent(diff, d => d.y);
-    const xp = Math.max((xe[1]-xe[0])*.04,1), yp = Math.max((ye[1]-ye[0])*.06,1);
-    const xSc = d3.scaleLinear().domain([Math.max(0,xe[0]-xp), Math.min(100,xe[1]+xp)]).range([0,w]);
-    const ySc = d3.scaleLinear().domain([ye[0]-yp, ye[1]+yp]).range([h,0]);
+    const xp = Math.max((xe[1] - xe[0]) * .04, 1), yp = Math.max((ye[1] - ye[0]) * .06, 1);
+    const xSc = d3.scaleLinear().domain([Math.max(0, xe[0] - xp), Math.min(100, xe[1] + xp)]).range([0, w]);
+    const ySc = d3.scaleLinear().domain([ye[0] - yp, ye[1] + yp]).range([h, 0]);
 
     // Zero line
     const y0 = ySc(0);
-    g.append('line').attr('x1',0).attr('x2',w).attr('y1',y0).attr('y2',y0)
-        .attr('stroke','rgba(255,255,255,0.15)').attr('stroke-width',1).attr('stroke-dasharray','4,3');
+    g.append('line').attr('x1', 0).attr('x2', w).attr('y1', y0).attr('y2', y0)
+        .attr('stroke', 'rgba(255,255,255,0.15)').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
 
     // Grid
     g.selectAll('.gx').data(xSc.ticks(6)).enter().append('line')
-        .attr('x1',d=>xSc(d)).attr('x2',d=>xSc(d)).attr('y1',0).attr('y2',h)
-        .attr('stroke','rgba(255,255,255,0.04)').attr('stroke-width',1);
+        .attr('x1', d => xSc(d)).attr('x2', d => xSc(d)).attr('y1', 0).attr('y2', h)
+        .attr('stroke', 'rgba(255,255,255,0.04)').attr('stroke-width', 1);
 
     // Axes
-    g.append('g').attr('transform',`translate(0,${h})`)
-        .call(d3.axisBottom(xSc).ticks(6).tickSize(0).tickFormat(d=>d+'%'))
-        .call(a=>{a.select('.domain').attr('stroke','var(--border)');a.selectAll('.tick text').attr('fill','var(--muted)').attr('dy','1.2em');});
+    g.append('g').attr('transform', `translate(0,${h})`)
+        .call(d3.axisBottom(xSc).ticks(6).tickSize(0).tickFormat(d => d + '%'))
+        .call(a => { a.select('.domain').attr('stroke', 'var(--border)'); a.selectAll('.tick text').attr('fill', 'var(--muted)').attr('dy', '1.2em'); });
     g.append('g')
-        .call(d3.axisLeft(ySc).ticks(5).tickSize(0).tickFormat(d=>(d>0?'+':'')+d.toFixed(1)+'%'))
-        .call(a=>{a.select('.domain').attr('stroke','var(--border)');a.selectAll('.tick text').attr('fill','var(--muted)').attr('dx','-.4em');});
+        .call(d3.axisLeft(ySc).ticks(5).tickSize(0).tickFormat(d => (d > 0 ? '+' : '') + d.toFixed(1) + '%'))
+        .call(a => { a.select('.domain').attr('stroke', 'var(--border)'); a.selectAll('.tick text').attr('fill', 'var(--muted)').attr('dx', '-.4em'); });
 
-    g.append('text').attr('fill','var(--muted)').attr('font-size','11px').attr('x',w/2).attr('y',h+30).attr('text-anchor','middle').text(xLabel);
-    g.append('text').attr('fill','var(--muted)').attr('font-size','11px').attr('transform','rotate(-90)').attr('x',-h/2).attr('y',-38).attr('text-anchor','middle').text('Diferença % (A − B)');
+    g.append('text').attr('fill', 'var(--muted)').attr('font-size', '11px').attr('x', w / 2).attr('y', h + 30).attr('text-anchor', 'middle').text(xLabel);
+    g.append('text').attr('fill', 'var(--muted)').attr('font-size', '11px').attr('transform', 'rotate(-90)').attr('x', -h / 2).attr('y', -38).attr('text-anchor', 'middle').text('Diferença % (A − B)');
 
     // Labels A lidera / B lidera
-    g.append('text').attr('fill',metaA.color).attr('font-size','10px').attr('x',4).attr('y',12).text(`↑ ${metaA.name} lidera`);
-    g.append('text').attr('fill',metaB.color).attr('font-size','10px').attr('x',4).attr('y',h-4).text(`↓ ${metaB.name} lidera`);
+    g.append('text').attr('fill', metaA.color).attr('font-size', '10px').attr('x', 4).attr('y', 12).text(`↑ ${metaA.name} lidera`);
+    g.append('text').attr('fill', metaB.color).attr('font-size', '10px').attr('x', 4).attr('y', h - 4).text(`↓ ${metaB.name} lidera`);
 
     // Pontos
     diff.forEach(d => {
         const col = d.y >= 0 ? metaA.color : metaB.color;
         g.append('circle')
-            .attr('cx',xSc(d.x)).attr('cy',ySc(d.y)).attr('r',2.5)
-            .attr('fill',col).attr('fill-opacity',.65)
-            .attr('stroke','#000').attr('stroke-width',.5).attr('stroke-opacity',.3)
-            .on('mouseover',(e)=>{
-                ttName.textContent = d.nm||'Local';
-                const parts=[d.cidade,d.bairro].filter(Boolean);
-                ttLocation.textContent=parts.join(' · ');ttLocation.style.display=parts.length?'block':'none';
-                ttIdx.textContent=(d.y>=0?'+':'')+d.y.toFixed(1)+'pp';
-                ttPct.textContent=`${metaA.name}: ${d.yA.toFixed(1)}% | ${metaB.name}: ${d.yB.toFixed(1)}%`;
-                ttFaixa.textContent=`${xLabel.replace(' →','')}: ${d.x.toFixed(1)}%`;
-                ttFaixa.style.color='var(--accent)';
-                ttFaixa.style.display='none';
-                iseTooltip.style.display='block';moveIseTT(e);
+            .attr('cx', xSc(d.x)).attr('cy', ySc(d.y)).attr('r', 2.5)
+            .attr('fill', col).attr('fill-opacity', .65)
+            .attr('stroke', '#000').attr('stroke-width', .5).attr('stroke-opacity', .3)
+            .on('mouseover', (e) => {
+                ttName.textContent = d.nm || 'Local';
+                const parts = [d.cidade, d.bairro].filter(Boolean);
+                ttLocation.textContent = parts.join(' · '); ttLocation.style.display = parts.length ? 'block' : 'none';
+                ttIdx.textContent = (d.y >= 0 ? '+' : '') + d.y.toFixed(1) + 'pp';
+                ttPct.textContent = `${metaA.name}: ${d.yA.toFixed(1)}% | ${metaB.name}: ${d.yB.toFixed(1)}%`;
+                ttFaixa.textContent = `${xLabel.replace(' →', '')}: ${d.x.toFixed(1)}%`;
+                ttFaixa.style.color = 'var(--accent)';
+                ttFaixa.style.display = 'none';
+                iseTooltip.style.display = 'block'; moveIseTT(e);
             })
-            .on('mousemove',e=>moveIseTT(e)).on('mouseout',()=>hideIseTT());
+            .on('mousemove', e => moveIseTT(e)).on('mouseout', () => hideIseTT());
     });
 
     // Stats
     const statsEl = card.querySelector('#diff-dep-f-stats');
     if (statsEl) {
-        const above = diff.filter(d=>d.y>0), below = diff.filter(d=>d.y<0);
-        const avgA = above.length ? (above.reduce((s,d)=>s+d.y,0)/above.length).toFixed(1) : '—';
-        const avgB = below.length ? (Math.abs(below.reduce((s,d)=>s+d.y,0)/below.length)).toFixed(1) : '—';
+        const above = diff.filter(d => d.y > 0), below = diff.filter(d => d.y < 0);
+        const avgA = above.length ? (above.reduce((s, d) => s + d.y, 0) / above.length).toFixed(1) : '—';
+        const avgB = below.length ? (Math.abs(below.reduce((s, d) => s + d.y, 0) / below.length)).toFixed(1) : '—';
         statsEl.innerHTML = `
             <div><span style="color:${metaA.color}">↑ ${metaA.name}</span>: ${above.length} locais (média +${avgA}pp)</div>
             <div><span style="color:${metaB.color}">↓ ${metaB.name}</span>: ${below.length} locais (média -${avgB}pp)</div>`;
@@ -1633,23 +1646,23 @@ function _triggerDepISERedraw() {
 }
 
 // Globais expostos para onclick inline
-window._setDepISEMode = function(mode) {
+window._setDepISEMode = function (mode) {
     window.ISE_DEP_STATE.mode = mode;
     _triggerDepISERedraw();
 };
-window._setDepISESubMode = function(sub) {
+window._setDepISESubMode = function (sub) {
     window.ISE_DEP_STATE.subMode = sub;
     _triggerDepISERedraw();
 };
-window._depRemoveCand = function(id) {
+window._depRemoveCand = function (id) {
     window.ISE_DEP_STATE.activeCands = window.ISE_DEP_STATE.activeCands.filter(c => c !== id);
     _triggerDepISERedraw();
 };
-window._depRemoveParty = function(party) {
+window._depRemoveParty = function (party) {
     window.ISE_DEP_STATE.activeParties = window.ISE_DEP_STATE.activeParties.filter(p => p !== party);
     _triggerDepISERedraw();
 };
-window._depVsCandSwap = function(id) {
+window._depVsCandSwap = function (id) {
     const s = window.ISE_DEP_STATE;
     if (s.vsPair[0] === id) s.vsPair = [s.vsPair[1], null];
     else if (s.vsPair[1] === id) s.vsPair[1] = null;
@@ -1657,7 +1670,7 @@ window._depVsCandSwap = function(id) {
     else s.vsPair[1] = id;
     _triggerDepISERedraw();
 };
-window._depVsPartySwap = function(party) {
+window._depVsPartySwap = function (party) {
     const s = window.ISE_DEP_STATE;
     if (s.vsPartyPair[0] === party) s.vsPartyPair = [s.vsPartyPair[1], null];
     else if (s.vsPartyPair[1] === party) s.vsPartyPair[1] = null;
@@ -1690,17 +1703,17 @@ const ISE_FACTORS = {
         color: '#c084fc',
         factors: [
             { id: 'mulheres', label: 'Mulheres', keys: ['Pct Mulheres', 'FEMININO', 'MULHERES', 'Mulheres'], isAbs: true },
-            { id: 'homens',   label: 'Homens',   keys: ['Pct Homens',   'MASCULINO', 'HOMENS',   'Homens'],   isAbs: true },
+            { id: 'homens', label: 'Homens', keys: ['Pct Homens', 'MASCULINO', 'HOMENS', 'Homens'], isAbs: true },
         ]
     },
     raca: {
         label: 'Cor/Raça',
         color: '#fb923c',
         factors: [
-            { id: 'branca',   label: 'Branca',   keys: ['Pct Branca',   'PCT BRANCA']   },
-            { id: 'preta',    label: 'Preta',    keys: ['Pct Preta',    'PCT PRETA']    },
-            { id: 'parda',    label: 'Parda',    keys: ['Pct Parda',    'PCT PARDA']    },
-            { id: 'amarela',  label: 'Amarela',  keys: ['Pct Amarela',  'PCT AMARELA']  },
+            { id: 'branca', label: 'Branca', keys: ['Pct Branca', 'PCT BRANCA'] },
+            { id: 'preta', label: 'Preta', keys: ['Pct Preta', 'PCT PRETA'] },
+            { id: 'parda', label: 'Parda', keys: ['Pct Parda', 'PCT PARDA'] },
+            { id: 'amarela', label: 'Amarela', keys: ['Pct Amarela', 'PCT AMARELA'] },
             { id: 'indigena', label: 'Indígena', keys: ['Pct Indigena', 'PCT INDIGENA'] },
         ]
     },
@@ -1713,41 +1726,41 @@ const ISE_FACTORS = {
             { id: 'idade_35_44', label: '35–44', ageRange: [35, 44] },
             { id: 'idade_45_59', label: '45–59', ageRange: [45, 59] },
             { id: 'idade_60_74', label: '60–74', ageRange: [60, 74] },
-            { id: 'idade_75',    label: '75+',   ageRange: [75, 200] },
+            { id: 'idade_75', label: '75+', ageRange: [75, 200] },
         ]
     },
     escolaridade: {
         label: 'Escolaridade',
         color: '#60a5fa',
         factors: [
-            { id: 'analfabeto',  label: 'Analfabeto',     keys: ['ANALFABETO', 'Analfabeto'],                                                    isAbs: true },
-            { id: 'le_escreve',  label: 'Lê/Escreve',     keys: ['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve'],                               isAbs: true },
-            { id: 'fund_incomp', label: 'Fund. Inc.',      keys: ['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO'],                     isAbs: true },
-            { id: 'fund_comp',   label: 'Fund. Comp.',     keys: ['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO'],                         isAbs: true },
-            { id: 'med_incomp',  label: 'Méd. Inc.',       keys: ['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO'],                                 isAbs: true },
-            { id: 'med_comp',    label: 'Méd. Comp.',      keys: ['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO'],                                     isAbs: true },
-            { id: 'sup_incomp',  label: 'Sup. Inc.',       keys: ['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO'],                           isAbs: true },
-            { id: 'sup_comp',    label: 'Sup. Comp.',      keys: ['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Superior Completo'],          isAbs: true },
+            { id: 'analfabeto', label: 'Analfabeto', keys: ['ANALFABETO', 'Analfabeto'], isAbs: true },
+            { id: 'le_escreve', label: 'Lê/Escreve', keys: ['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve'], isAbs: true },
+            { id: 'fund_incomp', label: 'Fund. Inc.', keys: ['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO'], isAbs: true },
+            { id: 'fund_comp', label: 'Fund. Comp.', keys: ['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO'], isAbs: true },
+            { id: 'med_incomp', label: 'Méd. Inc.', keys: ['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO'], isAbs: true },
+            { id: 'med_comp', label: 'Méd. Comp.', keys: ['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO'], isAbs: true },
+            { id: 'sup_incomp', label: 'Sup. Inc.', keys: ['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO'], isAbs: true },
+            { id: 'sup_comp', label: 'Sup. Comp.', keys: ['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Superior Completo'], isAbs: true },
         ]
     },
     estado_civil: {
         label: 'Estado Civil',
         color: '#f472b6',
         factors: [
-            { id: 'solteiro',   label: 'Solteiro',   keys: ['SOLTEIRO', 'Solteiro'],                                       isAbs: true },
-            { id: 'casado',     label: 'Casado',     keys: ['CASADO', 'Casado'],                                             isAbs: true },
-            { id: 'divorciado', label: 'Divorciado', keys: ['DIVORCIADO', 'Divorciado'],                                     isAbs: true },
-            { id: 'separado',   label: 'Separado',   keys: ['SEPARADO JUDICIALMENTE', 'SEPARADO', 'Separado'],              isAbs: true },
-            { id: 'viuvo',      label: 'Viúvo',      keys: ['VIÚVO', 'VIUVO', 'Viúvo', 'Viuvo'],                           isAbs: true },
+            { id: 'solteiro', label: 'Solteiro', keys: ['SOLTEIRO', 'Solteiro'], isAbs: true },
+            { id: 'casado', label: 'Casado', keys: ['CASADO', 'Casado'], isAbs: true },
+            { id: 'divorciado', label: 'Divorciado', keys: ['DIVORCIADO', 'Divorciado'], isAbs: true },
+            { id: 'separado', label: 'Separado', keys: ['SEPARADO JUDICIALMENTE', 'SEPARADO', 'Separado'], isAbs: true },
+            { id: 'viuvo', label: 'Viúvo', keys: ['VIÚVO', 'VIUVO', 'Viúvo', 'Viuvo'], isAbs: true },
         ]
     },
     saneamento: {
         label: 'Saneamento',
         color: '#a3e635',
         factors: [
-            { id: 'esg_rede',   label: 'Rede Geral',  keys: ['Pct Esgoto Rede Geral'] },
-            { id: 'esg_fossa',  label: 'Fossa Sép.',  keys: ['Pct Fossa Septica', 'Pct Fossa Séptica'] },
-            { id: 'esg_inad',   label: 'Esg. Inad.',  keys: ['Pct Esgoto Inadequado'] },
+            { id: 'esg_rede', label: 'Rede Geral', keys: ['Pct Esgoto Rede Geral'] },
+            { id: 'esg_fossa', label: 'Fossa Sép.', keys: ['Pct Fossa Septica', 'Pct Fossa Séptica'] },
+            { id: 'esg_inad', label: 'Esg. Inad.', keys: ['Pct Esgoto Inadequado'] },
         ]
     },
     participacao: {
@@ -1839,10 +1852,10 @@ function _getFactorValue(props, factorDef) {
     if (factorDef.id === 'solteiro' || factorDef.id === 'casado' ||
         factorDef.id === 'divorciado' || factorDef.id === 'separado' || factorDef.id === 'viuvo') {
 
-        const s   = getPropVal(props, ['SOLTEIRO',   'Solteiro']);
-        const c   = getPropVal(props, ['CASADO',     'Casado']);
-        const d   = getPropVal(props, ['DIVORCIADO', 'Divorciado']);
-        const v   = getPropVal(props, ['VIÚVO', 'VIUVO', 'Viúvo', 'Viuvo']);
+        const s = getPropVal(props, ['SOLTEIRO', 'Solteiro']);
+        const c = getPropVal(props, ['CASADO', 'Casado']);
+        const d = getPropVal(props, ['DIVORCIADO', 'Divorciado']);
+        const v = getPropVal(props, ['VIÚVO', 'VIUVO', 'Viúvo', 'Viuvo']);
         const sep = getPropVal(props, ['SEPARADO JUDICIALMENTE', 'SEPARADO', 'Separado']);
 
         // Detecta se é Pct (legacy) — igual ao app.js
@@ -1855,15 +1868,15 @@ function _getFactorValue(props, factorDef) {
     }
 
     // ── Escolaridade ──────────────────────────────────────────────────────────
-    if (['analfabeto','le_escreve','fund_incomp','fund_comp','med_incomp','med_comp','sup_incomp','sup_comp'].includes(factorDef.id)) {
+    if (['analfabeto', 'le_escreve', 'fund_incomp', 'fund_comp', 'med_incomp', 'med_comp', 'sup_incomp', 'sup_comp'].includes(factorDef.id)) {
         const ana = getPropVal(props, ['ANALFABETO', 'Analfabeto']);
-        const le  = getPropVal(props, ['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve']);
-        const fi  = getPropVal(props, ['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO']);
-        const fc  = getPropVal(props, ['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO']);
-        const mi  = getPropVal(props, ['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO']);
-        const mc  = getPropVal(props, ['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO']);
-        const si  = getPropVal(props, ['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO']);
-        const sc  = getPropVal(props, ['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Superior Completo']);
+        const le = getPropVal(props, ['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve']);
+        const fi = getPropVal(props, ['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO']);
+        const fc = getPropVal(props, ['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO']);
+        const mi = getPropVal(props, ['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO']);
+        const mc = getPropVal(props, ['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO']);
+        const si = getPropVal(props, ['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO']);
+        const sc = getPropVal(props, ['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Superior Completo']);
 
         // Detecta Pct legacy
         const isPct = (props['Pct Analfabeto'] !== undefined || props['Pct Médio Completo'] !== undefined);
@@ -1878,13 +1891,13 @@ function _getFactorValue(props, factorDef) {
     }
 
     // ── Cor/Raça — já vem como Pct (0–100) ───────────────────────────────────
-    if (['branca','preta','parda','amarela','indigena'].includes(factorDef.id)) {
+    if (['branca', 'preta', 'parda', 'amarela', 'indigena'].includes(factorDef.id)) {
         const v = getPropVal(props, factorDef.keys);
         return v > 0 ? v : -1;
     }
 
     // ── Saneamento — já vem como Pct (0–100) ─────────────────────────────────
-    if (['esg_rede','esg_fossa','esg_inad'].includes(factorDef.id)) {
+    if (['esg_rede', 'esg_fossa', 'esg_inad'].includes(factorDef.id)) {
         const v = getPropVal(props, factorDef.keys);
         return v >= 0 ? v : -1;
     }
@@ -1921,7 +1934,7 @@ function processFactorData(features, candidatoKey, currentCargo, factorDef) {
 
         if (votosValidos <= 0) return;
 
-        const locId = String(gp(p, 'local_id') || gp(p, 'nr_locvot') || '');
+        const locId = getIseSelectionId(p);
         const locName = gp(p, 'nm_locvot') || gp(p, 'NM_LOCVOT') || '';
         const isPrison = String(locName).toUpperCase().match(/PRES[IÍ]DIO|PENITENCI[AÁ]RIA|COMPLEXO PEN|CADEIA|PENAL|DETEN[CÇ][AÃ]O/i);
         if (isPrison) return;
@@ -2128,9 +2141,12 @@ function drawFactorChart(container, id, data, candidateName, candidateColor, xLa
 
     // Trend line
     const reg = linReg(data);
-    const x0 = xSc.domain()[0], x1 = xSc.domain()[1];
-    const y0c = Math.max(0, Math.min(100, reg.slope * x0 + reg.intercept));
-    const y1c = Math.max(0, Math.min(100, reg.slope * x1 + reg.intercept));
+    const xExtent = d3.extent(data, d => d.x);
+    const x0 = xExtent[0];
+    const x1 = xExtent[1];
+
+    const y0c = reg.slope * x0 + reg.intercept;
+    const y1c = reg.slope * x1 + reg.intercept;
     g.append('line').attr('x1', xSc(x0)).attr('x2', xSc(x1)).attr('y1', ySc(y0c)).attr('y2', ySc(y1c))
         .attr('stroke', candidateColor).attr('stroke-width', 2);
 
@@ -2143,7 +2159,7 @@ function drawFactorChart(container, id, data, candidateName, candidateColor, xLa
     const tercilColors = {
         baixo: accentColor + '66',
         medio: accentColor + 'aa',
-        alto:  accentColor,
+        alto: accentColor,
     };
 
     ISE_TERCIL_ORDER.forEach(t => {
@@ -2158,7 +2174,7 @@ function drawFactorChart(container, id, data, candidateName, candidateColor, xLa
                 const parts = [d.cidade, d.bairro].filter(Boolean);
                 ttLocation.textContent = parts.join(' · ');
                 ttLocation.style.display = parts.length ? 'block' : 'none';
-                
+
                 const xLabelEl = document.getElementById('ise-tt-x-label');
                 if (xLabelEl) xLabelEl.textContent = factorDef.isCurrency ? 'Renda Média (R$)' : factorLabel + ' (%)';
 
@@ -2202,17 +2218,17 @@ function drawFactorChart(container, id, data, candidateName, candidateColor, xLa
         stEl.innerHTML = ISE_TERCIL_ORDER.map(t =>
             `<div>${labels[t]}: <span style="font-weight:700;color:var(--text);">${means[t] !== '—' ? means[t] + '%' : '—'}</span></div>`
         ).join('') +
-        `<div style="border-left:1px solid var(--border);padding-left:10px;margin-left:4px;" title="Desempenho médio ponderado pela prevalência do fator — locais onde ${factorLabel} é mais frequente pesam mais">
+            `<div style="border-left:1px solid var(--border);padding-left:10px;margin-left:4px;" title="Desempenho médio ponderado pela prevalência do fator — locais onde ${factorLabel} é mais frequente pesam mais">
             Méd. pond.: <span style="font-weight:700;color:${candidateColor};">${mediaGeral !== '—' ? mediaGeral + '%' : '—'}</span>
          </div>` +
-        `<div style="margin-left:auto;">Coef(β): <span style="font-weight:700;color:${reg.slope >= 0 ? '#88c0d0' : '#bf616a'};">${reg.slope >= 0 ? '+' : ''}${reg.slope.toFixed(3)}</span></div>`;
+            `<div style="margin-left:auto;">Coef(β): <span style="font-weight:700;color:${reg.slope >= 0 ? '#88c0d0' : '#bf616a'};">${reg.slope >= 0 ? '+' : ''}${reg.slope.toFixed(3)}</span></div>`;
     }
 }
 
 
 // Expõe globalmente
 // ── Muda modo Selecionar / Mano a Mano (candidatos normais) ──────────────────
-window.setIseMode = function(mode) {
+window.setIseMode = function (mode) {
     if (!window.ISE_CAND_STATE) return;
     window.ISE_CAND_STATE.mode = mode;
     // Se voltando para select sem candidatos ativos, restaura os 3 primeiros
@@ -2221,27 +2237,27 @@ window.setIseMode = function(mode) {
         window.ISE_CAND_STATE.active = new Set(keys.slice(0, 3));
     }
     // Atualiza visual dos botões imediatamente
-    const btnSel  = document.getElementById('iseModeSelect');
+    const btnSel = document.getElementById('iseModeSelect');
     const btnVsVs = document.getElementById('iseModeVsVs');
-    if (btnSel)  btnSel.classList.toggle('active', mode === 'select');
+    if (btnSel) btnSel.classList.toggle('active', mode === 'select');
     if (btnVsVs) btnVsVs.classList.toggle('active', mode === 'vsVs');
     _triggerISERedraw();
 };
 
-window.setIseAnalysisMode = function(mode) {
+window.setIseAnalysisMode = function (mode) {
     if (isLimitedCensusYear2006() && mode === 'ise') mode = 'factor';
     window.ISE_FACTOR_STATE.analysisMode = mode;
-    const btnISE    = document.getElementById('iseAnalysisModeISE');
+    const btnISE = document.getElementById('iseAnalysisModeISE');
     const btnFactor = document.getElementById('iseAnalysisModeFactor');
     const factorBox = document.getElementById('iseFactorSelectorBox');
-    if (btnISE)    btnISE.classList.toggle('active', mode === 'ise');
+    if (btnISE) btnISE.classList.toggle('active', mode === 'ise');
     if (btnFactor) btnFactor.classList.toggle('active', mode === 'factor');
     if (factorBox) factorBox.style.display = mode === 'factor' ? 'block' : 'none';
     if (mode === 'factor') _renderFactorSelector();
     _triggerISERedraw();
 };
 
-window.setIseFactor = function(groupId, factorId) {
+window.setIseFactor = function (groupId, factorId) {
     window.ISE_FACTOR_STATE.factorGroupId = groupId;
     window.ISE_FACTOR_STATE.factorId = factorId;
     _renderFactorSelector();
@@ -2517,7 +2533,7 @@ window.applyIseMapFilter = function () {
         if (filter !== 'all') {
             const props = layer.feature.properties;
             const gp = window.getProp || function (p, k) { return p[k]; };
-            const locId = String(gp(props, 'local_id') || gp(props, 'nr_locvot') || '');
+            const locId = getIseSelectionId(props);
             const classData = window.iseDataMap.get(locId);
             if (classData !== filter) {
                 isVisible = false;

@@ -3878,9 +3878,9 @@ div[style*="Apoio:"] {
 @media (max-width: 768px) {
 
     :root {
-        --mobile-nav-height: calc(60px + env(safe-area-inset-bottom, 0px));
+        --mobile-nav-height: calc(52px + env(safe-area-inset-bottom, 0px));
         --mobile-sheet-max-height: calc(100dvh - var(--mobile-nav-height) - 8px);
-        --mobile-sheet-height: min(58dvh, var(--mobile-sheet-max-height));
+        --mobile-sheet-height: min(50dvh, var(--mobile-sheet-max-height));
     }
 
     /* ----- MOBILE NAV BAR ----- */
@@ -3893,8 +3893,8 @@ div[style*="Apoio:"] {
         z-index: 500;
         background: var(--surface);
         border-top: 1px solid var(--border);
-        padding: 6px 0;
-        padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+        padding: 4px 0;
+        padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
         gap: 0;
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
     }
@@ -3904,15 +3904,15 @@ div[style*="Apoio:"] {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 3px;
+        gap: 2px;
         background: transparent;
         border: none;
         color: var(--muted);
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 600;
         font-family: inherit;
         cursor: pointer;
-        padding: 6px 4px;
+        padding: 5px 4px;
         transition: color 0.2s;
         -webkit-tap-highlight-color: transparent;
     }
@@ -3922,8 +3922,8 @@ div[style*="Apoio:"] {
     }
 
     .mobile-nav-btn svg {
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
     }
 
     /* ----- APP LAYOUT ----- */
@@ -3976,7 +3976,7 @@ div[style*="Apoio:"] {
         height: min(var(--mobile-sheet-height), var(--mobile-sheet-max-height));
         max-height: var(--mobile-sheet-max-height);
         z-index: 400;
-        border-radius: 16px 16px 0 0;
+        border-radius: 14px 14px 0 0;
         box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
         transform: translateY(100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -4028,18 +4028,19 @@ div[style*="Apoio:"] {
     .side .head::before {
         content: '';
         position: absolute;
-        top: 6px;
+        top: 5px;
         left: 50%;
         transform: translateX(-50%);
-        width: 36px;
-        height: 4px;
+        width: 32px;
+        height: 3px;
         background: var(--border);
         border-radius: 2px;
     }
 
     .side .head {
         position: relative;
-        padding-top: 16px;
+        min-height: 36px;
+        padding: 10px 10px 6px;
         cursor: grab;
         touch-action: none;
     }
@@ -4048,8 +4049,61 @@ div[style*="Apoio:"] {
     .side .body {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        gap: 5px;
+        padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
         touch-action: pan-y;
+    }
+
+    /* Seções mais compactas */
+    .section {
+        padding: 7px 9px;
+    }
+
+    .section h3 {
+        margin-bottom: 5px;
+        font-size: 9px;
+    }
+
+    .section-collapsible .section-header {
+        padding: 6px 9px;
+    }
+
+    .section-collapsible .section-body {
+        padding: 0 9px 8px;
+    }
+
+    /* Inputs menores */
+    .select,
+    .search-input,
+    .combobox-input {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .select {
+        padding-right: 26px;
+        background-position: right 8px center;
+        background-size: 10px;
+    }
+
+    /* Botões menores */
+    .button {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    /* Linha de controles */
+    .row {
+        gap: 6px;
+    }
+
+    .ctrl label {
+        font-size: 9px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+        gap: 4px;
     }
 
     /* ----- FLOATING MAP CONTROLS ----- */
@@ -4060,8 +4114,8 @@ div[style*="Apoio:"] {
     }
 
     #mapFloatingControls .select {
-        font-size: 12px !important;
-        padding: 6px 26px 6px 10px !important;
+        font-size: 11px !important;
+        padding: 5px 24px 5px 9px !important;
     }
 
     /* ----- LOADER OVERLAY ----- */
@@ -4092,49 +4146,55 @@ div[style*="Apoio:"] {
 
     /* ----- CHIP GROUPS ----- */
     .chip-group {
-        gap: 4px;
+        gap: 3px;
     }
 
     .chip-button {
-        padding: 6px 10px;
-        font-size: 11px;
+        padding: 3px 7px;
+        font-size: 10px;
+        border-radius: 4px;
     }
 
     /* ----- FILTER TABS ----- */
     .filter-tabs {
         gap: 1px;
         padding: 2px;
+        margin-bottom: 8px;
     }
 
     .tab-btn {
-        padding: 6px 6px;
-        font-size: 10px;
+        padding: 4px 5px;
+        font-size: 9px;
     }
 
     /* ----- SLIDERS (touch-friendly) ----- */
     .simple-slider::-webkit-slider-thumb {
-        width: 22px;
-        height: 22px;
+        width: 18px;
+        height: 18px;
     }
 
     .simple-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
+        width: 16px;
+        height: 16px;
     }
 
     .dual-thumb {
-        width: 22px;
-        height: 22px;
+        width: 18px;
+        height: 18px;
+    }
+
+    .dual-values {
+        font-size: 10px;
     }
 
     /* ----- COMBOBOX ----- */
     .combobox-dropdown {
-        max-height: 250px;
+        max-height: 200px;
     }
 
     .combobox-item {
-        padding: 12px 14px;
-        font-size: 15px;
+        padding: 7px 10px;
+        font-size: 11px;
     }
 
     /* ----- MODALS ----- */
@@ -4161,16 +4221,152 @@ div[style*="Apoio:"] {
     }
 
     /* ----- RESULTS BOX ----- */
+    .tabs {
+        gap: 3px;
+        margin-bottom: 6px;
+    }
+
+    .tab {
+        padding: 4px 8px;
+        font-size: 10px;
+        border-radius: 4px;
+    }
+
     .results-page {
         grid-template-columns: 1fr;
     }
 
+    #resultsContent {
+        min-height: 48px;
+    }
+
+    /* Candidatos: lista compacta horizontal (mobile-first) */
+    #resultsContent .grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .grid .cand {
+        animation-duration: 0.15s;
+    }
+
+    /* Card vira linha horizontal compacta com swatch colorido */
+    .cand {
+        display: grid;
+        grid-template-columns: 10px 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 0;
+        padding: 6px 8px;
+        border-radius: 0 !important;
+        border: none !important;
+        background: var(--surface) !important;
+        align-items: center;
+        column-gap: 7px;
+        row-gap: 0;
+        min-height: 0;
+    }
+
+    /* Swatch — coluna 1, ocupa as 2 linhas, círculo compacto */
+    .cand .swatch {
+        display: block !important;
+        grid-column: 1;
+        grid-row: 1 / 3;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        align-self: center;
+    }
+
+    /* Nome + partido ficam na mesma linha */
+    .cand-header {
+        grid-column: 2;
+        grid-row: 1;
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+        flex-wrap: nowrap;
+        min-width: 0;
+    }
+
     .cand h4 {
-        font-size: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cand small {
+        font-size: 9px;
+        color: var(--muted);
+        white-space: nowrap;
+        font-weight: 400;
+        flex-shrink: 0;
+    }
+
+    /* % + votos ficam na segunda linha */
+    .cand-stats {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 1px;
     }
 
     .bigPct {
-        font-size: 16px;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .smallVotos {
+        font-size: 9px;
+        color: var(--muted);
+        font-weight: 400;
+    }
+
+    /* Badge na terceira coluna — ocupa as 2 linhas */
+    .status-badge {
+        grid-column: 3;
+        grid-row: 1 / 3;
+        gap: 2px;
+        padding: 2px 5px;
+        font-size: 8px;
+        white-space: nowrap;
+        align-self: center;
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+
+    .status-badge svg {
+        width: 8px;
+        height: 8px;
+    }
+
+    /* Métricas compactas */
+    .metrics-grid {
+        gap: 4px;
+    }
+
+    .metric-item {
+        padding: 6px 8px;
+    }
+
+    .metric-item span {
+        font-size: 9px;
+    }
+
+    .metric-item strong {
+        font-size: 12px;
     }
 
     /* ----- ISE SECTION ----- */
@@ -4179,28 +4375,28 @@ div[style*="Apoio:"] {
     }
 
     .ise-mode-pill {
-        font-size: 10px;
-        padding: 4px 8px;
+        font-size: 9px;
+        padding: 3px 6px;
     }
 
     .ise-candidate-filter {
-        margin: 0 8px 12px 8px;
+        margin: 0 6px 8px 6px;
     }
 
     .ise-factor-group {
-        min-width: 100px;
+        min-width: 80px;
     }
 
     .ise-factor-chip {
-        font-size: 10px;
-        padding: 4px 7px;
+        font-size: 9px;
+        padding: 3px 6px;
     }
 
     /* ----- TOAST ----- */
     .toast {
-        bottom: 70px;
+        bottom: 60px;
         max-width: 90vw;
-        font-size: 13px;
+        font-size: 11px;
     }
 
     /* ----- PROFILE GRID ----- */
@@ -4210,21 +4406,33 @@ div[style*="Apoio:"] {
 
     /* ----- SEARCH RESULTS ----- */
     .search-results {
-        max-height: 250px;
+        max-height: 200px;
     }
 
     .search-result-item {
-        padding: 10px 14px;
-        font-size: 13px;
+        padding: 7px 10px;
+        font-size: 11px;
     }
 
     /* ----- TITLE & TEXT SIZING ----- */
     .title {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .section h3 {
+        font-size: 9px;
+    }
+
+    #resultsTitle {
         font-size: 10px;
+        line-height: 1.1;
+        text-transform: uppercase;
+        letter-spacing: 0.01em;
+    }
+
+    #resultsSubtitle {
+        font-size: 9px;
+        line-height: 1.2;
     }
 
     /* ----- HISTORY MODAL MOBILE ----- */
@@ -4233,19 +4441,19 @@ div[style*="Apoio:"] {
     }
 
     .history-tab {
-        font-size: 11px;
-        padding: 6px 8px;
+        font-size: 10px;
+        padding: 5px 7px;
     }
 
     /* ----- CANDIDATE DETAILS ----- */
     .cand-details-panel {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     /* ----- CAROUSEL ----- */
     .carousel-arrow {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
     }
 
     /* ----- LEAFLET CONTROLS ----- */
@@ -4255,22 +4463,67 @@ div[style*="Apoio:"] {
     }
 
     .leaflet-control-zoom a {
-        width: 36px !important;
-        height: 36px !important;
-        line-height: 36px !important;
-        font-size: 18px !important;
+        width: 30px !important;
+        height: 30px !important;
+        line-height: 30px !important;
+        font-size: 16px !important;
     }
 
     /* ----- GUIDE CONTENT ----- */
     .guide-content {
-        font-size: 13px;
+        font-size: 11px;
     }
 
     .guide-content h3 {
-        font-size: 15px;
+        font-size: 13px;
     }
 
     .guide-content h4 {
-        font-size: 12px;
+        font-size: 11px;
+    }
+
+    /* ----- PAINEL DE CONTROLES (aba esquerda) ----- */
+    #sideLeftPanel .head {
+        min-height: 34px;
+        padding: 8px 10px 5px;
+    }
+
+    /* Botão primário de carregar dados */
+    #sideLeftBody .button.primary {
+        padding: 7px 10px;
+        font-size: 11px;
+    }
+
+    /* Botões secundários / ghost */
+    #sideLeftBody .button:not(.primary) {
+        padding: 5px 8px;
+        font-size: 10px;
+    }
+
+    /* Chips de eleição (Gerais 2022, Mun. 2024…) */
+    #sideLeftBody .chip-group {
+        gap: 3px;
+        flex-wrap: wrap;
+    }
+
+    /* Seções internas do controle */
+    #sideLeftBody .section {
+        padding: 6px 8px;
+    }
+
+    #sideLeftBody .section h3 {
+        font-size: 9px;
+        margin-bottom: 4px;
+    }
+
+    /* Selects do painel de controles */
+    #sideLeftBody .select {
+        padding: 5px 26px 5px 7px;
+        font-size: 11px;
+    }
+
+    /* Labels dos sliders */
+    #sideLeftBody .dual-values {
+        font-size: 10px;
     }
 }
