@@ -267,16 +267,13 @@ function aggregatePropsForSelection(locationIDs) {
 
     let featuresToAgg = [];
 
-    // Se estamos em modo de agregação de filtros e há muitos locais,
-    // usar TODAS as features filtradas ao invés de apenas selectedLocationIDs
-    if (STATE.isFilterAggregationActive && locationIDs.size > 100) {
-      // Pega todas as features que passam pelos filtros atuais
-      const allFilteredFeatures = getAllFeaturesForAggregation();
-      featuresToAgg = allFilteredFeatures.map(f => f.properties);
+    if (STATE.isFilterAggregationActive) {
+      featuresToAgg = geojson.features
+        .filter(f => filterFeature(f))
+        .map(f => f.properties);
     } else {
-      // Modo normal: apenas as features selecionadas
       geojson.features.forEach(f => {
-        const id = String(getProp(f.properties, 'local_id') || getProp(f.properties, 'nr_locvot'));
+        const id = getFeatureSelectionId(f.properties);
         if (locationIDs.has(id)) featuresToAgg.push(f.properties);
       });
     }
@@ -643,7 +640,7 @@ function renderDeputyResults(cargo) {
   } else if (geojson && geojson.features) {
     geojson.features.forEach(f => {
       const p = f.properties;
-      const id = String(getProp(p, 'local_id') || getProp(p, 'nr_locvot'));
+      const id = getFeatureSelectionId(p);
       if (!selectedLocationIDs.has(id)) return;
       const z = getProp(p, 'nr_zona');
       const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
@@ -1172,8 +1169,10 @@ function renderDeputyPartyResults(cargo) {
     'FEDERAÇÃO BRASIL DA ESPERANÇA - FE BRASIL(PT/PC DO B/PV)': '#C0122D',
     'PSDB-CIDADANIA': '#0096ff',
     'Federação PSDB Cidadania(PSDB/CIDADANIA)': '#0096ff',
+    'FEDERAÇÃO PSDB CIDADANIA(PSDB/CIDADANIA)': '#0096ff',
     'PSOL-REDE': '#68018D',
-    'Federação PSOL REDE(PSOL/REDE)': '#68018D'
+    'Federação PSOL REDE(PSOL/REDE)': '#68018D',
+    'FEDERAÇÃO PSOL REDE(PSOL/REDE)': '#68018D'
   };
 
   const cleanPartyName = (p) => p ? p.trim().toUpperCase() : '';
@@ -1286,7 +1285,7 @@ function renderDeputyPartyResults(cargo) {
       const feats = geojson.features;
       for (let i = 0; i < feats.length; i++) {
         const p = feats[i].properties;
-        const id = String(getProp(p, 'local_id') || getProp(p, 'nr_locvot'));
+        const id = getFeatureSelectionId(p);
         const z = getProp(p, 'nr_zona');
         const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
         const m = getProp(p, 'cd_localidade_tse') || getProp(p, 'CD_MUNICIPIO');
@@ -1634,7 +1633,7 @@ function renderVereadorResults(cargo) {
     if (geojson && geojson.features) {
       geojson.features.forEach(f => {
         const p = f.properties;
-        const id = String(getProp(p, 'local_id') || getProp(p, 'nr_locvot'));
+        const id = getFeatureSelectionId(p);
         if (!selectedLocationIDs.has(id)) return;
         const z = getProp(p, 'nr_zona');
         const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
@@ -1849,7 +1848,7 @@ function renderVereadorPartyResults(cargo) {
       STATE.vereadorLookup = new Map();
       geojson.features.forEach(f => {
         const p = f.properties;
-        const id = String(getProp(p, 'local_id') || getProp(p, 'nr_locvot'));
+        const id = getFeatureSelectionId(p);
         const z = getProp(p, 'nr_zona');
         const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
         if (id && z && l) STATE.vereadorLookup.set(id, `${parseInt(z)}_${parseInt(l)}`);
@@ -2118,7 +2117,7 @@ function openVereadorCoalitionModal(composition, titleName, color, cargo, electe
       STATE.vereadorLookup = new Map();
       geojson.features.forEach(f => {
         const p = f.properties;
-        const id = String(getProp(p, 'local_id') || getProp(p, 'nr_locvot'));
+        const id = getFeatureSelectionId(p);
         const z = getProp(p, 'nr_zona');
         const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
         if (id && z && l) STATE.vereadorLookup.set(id, `${parseInt(z)}_${parseInt(l)}`);
@@ -2296,7 +2295,7 @@ function openCoalitionModal(composition, titleName, color, cargo, electedCount, 
       STATE.deputyLookupCargo = cargo;
       geojson.features.forEach(f => {
         const p = f.properties;
-        const id = String(getProp(p, 'local_id') || getProp(p, 'nr_locvot'));
+        const id = getFeatureSelectionId(p);
         const z = getProp(p, 'nr_zona');
         const l = getProp(p, 'nr_locvot') || getProp(p, 'nr_local_votacao');
         const m = getProp(p, 'cd_localidade_tse') || getProp(p, 'CD_MUNICIPIO');
