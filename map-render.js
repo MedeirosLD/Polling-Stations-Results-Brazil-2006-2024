@@ -17,7 +17,7 @@ function populateVizCandidatoDropdown(turno) {
       ? (STATE.inaptos['vereador_ord']?.['1T'] || [])
       : (STATE.inaptos[currentCargo]?.['1T'] || []);
 
-    // Lookup local_id â†’ chave (zona_local para vereador, zona_muni_local para deputado)
+    // Lookup local_id → chave (zona_local para vereador, zona_muni_local para deputado)
     const lookupKey = isVereador ? 'vereadorLookup' : 'deputyLookup';
     const lookupCargoKey = isVereador ? 'vereadorLookupCargo' : 'deputyLookupCargo';
     if (!STATE[lookupKey] || STATE[lookupCargoKey] !== currentCargo) {
@@ -95,7 +95,7 @@ function populateVizCandidatoDropdown(turno) {
         if (isLegenda) {
           const partidoResolvido = STATE[partyPrefixKey]?.[id];
           if (partidoResolvido) partido = normalizePartyAlias(partidoResolvido.toUpperCase());
-          nome = `Voto de Legenda â€” ${partido}`;
+          nome = `Voto de Legenda — ${partido}`;
         }
         return { id, nome, partido, status: meta[2] || '', votos: totalVotesByCand[id] || 0, numero: id, isLegenda };
       })
@@ -111,8 +111,8 @@ function populateVizCandidatoDropdown(turno) {
     if (deputySearchInput) {
       deputySearchInput.value = '';
       deputySearchInput.placeholder = deputySearchCandList.length > 0
-        ? `Buscar entre ${deputySearchCandList.length} candidatos (nome ou nÂº)...`
-        : 'Nenhum candidato disponÃ­vel';
+        ? `Buscar entre ${deputySearchCandList.length} candidatos (nome ou nº)...`
+        : 'Nenhum candidato disponível';
       deputySearchInput.disabled = deputySearchCandList.length === 0;
     }
     if (deputySearchResults) {
@@ -140,11 +140,11 @@ function populateVizCandidatoDropdown(turno) {
     return;
   }
 
-  // NÃ£o Ã© deputado: esconde search box, mostra select
+  // Não é deputado: esconde search box, mostra select
   dom.selectVizCandidato.style.display = '';
   if (deputySearchBox) deputySearchBox.style.display = 'none';
 
-  // EleiÃ§Ãµes gerais/municipais: comportamento original
+  // Eleições gerais/municipais: comportamento original
   const candidatos = STATE.candidates[currentCargo]?.[turno] || [];
   candidatos.forEach(key => {
     if (STATE.filterInaptos && (STATE.inaptos[currentCargo]?.[turno] || []).includes(key)) {
@@ -191,7 +191,7 @@ function setupDeputySearch(input, resultsContainer) {
     }
   });
 
-  // NavegaÃ§Ã£o por teclado
+  // Navegação por teclado
   input.addEventListener('keydown', (e) => {
     const items = resultsContainer.querySelectorAll('.search-result-item');
     if (items.length === 0) return;
@@ -245,7 +245,7 @@ function performDeputySearch(query, resultsContainer) {
 
   let results;
   if (isNumericSearch) {
-    // Busca por nÃºmero: exata no inÃ­cio
+    // Busca por número: exata no início
     results = deputySearchCandList.filter(c =>
       c.numero.startsWith(query.trim())
     );
@@ -334,15 +334,15 @@ function renderDeputySearchResults(results, container, query) {
       const input = document.getElementById('deputySearchInput');
       if (input) {
         const label = candData.isLegenda
-          ? `Voto de Legenda â€” ${candData.partido}`
-          : `${toTitleCase(candData.nome)} (${candData.partido}) â€¢ NÂº ${candData.numero}`;
+          ? `Voto de Legenda — ${candData.partido}`
+          : `${toTitleCase(candData.nome)} (${candData.partido}) • Nº ${candData.numero}`;
         input.value = label;
       }
 
       // Fechar dropdown
       container.classList.remove('visible');
 
-      // Disparar evento de mudanÃ§a
+      // Disparar evento de mudança
       dom.selectVizCandidato.dispatchEvent(new Event('change'));
     });
   });
@@ -350,7 +350,7 @@ function renderDeputySearchResults(results, container, query) {
 
 // ====== MAP RENDERING ======
 
-// VariÃ¡vel para guardar o listener de movimento
+// Variável para guardar o listener de movimento
 let moveEndListener = null;
 
 function applyFiltersAndRedraw() {
@@ -379,7 +379,7 @@ function applyFiltersAndRedraw() {
     return;
   }
 
-  // Recalcular estatÃ­sticas do candidato se estiver no modo Desempenho
+  // Recalcular estatísticas do candidato se estiver no modo Desempenho
   if (currentVizMode.startsWith('desempenho') && dom.selectVizCandidato?.value) {
     const candidatoKey = dom.selectVizCandidato.value;
     performanceModeStats = calculateCandidateStats(candidatoKey) || {
@@ -390,7 +390,7 @@ function applyFiltersAndRedraw() {
 
   updateAvailabilityBars(geojson);
 
-  // Precomputa vencedores de vereador se necessÃ¡rio
+  // Precomputa vencedores de vereador se necessário
   if (currentCargo.startsWith('vereador') && STATE.vereadorResults && Object.keys(STATE.vereadorResults).length > 0) {
     precomputeVereadorWinners();
   }
@@ -427,7 +427,7 @@ function applyFiltersAndRedraw() {
 
 
 
-// --- HELPER FUNCTIONS (ExtraÃ­das para reaproveitar nos dois modos) ---
+// --- HELPER FUNCTIONS (Extraídas para reaproveitar nos dois modos) ---
 
 function createPointLayer(feature, latlng) {
   return L.circleMarker(latlng, { radius: getPointRadiusForFeature(feature) });
@@ -507,7 +507,7 @@ function refreshTurnDependentUI() {
 function filterFeature(feature) {
   const props = feature.properties;
 
-  // Filtro de PresÃ­dios/Locais Especiais (ExclusÃ£o Global)
+  // Filtro de Presídios/Locais Especiais (Exclusão Global)
   const nomeLocalForExclusion = norm(getProp(props, 'nm_locvot'));
   const exclusoes = ['PRISAO', 'PENITENCIARIA', 'PENINTENCIARI', 'DETENCAO', 'INTERNATO', 'CDP ', 'PRESIDIO', 'FUNDACAO CASA', 'FUND. CASA', 'UI-', 'UNID. DE INT', 'PENAL'];
   for (let kw of exclusoes) {
@@ -547,7 +547,7 @@ function filterFeature(feature) {
     if (!nomeLocal.includes(searchTxt)) return false;
   }
 
-  // --- FILTRO DE DESEMPENHO (porcentagem mÃ­nima) ---
+  // --- FILTRO DE DESEMPENHO (porcentagem mínima) ---
   if (currentVizMode.startsWith('desempenho') && performanceFilterMinPct > 0) {
     const candidatoKey = dom.selectVizCandidato?.value;
     if (candidatoKey) {
@@ -589,7 +589,7 @@ function filterFeature(feature) {
     }
   }
 
-  // --- FILTROS CENSITÃRIOS ---
+  // --- FILTROS CENSITÁRIOS ---
 
   // 1. Renda (Direto)
   const renda = ensureNumber(getProp(props, 'Renda Media'));
@@ -610,37 +610,37 @@ function filterFeature(feature) {
     return 0;
   };
 
-  // Helper de checagem genÃ©rica Pct ou Absoluto Calculado
+  // Helper de checagem genérica Pct ou Absoluto Calculado
   const checkDynamic = (filterVal, filterMode, type) => {
     if (filterVal === null) return true;
 
-    // Se for Modo Legacy (2006) ou se o dado jÃ¡ vier como Pct explÃ­cito:
-    // (Ainda precisamos suportar Pct direto para RaÃ§a e Saneamento)
+    // Se for Modo Legacy (2006) ou se o dado já vier como Pct explícito:
+    // (Ainda precisamos suportar Pct direto para Raça e Saneamento)
 
-    // RaÃ§a & Saneamento (Sempre Pct)
+    // Raça & Saneamento (Sempre Pct)
     if (type === 'raca' || type === 'saneamento') {
       const propVal = ensureNumber(getProp(props, filterMode));
       return propVal >= filterVal;
     }
 
-    // Para GÃªnero, Idade, Escolaridade, Civil: Calcular dinamicamente
+    // Para Gênero, Idade, Escolaridade, Civil: Calcular dinamicamente
     let numerator = 0;
     let denominator = 0;
 
-    // GÃªnero
+    // Gênero
     if (type === 'genero') {
       const h = getVal(['MASCULINO', 'HOMENS', 'Homens', 'Pct Homens']);
       const m = getVal(['FEMININO', 'MULHERES', 'Mulheres', 'Pct Mulheres']);
 
-      // Fallback para legacy Pct direto se nÃ£o tiver absoluto
-      // Se tiver Pct Homens e Pct Mulheres, getVal retornarÃ¡ eles.
-      // Se for Pct, a soma deve ser ~100 (ou perto). Se for Absoluto, soma Ã© pop.
+      // Fallback para legacy Pct direto se não tiver absoluto
+      // Se tiver Pct Homens e Pct Mulheres, getVal retornará eles.
+      // Se for Pct, a soma deve ser ~100 (ou perto). Se for Absoluto, soma é pop.
 
       const total = h + m;
       if (total === 0) return false;
 
-      // Se for Pct, total Ã© ~100.
-      // filterVal Ã© 0-100.
+      // Se for Pct, total é ~100.
+      // filterVal é 0-100.
 
       // 'Pct Mulheres' vs 'Pct Homens'
       if (filterMode === 'Pct Mulheres') numerator = m;
@@ -655,11 +655,11 @@ function filterFeature(feature) {
       const s = getVal(['SOLTEIRO', 'Solteiro', 'Pct Solteiro']);
       const c = getVal(['CASADO', 'Casado', 'Pct Casado']);
       const d = getVal(['DIVORCIADO', 'Divorciado', 'Pct Divorciado']);
-      const v = getVal(['VIÃšVO', 'VIUVO', 'ViÃºvo', 'Pct ViÃºvo']);
+      const v = getVal(['VIÚVO', 'VIUVO', 'Viúvo', 'Pct Viúvo']);
       const sep = getVal(['SEPARADO JUDICIALMENTE', 'SEPARADO', 'Separado', 'Pct Separado']);
 
-      // DetecÃ§Ã£o de Modo Percentual (Legacy)
-      // Se a soma for significativamente < da populaÃ§Ã£o total esperada (em absolutos) ou se for ~100
+      // Detecção de Modo Percentual (Legacy)
+      // Se a soma for significativamente < da população total esperada (em absolutos) ou se for ~100
       // Mas melhor: verificar se usamos keys de Pct
       const isPct = (props['Pct Solteiro'] !== undefined || props['Pct Casado'] !== undefined);
 
@@ -674,22 +674,22 @@ function filterFeature(feature) {
       if (filterMode === 'Solteiro') num = s;
       else if (filterMode === 'Casado') num = c;
       else if (filterMode === 'Divorciado') num = d;
-      else if (filterMode === 'ViÃºvo') num = v;
+      else if (filterMode === 'Viúvo') num = v;
       else num = sep;
 
       return (num / den * 100) >= filterVal;
     }
     else if (type === 'escolaridade') {
       const ana = getVal(['ANALFABETO', 'Analfabeto', 'Pct Analfabeto']);
-      const le = getVal(['LÃŠ E ESCREVE', 'LE E ESCREVE', 'LÃª e Escreve', 'Pct LÃª e Escreve']);
+      const le = getVal(['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve', 'Pct Lê e Escreve']);
       const fi = getVal(['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO', 'Pct Fundamental Incompleto']);
       const fc = getVal(['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO', 'Pct Fundamental Completo']);
-      const mi = getVal(['ENSINO MÃ‰DIO INCOMPLETO', 'MEDIO INCOMPLETO', 'Pct MÃ©dio Incompleto']);
-      const mc = getVal(['ENSINO MÃ‰DIO COMPLETO', 'MEDIO COMPLETO', 'Pct MÃ©dio Completo']);
+      const mi = getVal(['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO', 'Pct Médio Incompleto']);
+      const mc = getVal(['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO', 'Pct Médio Completo']);
       const si = getVal(['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO', 'Pct Superior Incompleto']);
       const sc = getVal(['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Pct Superior Completo']);
 
-      const isPct = (props['Pct Analfabeto'] !== undefined || props['Pct MÃ©dio Completo'] !== undefined);
+      const isPct = (props['Pct Analfabeto'] !== undefined || props['Pct Médio Completo'] !== undefined);
 
       let den;
       let num;
@@ -700,11 +700,11 @@ function filterFeature(feature) {
       if (den === 0) return false;
 
       if (filterMode.includes('Analfabeto')) num = ana;
-      else if (filterMode.includes('LÃª')) num = le;
+      else if (filterMode.includes('Lê')) num = le;
       else if (filterMode === 'Fund. Incomp.') num = fi;
       else if (filterMode === 'Fund. Completo') num = fc;
-      else if (filterMode === 'MÃ©dio Incomp.') num = mi;
-      else if (filterMode === 'MÃ©dio Completo') num = mc;
+      else if (filterMode === 'Médio Incomp.') num = mi;
+      else if (filterMode === 'Médio Completo') num = mc;
       else if (filterMode === 'Superior Incompleto') num = si;
       else if (filterMode === 'Superior Completo') num = sc;
 
@@ -735,8 +735,8 @@ function filterFeature(feature) {
           }
         } else if (key.startsWith('Pct ') && key.includes('anos')) {
           // Tratamento Legacy Pct
-          // Se cair aqui, totalAge serÃ¡ soma de PCTS (~100).
-          // filterMode serÃ¡ comparado com a soma das PCTs do bucket.
+          // Se cair aqui, totalAge será soma de PCTS (~100).
+          // filterMode será comparado com a soma das PCTs do bucket.
           const val = ensureNumber(props[key]);
           const match = key.match(/(\d+)/);
           if (match) {
@@ -1188,7 +1188,7 @@ function clearSelection(updateMap = true) {
   dom.resultsContent.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--muted);"><p style="margin-bottom:8px">ðŸ‘†</p>Clique no mapa ou use filtros para ver resultados.</div>';
   dom.resultsMetrics.innerHTML = '';
   dom.summaryGrid.innerHTML = '';
-  dom.resultsTitle.textContent = 'Resultados da SeleÃ§Ã£o';
+  dom.resultsTitle.textContent = 'Resultados da Seleção';
   dom.resultsSubtitle.textContent = '';
   // Reset Unified View
   dom.unifiedResultsContainer.classList.remove('hidden');
@@ -1226,7 +1226,7 @@ function syncResultsPanelToCurrentView() {
 
 function getAllFeaturesForAggregation() {
   // Retorna TODAS as features que passam pelos filtros atuais
-  // NÃ£o apenas as visÃ­veis no viewport
+  // Não apenas as visíveis no viewport
   const geojson = currentDataCollection[currentCargo];
   if (!geojson || !geojson.features) return [];
 
@@ -1393,40 +1393,50 @@ function selectFeaturesInBounds(bounds) {
 }
 
 
-// FunÃ§Ã£o auxiliar para gerar o texto do tÃ­tulo baseado nos filtros ativos
+// Função auxiliar para gerar o texto do título baseado nos filtros ativos
 function getActiveCensusFilterLabel() {
   const f = STATE.censusFilters;
 
   // 1. Filtro de Renda
   if (f.rendaMin !== null || f.rendaMax !== null) {
     const min = (f.rendaMin || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
-    const max = f.rendaMax ? (f.rendaMax).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) : 'MÃ¡x (+R$ 10k)';
-    return `Renda MÃ©dia: ${min} a ${max}`;
+    const max = f.rendaMax ? (f.rendaMax).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) : 'Máx (+R$ 10k)';
+    return `Renda Média: ${min} a ${max}`;
   }
 
-  // 2. Filtro de RaÃ§a/Cor
+  // 2. Filtro de Raça/Cor
   if (f.racaVal > 0) {
-    // Remove o "Pct" para ficar mais bonito (ex: "Pct Preta" vira "PopulaÃ§Ã£o Preta")
-    const label = f.racaMode.replace('Pct ', 'PopulaÃ§Ã£o ');
+    // Remove o "Pct" para ficar mais bonito (ex: "Pct Preta" vira "População Preta")
+    const label = f.racaMode.replace('Pct ', 'População ');
     return `${label}: Acima de ${f.racaVal}%`;
   }
 
   // 3. Filtro de Idade
   if (f.idadeVal > 0) {
-    return `Idade ${f.idadeMode}: Acima de ${f.idadeVal}% dos moradores`;
+    return `Idade ${f.idadeMode}: Acima de ${f.idadeVal}% dos eleitores`;
   }
 
-  // 4. Filtro de GÃªnero
+  // 4. Filtro de Gênero
   if (f.generoVal > 0) {
     const label = f.generoMode.replace('Pct ', ''); // "Mulheres" ou "Homens"
-    return `GÃªnero (${label}): Acima de ${f.generoVal}%`;
+    return `Gênero (${label}): Acima de ${f.generoVal}%`;
   }
 
-  // 5. Filtro de Saneamento
+  // 5. Filtro de Escolaridade
+  if (f.escolaridadeVal > 0) {
+    return `Escolaridade (${f.escolaridadeMode}): Acima de ${f.escolaridadeVal}%`;
+  }
+
+  // 6. Filtro de Estado Civil
+  if (f.estadoCivilVal > 0) {
+    return `Estado Civil (${f.estadoCivilMode}): Acima de ${f.estadoCivilVal}%`;
+  }
+
+  // 7. Filtro de Saneamento
   if (f.saneamentoVal > 0) {
     const label = f.saneamentoMode.replace('Pct ', '');
     return `Saneamento (${label}): Acima de ${f.saneamentoVal}%`;
   }
 
-  return null; // Nenhum filtro censitÃ¡rio ativo
+  return null; // Nenhum filtro censitário ativo
 }
