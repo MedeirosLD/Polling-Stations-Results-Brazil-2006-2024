@@ -294,28 +294,28 @@ function processAgeLegacy(p, buckets) {
 
 function updateApplyButtonText() {
   const hasLoadedData = !!currentDataCollection[currentCargo];
-  let btnDisabled = !hasLoadedData;
-  let btnText = 'Analisar/Agregar';
+  let btnDisabled = true;
+  let btnText = 'Filtros automáticos';
 
-  const isGeral = (STATE.currentElectionType === 'geral');
-  const isAllCities = (currentCidadeFilter === 'all');
+  const isGeral = false;
+  const isAllCities = false;
 
   // Texto dinâmico
   if (STATE.currentElectionType === 'municipal') {
     const mun = dom.selectMunicipio.value;
-    btnText = `Analisar "${mun}"`;
+    btnText = 'Filtros automáticos';
     if (currentBairroFilter !== 'all') {
-      btnText += ` (Bairro)`;
+      btnText = 'Filtros automáticos';
     }
   } else {
     // Modo GERAL
     if (isAllCities) {
       const uf = dom.selectUFGeneral.value;
-      btnText = `Filtrar Estado (${uf || 'BR'})`;
+      btnText = 'Filtros automáticos';
     } else {
       // Cidade específica selecionada
       const selectedText = dom.inputCidade ? dom.inputCidade.value : currentCidadeFilter;
-      btnText = `Analisar "${selectedText}"`;
+      btnText = 'Filtros automáticos';
     }
   }
 
@@ -323,9 +323,15 @@ function updateApplyButtonText() {
     btnText = `${btnText} • Aplicar`;
   }
 
+  if (!hasLoadedData) {
+    btnText = 'Carregue os dados';
+  } else if (STATE.hasPendingFilterChanges) {
+    btnText = 'Atualizando filtros...';
+  }
+
   dom.btnApplyFilters.textContent = btnText;
   dom.btnApplyFilters.disabled = btnDisabled;
-  dom.btnApplyFilters.classList.toggle('cta-ready', hasLoadedData);
+  dom.btnApplyFilters.classList.toggle('cta-ready', false);
   dom.btnApplyFilters.classList.toggle('pending-action', hasLoadedData && STATE.hasPendingFilterChanges);
 
   // REMOVIDO O BLOCO QUE CAUSAVA O ERRO (dom.btnShowByBairro)

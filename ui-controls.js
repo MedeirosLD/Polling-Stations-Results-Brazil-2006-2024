@@ -159,11 +159,17 @@
   });
 
   // BOTÃƒO CARREGAR
-  dom.btnLoadData.addEventListener('click', () => {
-    if (STATE.currentElectionType === 'geral') {
-      window.onClickLoadData_General();
-    } else {
-      window.onClickLoadData_Municipal();
+  dom.btnLoadData.addEventListener('click', async () => {
+    if (STATE.isLoadingDataset) return;
+    try {
+      if (STATE.currentElectionType === 'geral') {
+        await window.onClickLoadData_General();
+      } else {
+        await window.onClickLoadData_Municipal();
+      }
+    } catch (error) {
+      console.error('Falha no fluxo de carregamento:', error);
+      showToast(`Erro ao carregar dados: ${error.message}`, 'error');
     }
   });
 
@@ -372,6 +378,7 @@
 
     // CORREÇÃO: Chama a nova função de texto que libera o botão
     updateApplyButtonText();
+    debouncedAutoApplyFilters();
   });
 
   bairroCombobox = createCombobox({
@@ -383,14 +390,22 @@
     clearSelection(false);
     markFiltersDirty();
     updateApplyButtonText();
+    debouncedAutoApplyFilters();
   });
 
+  const debouncedAutoApplyFilters = debounce(() => {
+    if (!currentDataCollection[currentCargo] || STATE.isLoadingDataset) return;
+    applyFiltersAndRedraw();
+    clearPendingFilterChanges();
+  }, 180);
+
   const debouncedFilterDirty = debounce(() => markFiltersDirty(), 180);
-  dom.searchLocal.addEventListener('keyup', (e) => {
+  dom.searchLocal.addEventListener('input', (e) => {
     currentLocalFilter = norm(e.target.value);
     clearSelection(false);
     debouncedFilterDirty();
     updateApplyButtonText();
+    debouncedAutoApplyFilters();
   });
 
   const addSearchFilter = (inputEl, selectEl) => {
@@ -754,6 +769,11 @@ function setupSliders() {
     clearSelection(false);
     markFiltersDirty();
   }, 100);
+  const debouncedAutoApplyFilters = debounce(() => {
+    if (!currentDataCollection[currentCargo] || STATE.isLoadingDataset) return;
+    applyFiltersAndRedraw();
+    clearPendingFilterChanges();
+  }, 180);
 
   // 1. DUAL SLIDER (RENDA)
   const track = document.querySelector('.dual-track');
@@ -790,6 +810,7 @@ function setupSliders() {
     STATE.censusFilters.rendaMax = valMax < MAX_VAL ? valMax : null;
     debouncedMarkDirty();
     updateApplyButtonText();
+    debouncedAutoApplyFilters();
   }
 
   const debouncedRenda = debounce(updateRendaState, 200);
@@ -860,6 +881,7 @@ function setupSliders() {
       STATE.censusFilters[stateKeyVal] = val > 0 ? val : null;
       debouncedMarkDirty();
       updateApplyButtonText();
+      debouncedAutoApplyFilters();
     });
 
     // Atualiza Estado e UI quando o select muda
@@ -877,6 +899,11 @@ function setupSliders() {
       // Se houver valor de filtro aplicado, redesenha o mapa
       if (STATE.censusFilters[stateKeyVal] !== null) {
         debouncedMarkDirty();
+        debouncedAutoApplyFilters();
+      } else if (currentDataCollection[currentCargo] && !STATE.isLoadingDataset) {
+        clearSelection(false);
+        applyFiltersAndRedraw();
+        clearPendingFilterChanges();
       }
     });
   }
