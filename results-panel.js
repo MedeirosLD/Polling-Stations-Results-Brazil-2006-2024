@@ -375,6 +375,175 @@ function getStatusBadge(status) {
   return '';
 }
 
+const CANDIDATE_COLOR_PRESETS = [
+  '#1d4ed8', '#0f766e', '#16a34a', '#ca8a04', '#ea580c', '#dc2626',
+  '#be123c', '#7c3aed', '#4338ca', '#334155', '#111827', '#a16207'
+];
+
+let activeCandidateColorTarget = null;
+
+function ensureCandidateColorPopover() {
+  let popover = document.getElementById('candidateColorPopover');
+  if (popover) return popover;
+
+  popover = document.createElement('div');
+  popover.id = 'candidateColorPopover';
+  popover.className = 'candidate-color-popover hidden';
+  popover.innerHTML = `
+    <div class="candidate-color-card">
+      <div class="candidate-color-head">
+        <div>
+          <div class="candidate-color-kicker">Personalizar Cor</div>
+          <div class="candidate-color-name" id="candidateColorPopoverName">Candidato</div>
+        </div>
+        <button type="button" class="candidate-color-close" onclick="closeCandidateColorPopover()" aria-label="Fechar">×</button>
+      </div>
+      <div class="candidate-color-preview-row">
+        <span class="candidate-color-preview" id="candidateColorPreview"></span>
+        <div class="candidate-color-meta">
+          <span id="candidateColorPopoverParty">Partido</span>
+          <strong id="candidateColorPopoverValue">#000000</strong>
+        </div>
+      </div>
+      <div class="candidate-color-presets" id="candidateColorPresets"></div>
+      <div class="candidate-color-advanced">
+        <button type="button" class="candidate-color-picker-btn" onclick="openCandidateColorNativePicker()">
+          Escolher qualquer cor
+        </button>
+        <input id="candidateColorNativeInput" type="color" value="#2563EB" tabindex="-1" aria-hidden="true" />
+      </div>
+      <label class="candidate-color-field">
+        <span>Cor personalizada</span>
+        <input id="candidateColorHexInput" type="text" maxlength="7" placeholder="#2563EB" />
+      </label>
+      <div class="candidate-color-actions">
+        <button type="button" class="button ghost" onclick="resetCandidateColorPopover()">Cor padrão</button>
+        <button type="button" class="button primary" onclick="applyCandidateColorPopover()">Aplicar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(popover);
+
+  const presetsEl = popover.querySelector('#candidateColorPresets');
+  presetsEl.innerHTML = CANDIDATE_COLOR_PRESETS.map(color => `
+    <button type="button" class="candidate-color-chip" data-color="${color}" aria-label="Escolher cor ${color}"
+      onclick="setCandidateColorPopoverValue('${color}')">
+      <span style="background:${color}"></span>
+    </button>
+  `).join('');
+
+  const hexInput = popover.querySelector('#candidateColorHexInput');
+  const nativeInput = popover.querySelector('#candidateColorNativeInput');
+  hexInput.addEventListener('input', () => {
+    const value = normalizeCandidateHexColor(hexInput.value);
+    updateCandidateColorPopoverPreview(value || hexInput.value);
+  });
+  hexInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      applyCandidateColorPopover();
+    } else if (e.key === 'Escape') {
+      closeCandidateColorPopover();
+    }
+  });
+
+  nativeInput.addEventListener('input', () => {
+    setCandidateColorPopoverValue(nativeInput.value.toUpperCase());
+  });
+
+  document.addEventListener('click', (e) => {
+    const currentPopover = document.getElementById('candidateColorPopover');
+    if (!currentPopover || currentPopover.classList.contains('hidden')) return;
+    if (currentPopover.contains(e.target)) return;
+    if (e.target.closest('.swatch-button')) return;
+    closeCandidateColorPopover();
+  });
+
+  return popover;
+}
+
+function normalizeCandidateHexColor(value) {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return '';
+  const withHash = raw.startsWith('#') ? raw : `#${raw}`;
+  return /^#[0-9A-F]{6}$/.test(withHash) ? withHash : '';
+}
+
+function updateCandidateColorPopoverPreview(colorValue) {
+  const popover = ensureCandidateColorPopover();
+  const preview = popover.querySelector('#candidateColorPreview');
+  const valueEl = popover.querySelector('#candidateColorPopoverValue');
+  const normalized = normalizeCandidateHexColor(colorValue);
+  preview.style.background = normalized || 'transparent';
+  preview.style.borderColor = normalized || 'var(--border)';
+  valueEl.textContent = normalized || 'Inválida';
+
+  popover.querySelectorAll('.candidate-color-chip').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.color === normalized);
+  });
+}
+
+function setCandidateColorPopoverValue(color) {
+  const popover = ensureCandidateColorPopover();
+  const hexInput = popover.querySelector('#candidateColorHexInput');
+  const nativeInput = popover.querySelector('#candidateColorNativeInput');
+  hexInput.value = color;
+  if (normalizeCandidateHexColor(color)) nativeInput.value = color;
+  updateCandidateColorPopoverPreview(color);
+}
+
+function openCandidateColorNativePicker() {
+  const popover = ensureCandidateColorPopover();
+  const nativeInput = popover.querySelector('#candidateColorNativeInput');
+  if (!nativeInput) return;
+  nativeInput.click();
+}
+
+function openCandidateColorPopover(triggerEl, nome, partido, currentColor) {
+  const popover = ensureCandidateColorPopover();
+  activeCandidateColorTarget = { nome, partido };
+
+  popover.querySelector('#candidateColorPopoverName').textContent = nome;
+  popover.querySelector('#candidateColorPopoverParty').textContent = partido || 'Sem partido';
+  setCandidateColorPopoverValue(currentColor);
+
+  popover.classList.remove('hidden');
+
+  const rect = triggerEl.getBoundingClientRect();
+  const popRect = popover.getBoundingClientRect();
+  const top = Math.min(window.innerHeight - popRect.height - 12, rect.bottom + 10);
+  const left = Math.min(window.innerWidth - popRect.width - 12, Math.max(12, rect.left));
+  popover.style.top = `${Math.max(12, top)}px`;
+  popover.style.left = `${left}px`;
+}
+
+function closeCandidateColorPopover() {
+  const popover = document.getElementById('candidateColorPopover');
+  if (!popover) return;
+  popover.classList.add('hidden');
+  activeCandidateColorTarget = null;
+}
+
+function applyCandidateColorPopover() {
+  const popover = ensureCandidateColorPopover();
+  const hexInput = popover.querySelector('#candidateColorHexInput');
+  const color = normalizeCandidateHexColor(hexInput.value);
+  if (!color || !activeCandidateColorTarget?.nome) {
+    showToast('Digite uma cor hexadecimal válida.', 'warn', 2200);
+    return;
+  }
+  setCandidateColor(activeCandidateColorTarget.nome, color);
+  closeCandidateColorPopover();
+}
+
+function resetCandidateColorPopover() {
+  if (!activeCandidateColorTarget?.nome) return;
+  CUSTOM_CANDIDATE_COLORS.delete(activeCandidateColorTarget.nome);
+  updateSelectionUI(STATE.isFilterAggregationActive);
+  if (currentLayer) currentLayer.setStyle(getFeatureStyle);
+  closeCandidateColorPopover();
+}
+
 function renderResultsPanel(props, cargo) {
   // Limpa TODOS os toggles de navegacao ao trocar de cargo (clean slate)
   ['deputy-view-toggle', 'party-view-toggle', 'vereador-view-toggle', 'vereador-party-view-toggle'].forEach(id => {
@@ -463,17 +632,13 @@ function renderResultsPanel(props, cargo) {
     div.dataset.status = r.status;
 
     const sw = getColorForCandidate(r.nome, r.partido);
-    const safeId = 'color-' + btoa(unescape(encodeURIComponent(r.nome))).replace(/=/g, '');
-
     div.innerHTML = `
-      <div class="cand-header" 
-           style="cursor: pointer;"
-           onclick="if(['presidente', 'governador', 'senador', 'prefeito'].includes(currentOffice)) toggleCandidateDetails(this.parentNode, '${r.nome.replace(/'/g, "\\'")}', '${r.partido}', '${r.status}')">
-        <div class="swatch" style="background:${sw}" 
-             onclick="event.stopPropagation(); document.getElementById('${safeId}').click()"
-             title="Alterar cor"></div>
-        <input type="color" id="${safeId}" value="${sw}" style="display:none" 
-               onchange="setCandidateColor('${r.nome.replace(/'/g, "\\'")}', this.value)">
+      <div class="cand-header">
+        <button type="button" class="swatch-button"
+             onclick="openCandidateColorPopover(this, '${r.nome.replace(/'/g, "\\'")}', '${r.partido.replace(/'/g, "\\'")}', '${sw}')"
+             title="Personalizar cor do candidato">
+          <div class="swatch" style="background:${sw}"></div>
+        </button>
         <div class="cand-info">
           <h4 title="${r.nome}">${r.nome}</h4>
           <small title="${r.partido}">${r.partido}</small>

@@ -860,12 +860,221 @@ body {
     height: 12px;
     border-radius: 3px;
     flex-shrink: 0;
-    cursor: pointer;
     border: 1px solid rgba(128, 128, 128, 0.3);
 }
 
-.swatch:hover {
-    transform: scale(1.2);
+.swatch-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.swatch-button:hover {
+    border-color: var(--accent);
+    background: var(--surface);
+    transform: translateY(-1px);
+}
+
+.swatch-button:focus-visible {
+    outline: 2px solid rgba(37, 99, 235, 0.28);
+    outline-offset: 2px;
+}
+
+.swatch-button .swatch {
+    width: 12px;
+    height: 12px;
+}
+
+.candidate-color-popover {
+    position: fixed;
+    z-index: 3000;
+    width: min(280px, calc(100vw - 24px));
+}
+
+.candidate-color-popover.hidden {
+    display: none;
+}
+
+.candidate-color-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+    padding: 12px;
+}
+
+.candidate-color-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.candidate-color-kicker {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.candidate-color-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+}
+
+.candidate-color-close {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.candidate-color-preview-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.candidate-color-preview {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    flex-shrink: 0;
+}
+
+.candidate-color-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.candidate-color-meta span {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.candidate-color-meta strong {
+    font-size: 12px;
+    color: var(--text);
+}
+
+.candidate-color-presets {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.candidate-color-advanced {
+    margin-bottom: 10px;
+}
+
+.candidate-color-picker-btn {
+    width: 100%;
+    height: 34px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text-sec);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.candidate-color-picker-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--surface);
+}
+
+.candidate-color-advanced input[type="color"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.candidate-color-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    padding: 0;
+    cursor: pointer;
+}
+
+.candidate-color-chip span {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+}
+
+.candidate-color-chip.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+
+.candidate-color-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+}
+
+.candidate-color-field span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.candidate-color-field input {
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
+    font: inherit;
+}
+
+.candidate-color-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 .cand-info {
