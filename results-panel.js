@@ -1456,13 +1456,13 @@ function renderDeputyPartyResults(cargo) {
 
   for (let i = 0; i < totalPages; i++) {
     const pageDiv = document.createElement('div');
-    pageDiv.className = 'results-page';
+    pageDiv.className = 'results-page party-results-page';
 
     const batch = results.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE);
 
     batch.forEach(r => {
       const div = document.createElement('div');
-      div.className = 'cand';
+      div.className = 'cand party-result-card';
       div.style.borderLeft = `4px solid ${r.color}`;
 
       div.style.cursor = 'pointer';
@@ -1473,7 +1473,7 @@ function renderDeputyPartyResults(cargo) {
       };
 
       const electedHtml = (r.elected > 0)
-        ? `<span class="status-badge eleito" style="font-size:0.8rem; gap:4px">
+        ? `<span class="status-badge eleito party-result-badge">
              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
              ${r.elected} Eleito(s)</span>`
         : '';
@@ -1488,23 +1488,23 @@ function renderDeputyPartyResults(cargo) {
       const showCompositionSubtitle = r.isGroup && r.composition && normComp !== normName;
 
       const subtitleHtml = showCompositionSubtitle
-        ? `<div style="font-size:0.7rem; color:var(--muted); margin-bottom:4px; margin-top:-2px;">${r.composition}</div>`
+        ? `<div class="party-result-subtitle">${r.composition}</div>`
         : '';
 
       div.innerHTML = `
-        <div class="cand-header" style="margin-bottom:0">
-            <div class="cand-info">
-             <h4 style="${headerStyle}">${r.name}</h4>
+        <div class="cand-header party-result-header">
+            <div class="cand-info party-result-info">
+             <h4 class="party-result-title" style="${headerStyle}">${r.name}</h4>
              ${subtitleHtml}
             </div>
              ${electedHtml}
         </div>
-        <div class="cand-stats">
-          <div>
+        <div class="cand-stats party-result-stats">
+          <div class="party-result-votes">
             <span class="bigPct">${fmtPct(r.pct)}</span>
             <span class="smallVotos">${fmtInt(r.votes)}</span>
           </div>
-          <div style="font-size:10px; opacity:0.6; align-self:flex-end;">Ver lista ➜</div>
+          <div class="party-result-action">Ver lista -&gt;</div>
         </div>
       `;
       pageDiv.appendChild(div);
@@ -1996,18 +1996,18 @@ function renderVereadorPartyResults(cargo) {
 
   for (let i = 0; i < totalPages; i++) {
     const pageDiv = document.createElement('div');
-    pageDiv.className = 'results-page';
+    pageDiv.className = 'results-page party-results-page';
 
     results.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE).forEach(r => {
       const div = document.createElement('div');
-      div.className = 'cand';
+      div.className = 'cand party-result-card';
       div.style.borderLeft = `4px solid ${r.color}`;
       div.style.cursor = 'pointer';
       div.title = 'Clique para ver lista de candidatos';
       div.onclick = () => openVereadorCoalitionModal(r.composition, r.name, r.color, cargo, r.elected, r.isGroup);
 
       const electedHtml = (r.elected > 0)
-        ? `<span class="status-badge eleito" style="font-size:0.8rem; gap:4px">
+        ? `<span class="status-badge eleito party-result-badge">
              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
              ${r.elected} Eleito(s)</span>`
         : '';
@@ -2021,23 +2021,23 @@ function renderVereadorPartyResults(cargo) {
       const normName = r.name.replace(/\s/g, '').toUpperCase();
       const showCompositionSubtitle = r.isGroup && r.composition && normComp !== normName;
       const subtitleHtml = showCompositionSubtitle
-        ? `<div style="font-size:0.7rem; color:var(--muted); margin-bottom:4px; margin-top:-2px;">${r.composition}</div>`
+        ? `<div class="party-result-subtitle">${r.composition}</div>`
         : '';
 
       div.innerHTML = `
-        <div class="cand-header" style="margin-bottom:0">
-          <div class="cand-info">
-            <h4 style="${headerStyle}">${r.name}</h4>
+        <div class="cand-header party-result-header">
+          <div class="cand-info party-result-info">
+            <h4 class="party-result-title" style="${headerStyle}">${r.name}</h4>
             ${subtitleHtml}
           </div>
           ${electedHtml}
         </div>
-        <div class="cand-stats">
-          <div>
+        <div class="cand-stats party-result-stats">
+          <div class="party-result-votes">
             <span class="bigPct">${fmtPct(r.pct)}</span>
             <span class="smallVotos">${fmtInt(r.votes)}</span>
           </div>
-          <div style="font-size:10px; opacity:0.6; align-self:flex-end;">Ver lista ➜</div>
+          <div class="party-result-action">Ver lista -&gt;</div>
         </div>
       `;
       pageDiv.appendChild(div);
@@ -2547,4 +2547,3 @@ window.PARTY_COLORS = PARTY_COLORS;
 // Expor currentTurno como getter para sempre pegar o valor atualizado
 Object.defineProperty(window, 'currentTurno', { get() { return currentTurno; }, configurable: true });
 Object.defineProperty(window, 'currentCargo', { get() { return currentCargo; }, configurable: true });
-
