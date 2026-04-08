@@ -133,9 +133,7 @@ function renderSummaryBoxes(aggregatedProps) {
     const turnoKey = (office === 'senador') ? '1T' : (STATE.dataHas2T[cargoKey] && currentTurno === 2) ? '2T' : '1T';
     if (!STATE.candidates[cargoKey]?.[turnoKey]) return;
 
-    const officialSummary = shouldUseGeneralOfficialTotals(cargoKey)
-      ? STATE.generalOfficialTotals?.[cargoKey]?.[turnoKey]
-      : null;
+    const officialSummary = getGeneralOfficialSummaryForScope(cargoKey, turnoKey);
     const inaptosTurno = STATE.inaptos[cargoKey]?.[turnoKey] || [];
     const buildCandidateEntries = (filtrarInaptos = false) => {
       const entries = officialSummary?.votesByDisplayKey
@@ -381,6 +379,32 @@ const CANDIDATE_COLOR_PRESETS = [
 ];
 
 let activeCandidateColorTarget = null;
+let candidateColorUIInitialized = false;
+
+function closeCandidateColorPopoverOnViewChange() {
+  const popover = document.getElementById('candidateColorPopover');
+  if (popover) popover.classList.add('hidden');
+  activeCandidateColorTarget = null;
+}
+
+function renderCandidateColorControl(nome, partido, color, customizable = true) {
+  const safeNome = escapeAttribute(nome || '');
+  const safePartido = escapeAttribute(partido || '');
+
+  if (!customizable) {
+    return `<div class="swatch" style="background:${color}"></div>`;
+  }
+
+  return `
+    <button type="button" class="swatch-button"
+         data-candidate-name="${safeNome}"
+         data-candidate-party="${safePartido}"
+         data-current-color="${color}"
+         title="Personalizar cor do candidato">
+      <div class="swatch" style="background:${color}"></div>
+    </button>
+  `;
+}
 
 function ensureCandidateColorPopover() {
   let popover = document.getElementById('candidateColorPopover');
@@ -396,7 +420,7 @@ function ensureCandidateColorPopover() {
           <div class="candidate-color-kicker">Personalizar Cor</div>
           <div class="candidate-color-name" id="candidateColorPopoverName">Candidato</div>
         </div>
-        <button type="button" class="candidate-color-close" onclick="closeCandidateColorPopover()" aria-label="Fechar">×</button>
+        <button type="button" class="candidate-color-close" data-color-action="close" aria-label="Fechar">×</button>
       </div>
       <div class="candidate-color-preview-row">
         <span class="candidate-color-preview" id="candidateColorPreview"></span>
@@ -407,7 +431,7 @@ function ensureCandidateColorPopover() {
       </div>
       <div class="candidate-color-presets" id="candidateColorPresets"></div>
       <div class="candidate-color-advanced">
-        <button type="button" class="candidate-color-picker-btn" onclick="openCandidateColorNativePicker()">
+        <button type="button" class="candidate-color-picker-btn" data-color-action="open-native-picker">
           Escolher qualquer cor
         </button>
         <input id="candidateColorNativeInput" type="color" value="#2563EB" tabindex="-1" aria-hidden="true" />
@@ -417,8 +441,8 @@ function ensureCandidateColorPopover() {
         <input id="candidateColorHexInput" type="text" maxlength="7" placeholder="#2563EB" />
       </label>
       <div class="candidate-color-actions">
-        <button type="button" class="button ghost" onclick="resetCandidateColorPopover()">Cor padrão</button>
-        <button type="button" class="button primary" onclick="applyCandidateColorPopover()">Aplicar</button>
+        <button type="button" class="button ghost" data-color-action="reset">Cor padrão</button>
+        <button type="button" class="button primary" data-color-action="apply">Aplicar</button>
       </div>
     </div>
   `;
@@ -426,8 +450,7 @@ function ensureCandidateColorPopover() {
 
   const presetsEl = popover.querySelector('#candidateColorPresets');
   presetsEl.innerHTML = CANDIDATE_COLOR_PRESETS.map(color => `
-    <button type="button" class="candidate-color-chip" data-color="${color}" aria-label="Escolher cor ${color}"
-      onclick="setCandidateColorPopoverValue('${color}')">
+    <button type="button" class="candidate-color-chip" data-color="${color}" aria-label="Escolher cor ${color}">
       <span style="background:${color}"></span>
     </button>
   `).join('');
@@ -451,15 +474,50 @@ function ensureCandidateColorPopover() {
     setCandidateColorPopoverValue(nativeInput.value.toUpperCase());
   });
 
-  document.addEventListener('click', (e) => {
-    const currentPopover = document.getElementById('candidateColorPopover');
-    if (!currentPopover || currentPopover.classList.contains('hidden')) return;
-    if (currentPopover.contains(e.target)) return;
-    if (e.target.closest('.swatch-button')) return;
-    closeCandidateColorPopover();
-  });
+  initializeCandidateColorUI();
 
   return popover;
+}
+
+function initializeCandidateColorUI() {
+  if (candidateColorUIInitialized) return;
+  candidateColorUIInitialized = true;
+
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.swatch-button');
+    if (trigger) {
+      openCandidateColorPopover(
+        trigger,
+        trigger.dataset.candidateName || '',
+        trigger.dataset.candidateParty || '',
+        trigger.dataset.currentColor || DEFAULT_SWATCH
+      );
+      return;
+    }
+
+    const popover = document.getElementById('candidateColorPopover');
+    if (!popover || popover.classList.contains('hidden')) return;
+
+    if (popover.contains(e.target)) {
+      const preset = e.target.closest('.candidate-color-chip');
+      if (preset?.dataset.color) {
+        setCandidateColorPopoverValue(preset.dataset.color);
+        return;
+      }
+
+      const actionEl = e.target.closest('[data-color-action]');
+      if (!actionEl) return;
+
+      const action = actionEl.dataset.colorAction;
+      if (action === 'close') closeCandidateColorPopover();
+      else if (action === 'apply') applyCandidateColorPopover();
+      else if (action === 'reset') resetCandidateColorPopover();
+      else if (action === 'open-native-picker') openCandidateColorNativePicker();
+      return;
+    }
+
+    closeCandidateColorPopover();
+  });
 }
 
 function normalizeCandidateHexColor(value) {
@@ -545,6 +603,9 @@ function resetCandidateColorPopover() {
 }
 
 function renderResultsPanel(props, cargo) {
+  initializeCandidateColorUI();
+  closeCandidateColorPopoverOnViewChange();
+
   // Limpa TODOS os toggles de navegacao ao trocar de cargo (clean slate)
   ['deputy-view-toggle', 'party-view-toggle', 'vereador-view-toggle', 'vereador-party-view-toggle'].forEach(id => {
     const el = document.getElementById(id);
@@ -569,9 +630,7 @@ function renderResultsPanel(props, cargo) {
 
   const turnoKey = (currentTurno === 2 && STATE.dataHas2T[cargo]) ? '2T' : '1T';
   const candidatos = STATE.candidates[cargo]?.[turnoKey] || [];
-  const officialGeneralSummary = shouldUseGeneralOfficialTotals(cargo)
-    ? STATE.generalOfficialTotals?.[cargo]?.[turnoKey]
-    : null;
+  const officialGeneralSummary = getGeneralOfficialSummaryForScope(cargo, turnoKey);
   const officialMunicipalSummary = (cargo.startsWith('prefeito') && shouldUseMunicipalOfficialTotals())
     ? STATE.municipalOfficialTotals?.[cargo]?.[turnoKey]
     : null;
@@ -632,16 +691,14 @@ function renderResultsPanel(props, cargo) {
     div.dataset.status = r.status;
 
     const sw = getColorForCandidate(r.nome, r.partido);
+    const safeNome = escapeHtml(r.nome);
+    const safePartido = escapeHtml(r.partido);
     div.innerHTML = `
       <div class="cand-header">
-        <button type="button" class="swatch-button"
-             onclick="openCandidateColorPopover(this, '${r.nome.replace(/'/g, "\\'")}', '${r.partido.replace(/'/g, "\\'")}', '${sw}')"
-             title="Personalizar cor do candidato">
-          <div class="swatch" style="background:${sw}"></div>
-        </button>
+        ${renderCandidateColorControl(r.nome, r.partido, sw, true)}
         <div class="cand-info">
-          <h4 title="${r.nome}">${r.nome}</h4>
-          <small title="${r.partido}">${r.partido}</small>
+          <h4 title="${safeNome}">${safeNome}</h4>
+          <small title="${safePartido}">${safePartido}</small>
         </div>
       </div>
       <div class="cand-stats">
@@ -735,6 +792,9 @@ function loadOfficialTotals(year) {
 }
 
 function renderDeputyResults(cargo) {
+  initializeCandidateColorUI();
+  closeCandidateColorPopoverOnViewChange();
+
   // 0. Toggle Logic
   if (!STATE.deputyViewMode) STATE.deputyViewMode = 'candidate';
 
@@ -764,6 +824,7 @@ function renderDeputyResults(cargo) {
     STATE.deputyViewMode = mode;
 
     renderDeputyResults(cargo); // Correct 'cargo' from fresh closure
+    applyFiltersAndRedraw();
   });
 
   // Branching
@@ -904,20 +965,22 @@ function renderDeputyResults(cargo) {
         simpleStatus = 'SUPLENTE';
       }
 
-      const sw = getColorForCandidate(r.nome, r.partido);
+	      const sw = getColorForCandidate(r.nome, r.partido);
+      const safeNome = escapeHtml(r.nome);
+      const safePartyAndId = escapeHtml(`${r.partido} • ${r.id}`);
 
-      div.setAttribute('data-status', simpleStatus);
+	      div.setAttribute('data-status', simpleStatus);
       if (st.includes('INAPTO')) {
         div.classList.add('inapto-card'); // Adds the dashed red border
       }
-      div.innerHTML = `
-                <div class="cand-header">
-                  <div class="swatch" style="background:${sw}"></div>
-                  <div class="cand-info">
-                    <h4 title="${r.nome}">${r.nome}</h4>
-                    <small title="${r.partido}">${r.partido} • ${r.id}</small>
-                  </div>
-                </div>
+	      div.innerHTML = `
+	                <div class="cand-header">
+	                  ${renderCandidateColorControl(r.nome, r.partido, sw, true)}
+	                  <div class="cand-info">
+	                    <h4 title="${safeNome}">${safeNome}</h4>
+	                    <small title="${safePartyAndId}">${safePartyAndId}</small>
+	                  </div>
+	                </div>
                 <div class="cand-stats">
                   <div>
                     <span class="bigPct">${fmtPct(r.pct)}</span>
@@ -1328,6 +1391,9 @@ function setBar(id, min, max, scale) {
 }
 
 function renderDeputyPartyResults(cargo) {
+  initializeCandidateColorUI();
+  closeCandidateColorPopoverOnViewChange();
+
   // --- CONFIGURAÇÃO E CONSTANTES ---
   const FEDERATION_COLORS = {
     'FE BRASIL': '#C0122D',
@@ -1372,6 +1438,7 @@ function renderDeputyPartyResults(cargo) {
     if (STATE.deputyPartyViewMode === mode) return;
     STATE.deputyPartyViewMode = mode;
     renderDeputyPartyResults(cargo);
+    applyFiltersAndRedraw();
   });
 
 
@@ -1742,6 +1809,9 @@ function renderDeputyPartyResults(cargo) {
 // typeKey fixo = 'v'
 
 function renderVereadorResults(cargo) {
+  initializeCandidateColorUI();
+  closeCandidateColorPopoverOnViewChange();
+
   // Toggle Candidatos / Partidos (igual ao de deputados)
   const existingToggle = document.getElementById('vereador-view-toggle');
   if (existingToggle) existingToggle.remove();
@@ -1861,14 +1931,16 @@ function renderVereadorResults(cargo) {
       const st = (r.status || '').toUpperCase();
       if (st.includes('INAPTO')) { statusHtml = `<span class="status-badge inapto"><svg><use href="#svg-x"/></svg> INAPTO</span>`; simpleStatus = 'INAPTO'; div.classList.add('inapto-card'); }
       else if (st.includes('NÃO ELEITO') || st.includes('NAO ELEITO') || st === 'NÃO ELEITO' || st === 'NAO ELEITO') { statusHtml = `<span class="status-badge nao-eleito"><svg><use href="#svg-x"/></svg> Não Eleito</span>`; simpleStatus = 'NÃO ELEITO'; }
-      else if (st.includes('ELEITO') || st.includes('QP') || st.includes('MEDIA') || st.includes('MÉDIA')) { statusHtml = `<span class="status-badge eleito"><svg><use href="#svg-check"/></svg> ${r.status}</span>`; simpleStatus = 'ELEITO'; }
+      else if (st.includes('ELEITO') || st.includes('QP') || st.includes('MEDIA') || st.includes('MÉDIA')) { statusHtml = `<span class="status-badge eleito"><svg><use href="#svg-check"/></svg> ${escapeHtml(r.status)}</span>`; simpleStatus = 'ELEITO'; }
       else if (st.includes('SUPLENTE')) { statusHtml = `<span class="status-badge suplente">Suplente</span>`; simpleStatus = 'SUPLENTE'; }
       div.setAttribute('data-status', simpleStatus);
       const sw = getColorForCandidate(r.nome, r.partido);
+      const safeNome = escapeHtml(r.nome);
+      const safePartyAndId = escapeHtml(`${r.partido} • ${r.id}`);
       div.innerHTML = `
         <div class="cand-header">
-          <div class="swatch" style="background:${sw}"></div>
-          <div class="cand-info"><h4 title="${r.nome}">${r.nome}</h4><small title="${r.partido}">${r.partido} &bull; ${r.id}</small></div>
+          ${renderCandidateColorControl(r.nome, r.partido, sw, true)}
+          <div class="cand-info"><h4 title="${safeNome}">${safeNome}</h4><small title="${safePartyAndId}">${safePartyAndId}</small></div>
         </div>
         <div class="cand-stats">
           <div><span class="bigPct">${fmtPct(r.pct)}</span><span class="smallVotos">${fmtInt(r.votos)}</span></div>
@@ -1910,6 +1982,9 @@ function renderVereadorResults(cargo) {
 }
 
 function renderVereadorPartyResults(cargo) {
+  initializeCandidateColorUI();
+  closeCandidateColorPopoverOnViewChange();
+
   const useOfficialMunicipalTotals = shouldUseMunicipalOfficialTotals();
   const officialSummary = useOfficialMunicipalTotals ? STATE.municipalOfficialTotals?.[cargo]?.['1T'] : null;
   // --- CONFIGURAÇÃO E CONSTANTES ---
@@ -1955,6 +2030,7 @@ function renderVereadorPartyResults(cargo) {
     if (STATE.vereadorPartyViewMode === mode) return;
     STATE.vereadorPartyViewMode = mode;
     renderVereadorPartyResults(cargo);
+    applyFiltersAndRedraw();
   });
 
   // --- PREPARAÇÃO DOS DADOS (loop no mapa selecionado) ---

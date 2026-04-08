@@ -266,7 +266,10 @@ function applyGeneralMajoritariaJsonToGeojson2022(geojson, fullJson, turnoKey) {
 
 function buildGeneralOfficialSummary(fullJson, turnoKey) {
   const rawTotals = aggregateVotesFromResults(fullJson?.RESULTS || {});
-  const metadata = fullJson?.METADATA?.cand_names || {};
+  return buildGeneralOfficialSummaryFromRawTotals(rawTotals, fullJson?.METADATA?.cand_names || {}, turnoKey);
+}
+
+function buildGeneralOfficialSummaryFromRawTotals(rawTotals, metadata, turnoKey) {
   const votesByDisplayKey = {};
 
   Object.entries(rawTotals).forEach(([candidateId, votes]) => {
@@ -282,6 +285,51 @@ function buildGeneralOfficialSummary(fullJson, turnoKey) {
     rawTotals,
     ...summarizeRawVoteMap(rawTotals, { includeLegenda: true })
   };
+}
+
+function extractMunicipioCodeFromGeneralResultKey(resultKey) {
+  const parts = String(resultKey || '').split('_');
+  if (parts.length < 3) return '';
+  const municipioCode = String(parts[1] || '').trim();
+  return /^\d+$/.test(municipioCode) ? municipioCode : '';
+}
+
+function buildGeneralOfficialSummariesByCity(fullJson, turnoKey, geojson) {
+  const metadata = fullJson?.METADATA?.cand_names || {};
+  const cityNameByCode = new Map();
+
+  (geojson?.features || []).forEach((feature) => {
+    const props = feature?.properties || {};
+    const municipioCode = String(getProp(props, 'cd_localidade_tse') || '').trim();
+    const cityName = String(getProp(props, 'nm_localidade') || '').trim();
+    if (!municipioCode || !cityName || cityNameByCode.has(municipioCode)) return;
+    cityNameByCode.set(municipioCode, cityName);
+  });
+
+  const rawTotalsByCity = new Map();
+  Object.entries(fullJson?.RESULTS || {}).forEach(([resultKey, voteMap]) => {
+    const municipioCode = extractMunicipioCodeFromGeneralResultKey(resultKey);
+    const cityName = cityNameByCode.get(municipioCode);
+    if (!municipioCode || !cityName) return;
+
+    let rawTotals = rawTotalsByCity.get(cityName);
+    if (!rawTotals) {
+      rawTotals = {};
+      rawTotalsByCity.set(cityName, rawTotals);
+    }
+
+    Object.entries(voteMap || {}).forEach(([candidateId, rawVotes]) => {
+      rawTotals[candidateId] = (rawTotals[candidateId] || 0) + ensureNumber(rawVotes);
+    });
+  });
+
+  const summaries = {};
+  rawTotalsByCity.forEach((rawTotals, cityName) => {
+    const summary = buildGeneralOfficialSummaryFromRawTotals(rawTotals, metadata, turnoKey);
+    summaries[cityName] = summary;
+    summaries[norm(cityName)] = summary;
+  });
+  return summaries;
 }
 
 async function loadMajoritariaCargo2022(cargo, uf) {
@@ -321,6 +369,10 @@ async function loadMajoritariaCargo2022(cargo, uf) {
     officialTotals: {
       '1T': buildGeneralOfficialSummary(mergedTurno1, '1T'),
       ...(mergedTurno2 ? { '2T': buildGeneralOfficialSummary(mergedTurno2, '2T') } : {})
+    },
+    officialCityTotals: {
+      '1T': buildGeneralOfficialSummariesByCity(mergedTurno1, '1T', geojson),
+      ...(mergedTurno2 ? { '2T': buildGeneralOfficialSummariesByCity(mergedTurno2, '2T', geojson) } : {})
     }
   };
 }
@@ -358,6 +410,32 @@ function shouldUseGeneralJsonTotals(cargo = currentCargo) {
 function shouldUseGeneralOfficialTotals(cargo = currentCargo) {
   return shouldUseGeneralJsonTotals(cargo)
     && !String(cargo || '').startsWith('deputado');
+}
+
+function shouldUseGeneralCityOfficialTotals(cargo = currentCargo) {
+  const year = String(STATE.currentElectionYear);
+  return (year === '2022' || year === '2018' || year === '2014' || year === '2010' || year === '2006')
+    && STATE.currentElectionType === 'geral'
+    && STATE.isFilterAggregationActive
+    && currentCidadeFilter !== 'all'
+    && currentBairroFilter === 'all'
+    && !currentLocalFilter
+    && String(cargo || '').endsWith('_sup')
+    && !String(cargo || '').startsWith('deputado');
+}
+
+function getGeneralOfficialSummaryForScope(cargo = currentCargo, turnoKey = '1T') {
+  if (shouldUseGeneralOfficialTotals(cargo)) {
+    return STATE.generalOfficialTotals?.[cargo]?.[turnoKey] || null;
+  }
+
+  if (shouldUseGeneralCityOfficialTotals(cargo)) {
+    const cityKey = String(currentCidadeFilter || '').trim();
+    const cityTotals = STATE.generalOfficialTotalsByCity?.[cargo]?.[turnoKey] || {};
+    return cityTotals[cityKey] || cityTotals[norm(cityKey)] || null;
+  }
+
+  return null;
 }
 
 function shouldUseGeneralDeputyJsonTotals(cargo = currentCargo) {
@@ -452,6 +530,7 @@ async function onClickLoadData_Geral_2022() {
   currentDataCollection_2022 = {};
   STATE.spatialIndex2022 = { presidente: null, governador: null, senador: null };
   STATE.generalOfficialTotals = {};
+  STATE.generalOfficialTotalsByCity = {};
   uniqueCidades.clear();
   uniqueBairros.clear();
   clearSelection(true);
@@ -476,6 +555,7 @@ async function onClickLoadData_Geral_2022() {
       currentDataCollection[cargoKey] = loaded.geojson;
       processLoadedGeoJSON(loaded.geojson, cargoKey);
       STATE.generalOfficialTotals[cargoKey] = loaded.officialTotals || {};
+      STATE.generalOfficialTotalsByCity[cargoKey] = loaded.officialCityTotals || {};
       dataFound = true;
     });
 

@@ -475,6 +475,7 @@ const STATE = {
   },
   currentMuniCode: null,
   generalOfficialTotals: {},
+  generalOfficialTotalsByCity: {},
   municipalOfficialTotals: {},
   censusFilters: {
     rendaMin: null,

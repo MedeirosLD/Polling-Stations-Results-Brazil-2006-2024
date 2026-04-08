@@ -209,20 +209,24 @@ async function loadGeneralScopeBase2014(ufs, resultKeys) {
   return { type: 'FeatureCollection', features };
 }
 
-async function loadGeneralMajoritariaJson2014(cargo, uf, turno) {
+function buildGeneralMajoritariaArchiveSpec2014(cargo, uf, turno, subtype = 'ord') {
   const ufNorm = String(uf || '').toUpperCase();
   const isSenador = cargo === 'senador';
   const isGovernador = cargo === 'governador';
-  const zipUrl = isSenador
-    ? `${DATA_BASE_URL}Majoritarias 2014/senador_2014_ord_t${turno}_${ufNorm}.zip`
+  const subtypeNorm = subtype === 'sup' ? 'sup' : 'ord';
+  const basename = isSenador
+    ? `senador_2014_${subtypeNorm}_t${turno}_${ufNorm}`
     : isGovernador
-      ? `${DATA_BASE_URL}Majoritarias 2014/governador_2014_ord_t${turno}_${ufNorm}.zip`
-      : `${DATA_BASE_URL}Majoritarias 2014/${cargo}_2014_t${turno}_${ufNorm}.zip`;
-  const filename = isSenador
-    ? `senador_2014_ord_t${turno}_${ufNorm}.json`
-    : isGovernador
-      ? `governador_2014_ord_t${turno}_${ufNorm}.json`
-      : `${cargo}_2014_t${turno}_${ufNorm}.json`;
+      ? `governador_2014_${subtypeNorm}_t${turno}_${ufNorm}`
+      : `${cargo}_2014_t${turno}_${ufNorm}`;
+  return {
+    zipUrl: `${DATA_BASE_URL}Majoritarias 2014/${basename}.zip`,
+    filename: `${basename}.json`
+  };
+}
+
+async function loadGeneralMajoritariaJson2014(cargo, uf, turno, subtype = 'ord') {
+  const { zipUrl, filename } = buildGeneralMajoritariaArchiveSpec2014(cargo, uf, turno, subtype);
   const { data } = await fetchJsonFromZipEntry(zipUrl, filename);
   return data;
 }
@@ -274,13 +278,13 @@ function applyGeneralMajoritariaJsonToGeojson2014(geojson, fullJson, turnoKey) {
   });
 }
 
-async function loadMajoritariaCargo2014(cargo, uf) {
+async function loadMajoritariaCargo2014(cargo, uf, subtype = 'ord') {
   const ufs = (cargo === 'presidente' && String(uf).toUpperCase() === 'BR')
     ? ALL_STATE_SIGLAS
     : [String(uf || '').toUpperCase()];
 
   const turno1Payloads = (await Promise.all(
-    ufs.map((sigla) => loadGeneralMajoritariaJson2014(cargo, sigla, 1).catch(() => null))
+    ufs.map((sigla) => loadGeneralMajoritariaJson2014(cargo, sigla, 1, subtype).catch(() => null))
   )).filter((payload) => payload?.RESULTS);
 
   if (!turno1Payloads.length) return null;
@@ -291,7 +295,7 @@ async function loadMajoritariaCargo2014(cargo, uf) {
   let mergedTurno2 = null;
   if (cargo !== 'senador') {
     const turno2Payloads = (await Promise.all(
-      ufs.map((sigla) => loadGeneralMajoritariaJson2014(cargo, sigla, 2).catch(() => null))
+      ufs.map((sigla) => loadGeneralMajoritariaJson2014(cargo, sigla, 2, subtype).catch(() => null))
     )).filter((payload) => payload?.RESULTS);
 
     if (turno2Payloads.length) {
@@ -311,6 +315,10 @@ async function loadMajoritariaCargo2014(cargo, uf) {
     officialTotals: {
       '1T': buildGeneralOfficialSummary(mergedTurno1, '1T'),
       ...(mergedTurno2 ? { '2T': buildGeneralOfficialSummary(mergedTurno2, '2T') } : {})
+    },
+    officialCityTotals: {
+      '1T': buildGeneralOfficialSummariesByCity(mergedTurno1, '1T', geojson),
+      ...(mergedTurno2 ? { '2T': buildGeneralOfficialSummariesByCity(mergedTurno2, '2T', geojson) } : {})
     }
   };
 }
@@ -354,36 +362,57 @@ async function onClickLoadData_Geral_2014() {
   currentDataCollection_2022 = {};
   STATE.spatialIndex2022 = { presidente: null, governador: null, senador: null };
   STATE.generalOfficialTotals = {};
+  STATE.generalOfficialTotalsByCity = {};
   uniqueCidades.clear();
   uniqueBairros.clear();
   clearSelection(true);
   CANDIDATES_CACHE.clear();
 
-  currentSubType = 'ord';
-  currentCargo = `${currentOffice}_${currentSubType}`;
+  const requestedSubType = currentSubType;
 
   try {
-    const cargos = (ufToLoad === 'BR')
-      ? ['presidente']
-      : ['presidente', 'governador', 'senador'];
+    const loadPlans = (ufToLoad === 'BR')
+      ? [{ cargo: 'presidente', subtype: 'ord' }]
+      : [
+          { cargo: 'presidente', subtype: 'ord' },
+          { cargo: 'governador', subtype: 'ord' },
+          { cargo: 'senador', subtype: 'ord' },
+          { cargo: 'governador', subtype: 'sup' },
+          { cargo: 'senador', subtype: 'sup' }
+        ];
 
-    const results = await Promise.all(cargos.map((cargo) => loadMajoritariaCargo2014(cargo, ufToLoad)));
+    const results = await Promise.all(
+      loadPlans.map(({ cargo, subtype }) => loadMajoritariaCargo2014(cargo, ufToLoad, subtype))
+    );
     let dataFound = false;
 
     results.forEach((loaded, index) => {
-      const cargo = cargos[index];
+      const { cargo, subtype } = loadPlans[index];
       if (!loaded?.geojson?.features?.length) return;
 
-      const cargoKey = `${cargo}_ord`;
+      const cargoKey = `${cargo}_${subtype}`;
       currentDataCollection[cargoKey] = loaded.geojson;
       processLoadedGeoJSON(loaded.geojson, cargoKey);
       STATE.generalOfficialTotals[cargoKey] = loaded.officialTotals || {};
+      STATE.generalOfficialTotalsByCity[cargoKey] = loaded.officialCityTotals || {};
       dataFound = true;
     });
 
     if (!dataFound) {
       throw new Error('Nenhum dado JSON encontrado para 2014.');
     }
+
+    const requestedCargoKey = `${currentOffice}_${requestedSubType}`;
+    const ordCargoKey = `${currentOffice}_ord`;
+    const supCargoKey = `${currentOffice}_sup`;
+    currentSubType = currentDataCollection[requestedCargoKey]
+      ? requestedSubType
+      : currentDataCollection[ordCargoKey]
+        ? 'ord'
+        : currentDataCollection[supCargoKey]
+          ? 'sup'
+          : 'ord';
+    currentCargo = `${currentOffice}_${currentSubType}`;
 
     finalizeGeneralLoadUI(ufToLoad);
     showToast(`Dados de ${ufToLoad} (${year}) carregados!`, 'success');
