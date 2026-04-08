@@ -131,36 +131,6 @@ The app enriches polling places with census indicators such as income, schooling
 
 Once the merge is complete, the map is painted, the results panel is assembled, and all filters and analysis modules become available.
 
-## Use Cases
-
-This project is especially useful for:
-
-- election result exploration
-- local political analysis
-- academic research
-- campaign intelligence
-- journalism and data storytelling
-- demographic correlation analysis
-- municipal and state-level comparative work
-
-## Running The Project
-
-Because the application loads many local assets, it should be served through a local or static web server rather than opened directly as a raw `file://` page.
-
-Simple options:
-
-```bash
-python -m http.server 8000
-```
-
-Then open:
-
-```text
-http://localhost:8000
-```
-
-You can also host it on static hosting platforms such as GitHub Pages.
-
 ## Notes On Performance
 
 The project handles large geospatial and electoral datasets in the browser. Depending on the selected year, office, and geography, some combinations may load substantial ZIP and database assets.
@@ -172,16 +142,6 @@ The app therefore includes:
 - progressive redraw logic
 - direct browser-side data merging
 - automatic re-rendering after filter changes
-
-## Export And Analysis Scripts
-
-The repository also includes Python-side export tooling for analysis outside the browser.
-
-Example:
-
-- [scripts/export_factor_xlsx.py](c:/mapas/Polling-Stations-Results-Brazil-2006-2024-main/scripts/export_factor_xlsx.py)
-
-This script can generate Excel workbooks with factor-vs-vote analysis derived from the same logic used in the site’s analytical charts.
 
 ## Why This Project Is Different
 
@@ -196,10 +156,6 @@ This project goes further by combining:
 - browser-native exploration
 
 That makes it possible to study the fine-grained territorial and social structure of Brazilian voting behavior in a way that is rarely available in public tools.
-
-## Acknowledgments
-
-This project stands at the intersection of electoral data engineering, browser GIS, and public-interest political analysis. It was built to make complex election data accessible, inspectable, and analytically useful.
 
 ## License
 
