@@ -738,7 +738,7 @@ function renderResultsPanel(props, cargo) {
   const avisoHtml = isEstadoCompleto ? `
     <div class="metric-item" style="grid-column:1/-1; border-left:3px solid #f59e0b; background:rgba(245,158,11,0.07); padding:6px 10px; border-radius:4px; margin-bottom:2px;">
       <span style="font-size:0.72rem; color:#f59e0b; line-height:1.4;">
-        âš ï¸ <strong>AtenÃ§Ã£o:</strong> Os votos por candidato refletem o total real (${fmtInt(totalBase)} nominais). Comparecimento, brancos e nulos sÃ£o parciais â€” nem todos os locais estÃ£o mapeados.
+        &#9888;&#65039; <strong>Aten&ccedil;&atilde;o:</strong> Os votos por candidato refletem o total real (${fmtInt(totalBase)} nominais). Comparecimento, brancos e nulos s&atilde;o parciais &mdash; nem todos os locais est&atilde;o mapeados.
       </span>
     </div>` : '';
 
@@ -1082,7 +1082,7 @@ function renderDeputyResults(cargo) {
   const avisoDeputyHtml = isParcialDeputy ? `
     <div class="metric-item" style="grid-column:1/-1; border-left:3px solid #f59e0b; background:rgba(245,158,11,0.07); padding:6px 10px; border-radius:4px; margin-bottom:2px;">
       <span style="font-size:0.72rem; color:#f59e0b; line-height:1.4;">
-        âš ï¸ <strong>AtenÃ§Ã£o:</strong> Totais parciais â€” nem todos os locais estÃ£o mapeados.
+        &#9888;&#65039; <strong>Aten&ccedil;&atilde;o:</strong> Totais parciais &mdash; nem todos os locais est&atilde;o mapeados.
       </span>
     </div>` : '';
 
