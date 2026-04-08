@@ -212,12 +212,17 @@ async function loadGeneralScopeBase2014(ufs, resultKeys) {
 async function loadGeneralMajoritariaJson2014(cargo, uf, turno) {
   const ufNorm = String(uf || '').toUpperCase();
   const isSenador = cargo === 'senador';
+  const isGovernador = cargo === 'governador';
   const zipUrl = isSenador
     ? `${DATA_BASE_URL}Majoritarias 2014/senador_2014_ord_t${turno}_${ufNorm}.zip`
-    : `${DATA_BASE_URL}Majoritarias 2014/${cargo}_2014_t${turno}_${ufNorm}.zip`;
+    : isGovernador
+      ? `${DATA_BASE_URL}Majoritarias 2014/governador_2014_ord_t${turno}_${ufNorm}.zip`
+      : `${DATA_BASE_URL}Majoritarias 2014/${cargo}_2014_t${turno}_${ufNorm}.zip`;
   const filename = isSenador
     ? `senador_2014_ord_t${turno}_${ufNorm}.json`
-    : `${cargo}_2014_t${turno}_${ufNorm}.json`;
+    : isGovernador
+      ? `governador_2014_ord_t${turno}_${ufNorm}.json`
+      : `${cargo}_2014_t${turno}_${ufNorm}.json`;
   const { data } = await fetchJsonFromZipEntry(zipUrl, filename);
   return data;
 }
@@ -573,4 +578,3 @@ async function onClickLoadData_Deputies_2014(uf, year) {
     dom.mapLoader.classList.remove('visible');
   }
 }
-
