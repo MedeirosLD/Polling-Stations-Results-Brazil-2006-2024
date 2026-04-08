@@ -131,7 +131,11 @@ async function onClickLoadData_General_legado() {
         if (typeof currentLayer.getBounds === 'function') {
           const bounds = currentLayer.getBounds();
           if (bounds && bounds.isValid()) {
-            map.fitBounds(bounds, { animate: false, padding: [20, 20] });
+            if (typeof applyMapViewportAfterDataLoad === 'function') {
+              applyMapViewportAfterDataLoad(bounds, { animate: false, padding: [20, 20] });
+            } else {
+              map.fitBounds(bounds, { animate: false, padding: [20, 20] });
+            }
           }
         }
       } catch (e) {
@@ -423,7 +427,11 @@ async function onClickLoadData_Deputies_legado(uf, year) {
         if (typeof currentLayer.getBounds === 'function') {
           const bounds = currentLayer.getBounds();
           if (bounds && bounds.isValid()) {
-            map.fitBounds(bounds);
+            if (typeof applyMapViewportAfterDataLoad === 'function') {
+              applyMapViewportAfterDataLoad(bounds);
+            } else {
+              map.fitBounds(bounds);
+            }
           }
         }
       } catch (e) {
@@ -441,4 +449,3 @@ async function onClickLoadData_Deputies_legado(uf, year) {
     dom.mapLoader.classList.remove('visible');
   }
 }
-

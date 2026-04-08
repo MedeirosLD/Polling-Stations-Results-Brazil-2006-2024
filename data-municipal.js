@@ -1100,7 +1100,10 @@ function finalizeMunicipalLoadUI(municipio, isVereador) {
   applyFiltersAndRedraw();
   try {
     const bounds = currentLayer?.getBounds();
-    if (bounds?.isValid()) map.fitBounds(bounds);
+    if (bounds?.isValid()) {
+      if (typeof applyMapViewportAfterDataLoad === 'function') applyMapViewportAfterDataLoad(bounds);
+      else map.fitBounds(bounds);
+    }
   } catch (error) { }
 }
 
@@ -1593,4 +1596,3 @@ async function loadMunicipal2008Vereador(uf, municipio, ano) {
   finalizeMunicipalLoadUI(municipio, true);
   showToast(`Vereadores de ${municipio}/${uf} (${ano}) carregados!`, 'success');
 }
-

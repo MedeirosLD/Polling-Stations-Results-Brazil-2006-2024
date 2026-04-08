@@ -419,6 +419,40 @@ let currentLocalFilter = '';
 let autoLoadTimer = null;
 let autoLoadSequence = 0;
 let autoLoadRunningSequence = 0;
+let pendingMapViewportRestore = null;
+
+function rememberMapViewportForNextLoad(force = false) {
+  if (!map || typeof map.getCenter !== 'function' || typeof map.getZoom !== 'function') return;
+  const zoom = map.getZoom();
+  if (!force && zoom <= 7) return;
+
+  const center = map.getCenter();
+  if (!center) return;
+
+  pendingMapViewportRestore = {
+    center: { lat: center.lat, lng: center.lng },
+    zoom
+  };
+}
+
+function applyMapViewportAfterDataLoad(bounds, fitBoundsOptions = { animate: false, padding: [20, 20] }) {
+  if (!map) return;
+
+  const pending = pendingMapViewportRestore;
+  pendingMapViewportRestore = null;
+
+  if (pending?.center && Number.isFinite(pending.zoom)) {
+    const nextCenter = L.latLng(pending.center.lat, pending.center.lng);
+    if (!bounds || !bounds.isValid || !bounds.isValid() || bounds.contains(nextCenter)) {
+      map.setView(nextCenter, pending.zoom, { animate: false });
+      return;
+    }
+  }
+
+  if (bounds?.isValid?.()) {
+    map.fitBounds(bounds, fitBoundsOptions);
+  }
+}
 
 const STATE = {
   mapTileLayer: null,
@@ -471,6 +505,11 @@ const STATE = {
     saneamentoMode: 'Pct Esgoto Inadequado'
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.rememberMapViewportForNextLoad = rememberMapViewportForNextLoad;
+  window.applyMapViewportAfterDataLoad = applyMapViewportAfterDataLoad;
+}
 
 let uniqueCidades = new Set();
 let uniqueBairros = new Set();

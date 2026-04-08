@@ -65,6 +65,10 @@
     // Se já está ativo, ignora
     if (btn.classList.contains('active')) return;
 
+    if (typeof rememberMapViewportForNextLoad === 'function') {
+      rememberMapViewportForNextLoad();
+    }
+
     STATE.currentElectionYear = btn.dataset.value;
     STATE.currentElectionType = btn.dataset.type;
 
@@ -161,6 +165,9 @@
   // BOTÃƒO CARREGAR
   dom.btnLoadData.addEventListener('click', async () => {
     if (STATE.isLoadingDataset) return;
+    if (typeof rememberMapViewportForNextLoad === 'function') {
+      rememberMapViewportForNextLoad();
+    }
     try {
       if (STATE.currentElectionType === 'geral') {
         await window.onClickLoadData_General();
@@ -176,6 +183,10 @@
   dom.cargoChipsGeneral.addEventListener('click', (e) => {
     const btn = e.target.closest('.chip-button');
     if (!btn) return;
+
+    if (typeof rememberMapViewportForNextLoad === 'function') {
+      rememberMapViewportForNextLoad();
+    }
 
     // Extrai o cargo base e subtipo
     let newOffice = btn.dataset.value;
@@ -584,6 +595,10 @@
       if (!btn) return;
       const newOffice = btn.dataset.value; // 'prefeito' ou 'vereador'
       if (newOffice === currentOffice) return;
+
+      if (typeof rememberMapViewportForNextLoad === 'function') {
+        rememberMapViewportForNextLoad();
+      }
 
       dom.cargoChipsMunicipalCargo.querySelectorAll('.chip-button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');

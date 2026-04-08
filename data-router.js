@@ -132,7 +132,13 @@ async function onClickLoadData_Municipal() {
     dom.btnToggleInaptos.textContent = 'Filtrar Inaptos';
     updateConditionalUI();
     applyFiltersAndRedraw();
-    try { const b = currentLayer?.getBounds(); if (b?.isValid()) map.fitBounds(b); } catch (e) { }
+    try {
+      const b = currentLayer?.getBounds();
+      if (b?.isValid()) {
+        if (typeof applyMapViewportAfterDataLoad === 'function') applyMapViewportAfterDataLoad(b);
+        else map.fitBounds(b);
+      }
+    } catch (e) { }
     showToast(`Dados de ${municipio}/${uf} (${ano}) carregados!`, 'success');
 
   } catch (e) {
@@ -368,7 +374,13 @@ async function onClickLoadData_Vereadores(uf, municipio, ano, baseGeoProvided = 
     dom.btnToggleInaptos.textContent = 'Filtrar Inaptos';
 
     applyFiltersAndRedraw();
-    try { const b = currentLayer?.getBounds(); if (b?.isValid()) map.fitBounds(b); } catch (e) { }
+    try {
+      const b = currentLayer?.getBounds();
+      if (b?.isValid()) {
+        if (typeof applyMapViewportAfterDataLoad === 'function') applyMapViewportAfterDataLoad(b);
+        else map.fitBounds(b);
+      }
+    } catch (e) { }
     showToast(`Vereadores de ${municipio}/${uf} (${ano}) carregados!`, 'success');
 
   } catch (e) {
@@ -427,4 +439,3 @@ async function fetchFromZip() {
 }
 
 // ====== DATA PROCESSING ======
-

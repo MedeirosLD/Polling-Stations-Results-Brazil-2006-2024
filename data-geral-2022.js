@@ -409,7 +409,11 @@ function finalizeGeneralLoadUI(ufToLoad) {
     try {
       const bounds = currentLayer.getBounds?.();
       if (bounds?.isValid()) {
-        map.fitBounds(bounds, { animate: false, padding: [20, 20] });
+        if (typeof applyMapViewportAfterDataLoad === 'function') {
+          applyMapViewportAfterDataLoad(bounds, { animate: false, padding: [20, 20] });
+        } else {
+          map.fitBounds(bounds, { animate: false, padding: [20, 20] });
+        }
       }
     } catch (error) { }
   }
@@ -657,7 +661,8 @@ async function onClickLoadData_Deputies_2022(uf, year) {
       try {
         const bounds = currentLayer.getBounds?.();
         if (bounds?.isValid()) {
-          map.fitBounds(bounds);
+          if (typeof applyMapViewportAfterDataLoad === 'function') applyMapViewportAfterDataLoad(bounds);
+          else map.fitBounds(bounds);
         }
       } catch (error) {
         console.log('Nao foi possivel ajustar bounds automaticamente');
@@ -672,4 +677,3 @@ async function onClickLoadData_Deputies_2022(uf, year) {
     dom.mapLoader.classList.remove('visible');
   }
 }
-
