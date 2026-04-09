@@ -99,6 +99,11 @@
   }
 }
 
+
+function cleanPartyName(value) {
+  return value ? value.trim().toUpperCase() : '';
+}
+
 function renderSummaryBoxes(aggregatedProps) {
   dom.summaryGrid.innerHTML = '';
   const cargos = ['presidente', 'governador', 'senador'];
@@ -965,15 +970,15 @@ function renderDeputyResults(cargo) {
         simpleStatus = 'SUPLENTE';
       }
 
-	      const sw = getColorForCandidate(r.nome, r.partido);
+      const sw = getColorForCandidate(r.nome, r.partido);
       const safeNome = escapeHtml(r.nome);
       const safePartyAndId = escapeHtml(`${r.partido} • ${r.id}`);
 
-	      div.setAttribute('data-status', simpleStatus);
+      div.setAttribute('data-status', simpleStatus);
       if (st.includes('INAPTO')) {
         div.classList.add('inapto-card'); // Adds the dashed red border
       }
-	      div.innerHTML = `
+      div.innerHTML = `
 	                <div class="cand-header">
 	                  ${renderCandidateColorControl(r.nome, r.partido, sw, true)}
 	                  <div class="cand-info">
@@ -1406,8 +1411,6 @@ function renderDeputyPartyResults(cargo) {
     'FEDERAÇÃO PSOL REDE(PSOL/REDE)': '#68018D'
   };
 
-  const cleanPartyName = (p) => p ? p.trim().toUpperCase() : '';
-
   // 1. Alternador de Visualização
   const isFederationYear = (STATE.currentElectionYear >= 2022);
   const groupLabel = isFederationYear ? "Agrupar Federações" : "Agrupar Coligações";
@@ -1700,7 +1703,7 @@ function renderDeputyPartyResults(cargo) {
       div.style.cursor = 'pointer';
       div.title = "Clique para ver lista de candidatos";
       div.onclick = () => {
-        // Passa r.elected para tratar "NÃƒO ELEITO" geral
+        // Passa r.elected para tratar "NÃO ELEITO" geral
         openCoalitionModal(r.composition, r.name, r.color, cargo, r.elected, r.isGroup);
       };
 
@@ -1989,8 +1992,6 @@ function renderVereadorPartyResults(cargo) {
   const officialSummary = useOfficialMunicipalTotals ? STATE.municipalOfficialTotals?.[cargo]?.['1T'] : null;
   // --- CONFIGURAÇÃO E CONSTANTES ---
   const TYPE_KEY = 'v';
-  const cleanPartyName = (p) => p ? p.trim().toUpperCase() : '';
-
   // Sub-toggle Partidos Individuais / Modo Oficial
   // Em 2020 nao havia coligacoes para vereador (proibidas), so partidos isolados
   const vYear = STATE.currentElectionYear;
@@ -2077,7 +2078,7 @@ function renderVereadorPartyResults(cargo) {
         const meta = STATE.vereadorMetadata[cand];
         if (meta) {
           const status = (meta[2] || '').toUpperCase();
-          if ((status.includes('ELEITO') || status.includes('QP') || status.includes('MÃ‰DIA') || status.includes('MEDIA')) && !status.includes('NÃƒO') && !status.includes('NAO')) {
+          if ((status.includes('ELEITO') || status.includes('QP') || status.includes('MÉDIA') || status.includes('MEDIA')) && !status.includes('NÃO') && !status.includes('NAO')) {
             aggParty[partyName].electedSet.add(cand);
           }
         }
@@ -2415,18 +2416,18 @@ function openVereadorCoalitionModal(composition, titleName, color, cargo, electe
   let listHtml = candidateList.map((c, idx) => {
     const st = c.status.toUpperCase();
     let label = '', badgeClass = '';
-    if (forceNotElected) { label = 'NÃƒO ELEITO'; badgeClass = 'nao-eleito'; }
-    else if (st.includes('NÃƒO ELEITO') || st.includes('NAO ELEITO')) { label = 'NÃƒO ELEITO'; badgeClass = 'nao-eleito'; }
+    if (forceNotElected) { label = 'NÃO ELEITO'; badgeClass = 'nao-eleito'; }
+    else if (st.includes('NÃO ELEITO') || st.includes('NAO ELEITO')) { label = 'NÃO ELEITO'; badgeClass = 'nao-eleito'; }
     else if (st.includes('QP')) { label = 'ELEITO POR QP'; badgeClass = 'eleito'; }
     else if (st.includes('MÉDIA') || st.includes('MEDIA')) { label = 'ELEITO POR MÉDIA'; badgeClass = 'eleito'; }
     else if (st.includes('ELEITO')) { label = 'ELEITO'; badgeClass = 'eleito'; }
     else if (st.includes('SUPLENTE')) { label = 'SUPLENTE'; badgeClass = 'suplente'; }
-    else { label = 'NÃƒO ELEITO'; badgeClass = 'nao-eleito'; }
+    else { label = 'NÃO ELEITO'; badgeClass = 'nao-eleito'; }
 
     const statusBadge = `<span class="status-badge ${badgeClass}" style="font-size:0.65rem; padding:2px 5px;">${label}</span>`;
     const partyColor = colorForParty(c.partido);
     return `
-      <div style="display:flex; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.85rem; border-left: 3px solid ${partyColor}; padding-left: 8px;">
+      <div style="display:flex; align-items:center; padding:6px 0 6px 8px; border-bottom:1px solid var(--border); font-size:0.85rem; border-left: 3px solid ${partyColor}; box-sizing:border-box; min-width:0;">
         <span style="color:var(--muted); font-size:0.75rem; width:24px; flex-shrink:0;">${idx + 1}°</span>
         <div style="flex:1; margin-right:8px; overflow:hidden;">
           <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.nome}</div>
@@ -2451,12 +2452,12 @@ function openVereadorCoalitionModal(composition, titleName, color, cargo, electe
   }
 
   modalOverlay.innerHTML = `
-    <div class="info-modal wide-modal" style="max-width:450px; max-height:85vh; display:flex; flex-direction:column; padding:20px;">
+    <div class="info-modal wide-modal" style="max-width:450px; max-height:85vh; display:flex; flex-direction:column; padding:20px; overflow:hidden;">
       <button class="info-close" onclick="document.getElementById('coalition-modal-overlay').classList.remove('visible')">✕</button>
       <div style="border-bottom: 2px solid ${color}; padding-bottom:10px; margin-bottom:10px;">
         <h3 style="margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.5px;">${titleName}</h3>
       </div>
-      <div style="flex:1; overflow-y:auto; padding-right:4px;">
+      <div style="flex:1; overflow-y:auto; padding-right:8px; padding-bottom:8px; scrollbar-gutter:stable;">
         ${listHtml}
         ${legendHtml}
       </div>
@@ -2625,14 +2626,14 @@ function openCoalitionModal(composition, titleName, color, cargo, electedCount, 
     let badgeClass = '';
 
     if (forceNotElected) {
-      label = 'NÃƒO ELEITO';
+      label = 'NÃO ELEITO';
       badgeClass = 'nao-eleito';
     } else {
       // === LÓGICA DE STATUS CORRIGIDA E DETALHADA ===
-      // Verifica o NEGATIVO primeiro para evitar que "NÃƒO ELEITO" case com "ELEITO"
+      // Verifica o NEGATIVO primeiro para evitar que "NÃO ELEITO" case com "ELEITO"
 
-      if (st.includes('NÃƒO ELEITO')) {
-        label = 'NÃƒO ELEITO';
+      if (st.includes('NÃO ELEITO') || st.includes('NÃƒO ELEITO')) {
+        label = 'NÃO ELEITO';
         badgeClass = 'nao-eleito';
       }
       else if (st.includes('QP')) {
@@ -2654,7 +2655,7 @@ function openCoalitionModal(composition, titleName, color, cargo, electedCount, 
       }
       else {
         // Default fallback
-        label = 'NÃƒO ELEITO';
+        label = 'NÃO ELEITO';
         badgeClass = 'nao-eleito';
       }
     }
@@ -2663,7 +2664,7 @@ function openCoalitionModal(composition, titleName, color, cargo, electedCount, 
     const partyColor = colorForParty(c.partido);
 
     return `
-            <div style="display:flex; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.85rem; border-left: 3px solid ${partyColor}; padding-left: 8px;">
+            <div style="display:flex; align-items:center; padding:6px 0 6px 8px; border-bottom:1px solid var(--border); font-size:0.85rem; border-left: 3px solid ${partyColor}; box-sizing:border-box; min-width:0;">
                 <span style="color:var(--muted); font-size:0.75rem; width:24px; flex-shrink:0;">${idx + 1}°</span>
                 <div style="flex:1; margin-right:8px; overflow:hidden;">
                     <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.nome}</div>
@@ -2692,12 +2693,12 @@ function openCoalitionModal(composition, titleName, color, cargo, electedCount, 
   const headerStyle = `border-bottom: 2px solid ${color}; padding-bottom:10px; margin-bottom:10px;`;
 
   modalOverlay.innerHTML = `
-        <div class="info-modal wide-modal" style="max-width:450px; max-height:85vh; display:flex; flex-direction:column; padding:20px;">
+        <div class="info-modal wide-modal" style="max-width:450px; max-height:85vh; display:flex; flex-direction:column; padding:20px; overflow:hidden;">
             <button class="info-close" onclick="document.getElementById('coalition-modal-overlay').classList.remove('visible')">✕</button>
             <div style="${headerStyle}">
                 <h3 style="margin:0; font-size:1rem; text-transform:uppercase; letter-spacing:0.5px;">${titleName}</h3>
             </div>
-            <div style="flex:1; overflow-y:auto; padding-right:4px;">
+            <div style="flex:1; overflow-y:auto; padding-right:8px; padding-bottom:8px; scrollbar-gutter:stable;">
                 ${listHtml}
             </div>
             ${legendHtml}
