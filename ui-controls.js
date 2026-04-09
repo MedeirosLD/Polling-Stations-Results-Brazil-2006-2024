@@ -473,7 +473,14 @@ function setupControls() {
 
   const syncFilteredSelectionAndFrame = () => {
     const geojson = currentDataCollection[currentCargo];
-    if (!geojson || !shouldAutoFrameFilteredArea()) return;
+    if (!geojson) return;
+
+    if (!shouldAutoFrameFilteredArea()) {
+      if (typeof focusCurrentLayerOnMap === 'function') {
+        focusCurrentLayerOnMap();
+      }
+      return;
+    }
 
     const allFiltered = getAllFeaturesForAggregation();
     if (!allFiltered.length) return;

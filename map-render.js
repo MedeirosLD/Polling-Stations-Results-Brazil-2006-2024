@@ -1442,6 +1442,21 @@ function focusSelectionOnMap(options = {}) {
   return true;
 }
 
+function focusCurrentLayerOnMap(options = {}) {
+  if (!map || !currentLayer) return false;
+
+  const bounds = currentLayer.getBounds?.();
+  if (!bounds?.isValid?.()) return false;
+
+  map.flyToBounds(bounds, {
+    animate: true,
+    duration: 0.6,
+    padding: options.padding || [32, 32],
+    maxZoom: options.maxZoom || 16
+  });
+  return true;
+}
+
 function syncResultsPanelToCurrentView() {
   if (!currentDataCollection[currentCargo]) return;
 

@@ -92,9 +92,14 @@ async function onClickLoadData_General_legado() {
 
     if (!dataFound) throw new Error("Nenhum dado encontrado.");
 
-    currentMesorregiaoFilter = 'all';
-    currentMicrorregiaoFilter = 'all';
+    const preservedMeso = currentMesorregiaoFilter;
+    const preservedMicro = currentMicrorregiaoFilter;
+    const preservedCidade = currentCidadeFilter;
+    const preservedBairro = currentBairroFilter;
+    const preservedLocal = currentLocalFilter;
     populateRegionalDropdowns();
+    currentMesorregiaoFilter = preservedMeso;
+    currentMicrorregiaoFilter = preservedMicro;
     populateCidadeDropdown();
     [dom.filterBox, dom.vizBox].forEach(el => el.classList.remove('section-hidden'));
 
@@ -103,7 +108,7 @@ async function onClickLoadData_General_legado() {
     if (cidadeCombobox) {
       cidadeCombobox.disable(false);
       cidadeCombobox.setValue("Todos os municípios");
-      currentCidadeFilter = 'all';
+      currentCidadeFilter = preservedCidade;
     }
     if (dom.selectVizColorStyle) dom.selectVizColorStyle.disabled = false;
     if (dom.selectVizSize) dom.selectVizSize.disabled = false;

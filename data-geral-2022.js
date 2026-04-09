@@ -469,32 +469,36 @@ function shouldUseGeneralDeputyJsonTotals(cargo = currentCargo) {
 }
 
 function finalizeGeneralLoadUI(ufToLoad) {
-  currentMesorregiaoFilter = 'all';
-  currentMicrorregiaoFilter = 'all';
-  currentCidadeFilter = 'all';
-  currentBairroFilter = 'all';
-  currentLocalFilter = '';
+  const preservedMeso = currentMesorregiaoFilter;
+  const preservedMicro = currentMicrorregiaoFilter;
+  const preservedCidade = currentCidadeFilter;
+  const preservedBairro = currentBairroFilter;
+  const preservedLocal = currentLocalFilter;
 
+  currentMesorregiaoFilter = preservedMeso;
+  currentMicrorregiaoFilter = preservedMicro;
   populateRegionalDropdowns();
   populateCidadeDropdown();
+  currentCidadeFilter = preservedCidade;
   [dom.filterBox, dom.vizBox].forEach((el) => el.classList.remove('section-hidden'));
 
   if (mesorregiaoCombobox) mesorregiaoCombobox.disable(ufToLoad === 'BR');
   if (microrregiaoCombobox) microrregiaoCombobox.disable(ufToLoad === 'BR');
   if (cidadeCombobox) {
     cidadeCombobox.disable(false);
-    cidadeCombobox.setValue('Todos os municipios');
+    cidadeCombobox.setValue(currentCidadeFilter === 'all' ? 'Todos os municipios' : currentCidadeFilter);
   }
   if (bairroCombobox) {
-    bairroCombobox.disable(true);
-    bairroCombobox.setValue('');
+    currentBairroFilter = preservedBairro;
+    populateBairroDropdown();
   }
   if (dom.selectVizColorStyle) dom.selectVizColorStyle.disabled = false;
   if (dom.selectVizSize) dom.selectVizSize.disabled = false;
   dom.btnApplyFilters.disabled = false;
   updateApplyButtonText();
   dom.searchLocal.disabled = false;
-  dom.searchLocal.value = '';
+  currentLocalFilter = preservedLocal;
+  dom.searchLocal.value = preservedLocal ? preservedLocal : '';
 
   updateElectionTypeUI();
 
@@ -726,6 +730,11 @@ async function onClickLoadData_Deputies_2022(uf, year) {
     currentSubType = sub;
     currentCargo = `deputado_${sub}`;
 
+    const preservedMeso = currentMesorregiaoFilter;
+    const preservedMicro = currentMicrorregiaoFilter;
+    currentMesorregiaoFilter = preservedMeso;
+    currentMicrorregiaoFilter = preservedMicro;
+    populateRegionalDropdowns();
     populateCidadeDropdown();
     [dom.filterBox, dom.vizBox].forEach((el) => el.classList.remove('section-hidden'));
 
