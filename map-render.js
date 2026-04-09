@@ -1,4 +1,4 @@
-﻿
+
 function resolveFeatureSelectionId(properties) {
   if (typeof getFeatureSelectionId === 'function') {
     return getFeatureSelectionId(properties);
@@ -573,6 +573,8 @@ function createPointLayer(feature, latlng) {
   return L.circleMarker(latlng, { radius: getPointRadiusForFeature(feature) });
 }
 
+const DEFAULT_POINT_FILL_OPACITY = 0.8;
+
 function getPointRadiusForFeature(feature) {
   let radius = 7;
 
@@ -739,17 +741,7 @@ function filterFeature(feature) {
 
 
   // Helper para somar chaves variadas
-  const getVal = (candidates) => {
-    for (const key of candidates) {
-      if (props[key] !== undefined) return ensureNumber(props[key]);
-      const upper = key.toUpperCase();
-      // Scan loop safe
-      for (const k in props) {
-        if (k.toUpperCase() === upper) return ensureNumber(props[k]);
-      }
-    }
-    return 0;
-  };
+  const getVal = (candidates) => getNumericPropValue(props, candidates);
 
   // Helper de checagem genérica Pct ou Absoluto Calculado
   const checkDynamic = (filterVal, filterMode, type) => {
@@ -1108,7 +1100,7 @@ function getVereadorFeatureData(props) {
 function getFeatureStyle(feature) {
   const props = feature.properties;
   let fillColor = DEFAULT_SWATCH;
-  let fillOpacity = 1;
+  let fillOpacity = DEFAULT_POINT_FILL_OPACITY;
   let pctVal = 0;
 
   // SPECIAL HANDLING FOR DEPUTIES AND VEREADORES
@@ -1121,7 +1113,7 @@ function getFeatureStyle(feature) {
       return { stroke: false, fillColor: '#888888', fillOpacity: 0.2, opacity: 1 };
     }
     const { total, winner, winnerVotes, winningParty } = depData;
-    let fillColor = DEFAULT_SWATCH, fillOpacity = 1, pctVal = 0;
+    let fillColor = DEFAULT_SWATCH, fillOpacity = DEFAULT_POINT_FILL_OPACITY, pctVal = 0;
 
     if (currentVizMode.startsWith('vencedor')) {
       if (STATE.vereadorViewMode === 'party') {
@@ -1161,7 +1153,7 @@ function getFeatureStyle(feature) {
 
     const localId = resolveFeatureSelectionId(props);
     if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive)
-      return { stroke: false, fillColor: 'var(--accent)', fillOpacity: 1, opacity: 1 };
+      return { stroke: false, fillColor: 'var(--accent)', fillOpacity: DEFAULT_POINT_FILL_OPACITY, opacity: 1 };
     return { stroke: false, fillColor, fillOpacity, opacity: 1 };
   }
 
@@ -1233,7 +1225,7 @@ function getFeatureStyle(feature) {
 
     const localId = resolveFeatureSelectionId(props);
     if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive) {
-      return { stroke: false, fillColor: 'var(--accent)', fillOpacity: 1, opacity: 1 };
+      return { stroke: false, fillColor: 'var(--accent)', fillOpacity: DEFAULT_POINT_FILL_OPACITY, opacity: 1 };
     }
 
     return { stroke: false, fillColor: fillColor, fillOpacity: fillOpacity, opacity: 1 };
@@ -1269,12 +1261,12 @@ function getFeatureStyle(feature) {
       performanceModeStats.minPct,
       performanceModeStats.maxPct
     );
-    fillOpacity = 1;
+    fillOpacity = DEFAULT_POINT_FILL_OPACITY;
   } else if (currentVizColorStyle === 'gradient') {
     fillColor = getUniversalGradientColor(fillColor, pctVal);
-    fillOpacity = 1;
+    fillOpacity = DEFAULT_POINT_FILL_OPACITY;
   } else {
-    fillOpacity = 1;
+    fillOpacity = DEFAULT_POINT_FILL_OPACITY;
     if (currentVizMode.startsWith('desempenho') && pctVal === 0) {
       fillOpacity = 0.1;
     }
@@ -1286,7 +1278,7 @@ function getFeatureStyle(feature) {
     return {
       stroke: false,
       fillColor: 'var(--accent)',
-      fillOpacity: 1,
+      fillOpacity: DEFAULT_POINT_FILL_OPACITY,
       opacity: 1
     };
   }
