@@ -152,6 +152,12 @@ async function onClickLoadData_Municipal() {
 
 window.onClickLoadData_General = async function () {
   const year = String(STATE.currentElectionYear);
+  const uf = dom.selectUFGeneral?.value;
+
+  if (!uf) {
+    throw new Error('Selecione BR ou uma UF antes de carregar os dados.');
+  }
+
   if (year === '2022') {
     return onClickLoadData_Geral_2022();
   }

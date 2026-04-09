@@ -30,7 +30,10 @@ function setupControls() {
       const uf = dom.selectUFGeneral.value;
 
       if (currentOffice === 'presidente') {
-        label = `Carregar Presidente (${year})`;
+        disabled = !uf;
+        label = uf
+          ? `Carregar Presidente (${uf}, ${year})`
+          : 'Selecione BR ou uma UF para carregar';
       } else if (currentOffice === 'deputado') {
         disabled = !(uf && uf !== 'BR');
         label = uf && uf !== 'BR'
@@ -255,9 +258,6 @@ function setupControls() {
     setChipLoading(btn, true);
 
     // AUTO-AJUSTA UF SE NECESSÁRIO
-    if (currentOffice === 'presidente' && !dom.selectUFGeneral.value) {
-      dom.selectUFGeneral.value = 'BR';
-    }
     if ((currentOffice !== 'presidente' && currentOffice !== 'deputado') && dom.selectUFGeneral.value === 'BR') {
       dom.selectUFGeneral.value = ''; // Limpa BR para cargos estaduais
     }
@@ -301,7 +301,7 @@ function setupControls() {
     } else {
       // DADOS NÃO CARREGADOS - Carrega automaticamente se possível
       const uf = dom.selectUFGeneral.value;
-      const canLoad = (currentOffice === 'presidente') || (currentOffice === 'deputado' && uf && uf !== 'BR') || (uf && uf !== 'BR');
+      const canLoad = (currentOffice === 'presidente' && !!uf) || (currentOffice === 'deputado' && uf && uf !== 'BR') || (uf && uf !== 'BR');
 
       if (canLoad) {
         console.log(`[Auto-Load] Carregando ${currentOffice} automaticamente...`);
@@ -322,7 +322,9 @@ function setupControls() {
       } else {
         setChipLoading(btn, false);
         // Mostra mensagem se não pode carregar
-        if (currentOffice === 'deputado' && !uf) {
+        if (currentOffice === 'presidente' && !uf) {
+          showToast('Selecione BR ou uma UF para carregar dados de Presidente', 'info', 2000);
+        } else if (currentOffice === 'deputado' && !uf) {
           showToast('Selecione um estado para carregar dados de Deputados', 'info', 2000);
         } else if (!uf) {
           showToast('Selecione um estado para carregar dados', 'info', 2000);

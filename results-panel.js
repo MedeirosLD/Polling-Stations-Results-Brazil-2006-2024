@@ -1,4 +1,4 @@
-﻿function updateSelectionUI(isFilterAggregation = false) {
+function updateSelectionUI(isFilterAggregation = false) {
   STATE.isFilterAggregationActive = isFilterAggregation;
 
   const count = selectedLocationIDs.size;
@@ -17,7 +17,15 @@
   const aggregatedProps = aggregatePropsForSelection(selectedLocationIDs);
   const year = STATE.currentElectionYear;
 
-  // --- LÃ“GICA DE TÃTULO ATUALIZADA ---
+  if (dom.btnLocateSelection) {
+    dom.btnLocateSelection.style.display = 'inline-flex';
+    dom.btnLocateSelection.textContent = selectedLocationIDs.size === 1 ? 'Ver no mapa' : 'Enquadrar no mapa';
+    dom.btnLocateSelection.title = selectedLocationIDs.size === 1
+      ? 'Voltar para o local selecionado no mapa'
+      : 'Enquadrar a selecao atual no mapa';
+  }
+
+  // --- LÃ“GICA DE TÍTULO ATUALIZADA ---
   if (STATE.currentElectionType === 'municipal') {
     if (isFilterAggregation) {
       const censusLabel = getActiveCensusFilterLabel();
@@ -959,7 +967,7 @@ function renderDeputyResults(cargo) {
       if (st.includes('INAPTO')) {
         statusHtml = `<span class="status-badge inapto"><svg><use href="#svg-x" /></svg> INAPTO</span>`;
         simpleStatus = 'INAPTO';
-      } else if (st.includes('NÃO ELEITO') || st.includes('NAO ELEITO') || st.includes('NÃƒO ELEITO')) {
+      } else if (st.includes('NÃO ELEITO') || st.includes('NAO ELEITO') || st.includes('NÃO ELEITO')) {
         statusHtml = `<span class="status-badge nao-eleito"><svg><use href="#svg-x" /></svg> Não Eleito</span>`;
         simpleStatus = 'NÃO ELEITO';
       } else if (st.includes('ELEITO') || st.includes('QP') || st.includes('MÉDIA')) {
@@ -1145,7 +1153,7 @@ function updateAvailabilityBars(geojson) {
   const features = geojson.features;
   const total = features.length;
 
-  // --- HELPER DE CÃLCULO ---
+  // --- HELPER DE CÁLCULO ---
   const calcPct = (props, type, mode) => {
     // Validação de chave rigorosa
     const isValidKey = (k, v) => {
@@ -1204,7 +1212,7 @@ function updateAvailabilityBars(geojson) {
         }
       }
 
-      // --- FILTRO DE RUÃDO ESTATÃSTICO ---
+      // --- FILTRO DE RUÍDO ESTATÍSTICO ---
       // Se a soma das pessoas for muito baixa (ex: < 15), a porcentagem é irrelevante/ruído.
       // Isso evita que um local com 1 pessoa de 18 anos gere "100%" e estrague a barra.
       if (!foundAny || totalAge < 15) return null;
@@ -1469,7 +1477,7 @@ function renderDeputyPartyResults(cargo) {
 
   const geojson = currentDataCollection[cargo];
 
-  // === OTIMIZAÃ‡ÃƒO: LOOP RÃPIDO ===
+  // === OTIMIZAÃ‡ÃO: LOOP RÁPIDO ===
   // Se não tem seleção (estado todo), usamos OfficialTotals para renderizar rápido
   // Mas precisamos do aggParty para as CORES (quem teve mais voto).
   // Faremos um loop otimizado apenas nos IDs selecionados.
@@ -2632,7 +2640,7 @@ function openCoalitionModal(composition, titleName, color, cargo, electedCount, 
       // === LÓGICA DE STATUS CORRIGIDA E DETALHADA ===
       // Verifica o NEGATIVO primeiro para evitar que "NÃO ELEITO" case com "ELEITO"
 
-      if (st.includes('NÃO ELEITO') || st.includes('NÃƒO ELEITO')) {
+      if (st.includes('NÃO ELEITO') || st.includes('NÃO ELEITO')) {
         label = 'NÃO ELEITO';
         badgeClass = 'nao-eleito';
       }
