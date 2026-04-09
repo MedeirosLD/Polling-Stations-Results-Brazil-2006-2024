@@ -284,6 +284,7 @@ async function init() {
   dom.resultsBox = document.getElementById('resultsBox');
   dom.resultsTitle = document.getElementById('resultsTitle');
   dom.resultsSubtitle = document.getElementById('resultsSubtitle');
+  dom.btnLocateSelection = document.getElementById('btnLocateSelection');
   dom.btnClearSelection = document.getElementById('btnClearSelection');
   dom.turnTabs = document.getElementById('turnTabs');
   dom.resultsContent = document.getElementById('resultsContent');

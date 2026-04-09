@@ -1,4 +1,4 @@
-﻿function setupControls() {
+function setupControls() {
   // Popular UF Geral
   dom.selectUFGeneral.innerHTML = '<option value="" disabled selected>Selecione UF</option>';
   UF_MAP.forEach((nome, sigla) => {
@@ -162,7 +162,7 @@
     clearPendingFilterChanges();
   });
 
-  // BOTÃƒO CARREGAR
+  // BOTÃO CARREGAR
   dom.btnLoadData.addEventListener('click', async () => {
     if (STATE.isLoadingDataset) return;
     if (typeof rememberMapViewportForNextLoad === 'function') {
@@ -254,7 +254,7 @@
     btn.classList.add('active');
     setChipLoading(btn, true);
 
-    // AUTO-AJUSTA UF SE NECESSÃRIO
+    // AUTO-AJUSTA UF SE NECESSÁRIO
     if (currentOffice === 'presidente' && !dom.selectUFGeneral.value) {
       dom.selectUFGeneral.value = 'BR';
     }
@@ -272,7 +272,7 @@
       loadedDeputyState.types.has(currentCargo === 'deputado_estadual' ? 'e' : 'f');
 
     if ((currentDataCollection[currentCargo] || currentDataCollection[`${currentOffice}_sup`]) && hasDeputyVoteData) {
-      // DADOS JÃ CARREGADOS - Apenas redesenha
+      // DADOS JÁ CARREGADOS - Apenas redesenha
       setSectionLoading(dom.resultsBox, true);
 
       // Força limpeza do mapa antes de redesenhar
@@ -417,9 +417,35 @@
     debouncedAutoApplyFilters();
   });
 
+  const shouldAutoFrameFilteredArea = () => (
+    currentCidadeFilter !== 'all' || currentBairroFilter !== 'all'
+  );
+
+  const syncFilteredSelectionAndFrame = () => {
+    const geojson = currentDataCollection[currentCargo];
+    if (!geojson || !shouldAutoFrameFilteredArea()) return;
+
+    const allFiltered = getAllFeaturesForAggregation();
+    if (!allFiltered.length) return;
+
+    selectedLocationIDs.clear();
+    allFiltered.forEach((feature) => {
+      const id = getFeatureSelectionId(feature.properties);
+      if (id) selectedLocationIDs.add(id);
+    });
+
+    if (!selectedLocationIDs.size) return;
+
+    updateSelectionUI(true);
+    if (typeof focusSelectionOnMap === 'function') {
+      focusSelectionOnMap();
+    }
+  };
+
   const debouncedAutoApplyFilters = debounce(() => {
     if (!currentDataCollection[currentCargo] || STATE.isLoadingDataset) return;
     applyFiltersAndRedraw();
+    syncFilteredSelectionAndFrame();
     clearPendingFilterChanges();
   }, 180);
 
@@ -469,19 +495,7 @@
     requestAnimationFrame(() => {
       try {
         applyFiltersAndRedraw();
-
-        const geojson = currentDataCollection[currentCargo];
-        if (geojson) {
-          const allFiltered = getAllFeaturesForAggregation();
-
-          selectedLocationIDs.clear();
-          allFiltered.forEach(f => {
-            const id = getFeatureSelectionId(f.properties);
-            selectedLocationIDs.add(id);
-          });
-
-          updateSelectionUI(true);
-        }
+        syncFilteredSelectionAndFrame();
 
         clearPendingFilterChanges();
       } finally {
@@ -548,6 +562,14 @@
     updateApplyButtonText();
     applyFiltersAndRedraw();
   });
+
+  if (dom.btnLocateSelection) {
+    dom.btnLocateSelection.addEventListener('click', () => {
+      if (typeof focusSelectionOnMap === 'function') {
+        focusSelectionOnMap();
+      }
+    });
+  }
 
   dom.summaryGrid.addEventListener('click', (e) => {
     if (STATE.currentElectionType !== 'geral') return;

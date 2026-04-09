@@ -486,9 +486,14 @@
                             <small id="resultsSubtitle"
                                 style="color:var(--muted); font-size:12px; display:block; margin-top:2px;"></small>
                         </div>
-                        <button id="btnClearSelection" class="button ghost"
-                            style="padding:6px; width:28px; height:28px; border-radius:50%;"
-                            title="Limpar seleção">✕</button>
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                            <button id="btnLocateSelection" class="button ghost"
+                                style="padding:6px 10px; height:28px; border-radius:999px; display:none;"
+                                title="Voltar para a seleção no mapa">Localizar</button>
+                            <button id="btnClearSelection" class="button ghost"
+                                style="padding:6px; width:28px; height:28px; border-radius:50%;"
+                                title="Limpar seleção">✕</button>
+                        </div>
                     </div>
 
                     <div id="unifiedResultsContainer" class="animation-fade">

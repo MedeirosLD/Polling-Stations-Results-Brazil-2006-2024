@@ -1394,9 +1394,53 @@ function clearSelection(updateMap = true) {
   dom.summaryGrid.innerHTML = '';
   dom.resultsTitle.textContent = 'Resultados da Seleção';
   dom.resultsSubtitle.textContent = '';
+  if (dom.btnLocateSelection) dom.btnLocateSelection.style.display = 'none';
   // Reset Unified View
   dom.unifiedResultsContainer.classList.remove('hidden');
   updateNeighborhoodProfileUI();
+}
+
+function focusSelectionOnMap(options = {}) {
+  if (!map || !currentLayer || !selectedLocationIDs.size) return false;
+
+  const selectedLayers = [];
+  currentLayer.eachLayer?.((layer) => {
+    const props = layer?.feature?.properties;
+    if (!props) return;
+    const id = resolveFeatureSelectionId(props);
+    if (selectedLocationIDs.has(id)) selectedLayers.push(layer);
+  });
+
+  if (!selectedLayers.length) return false;
+
+  const singleLayer = selectedLayers.length === 1 ? selectedLayers[0] : null;
+  if (singleLayer && typeof singleLayer.getLatLng === 'function') {
+    const latlng = singleLayer.getLatLng();
+    if (!latlng) return false;
+    const targetZoom = Math.max(map.getZoom() || 0, options.singleZoom || 16);
+    map.flyTo(latlng, targetZoom, { animate: true, duration: 0.6 });
+    if (typeof singleLayer.openTooltip === 'function') singleLayer.openTooltip();
+    return true;
+  }
+
+  const bounds = L.latLngBounds([]);
+  selectedLayers.forEach((layer) => {
+    if (typeof layer.getBounds === 'function') {
+      bounds.extend(layer.getBounds());
+    } else if (typeof layer.getLatLng === 'function') {
+      bounds.extend(layer.getLatLng());
+    }
+  });
+
+  if (!bounds.isValid()) return false;
+
+  map.flyToBounds(bounds, {
+    animate: true,
+    duration: 0.6,
+    padding: options.padding || [32, 32],
+    maxZoom: options.maxZoom || 16
+  });
+  return true;
 }
 
 function syncResultsPanelToCurrentView() {
@@ -1412,6 +1456,7 @@ function syncResultsPanelToCurrentView() {
     dom.resultsBox.classList.remove('section-hidden');
     dom.resultsTitle.textContent = 'Sem resultados';
     dom.resultsSubtitle.textContent = 'Nenhum local corresponde ao estado atual dos filtros';
+    if (dom.btnLocateSelection) dom.btnLocateSelection.style.display = 'none';
     dom.resultsContent.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted);">Nenhum local encontrado.</div>';
     dom.resultsMetrics.innerHTML = '';
     dom.summaryGrid.innerHTML = '';
