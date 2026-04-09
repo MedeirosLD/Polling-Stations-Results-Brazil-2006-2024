@@ -392,6 +392,17 @@ async function buildDeputyBaseGeojson2022(uf) {
 }
 
 function shouldUseGeneralJsonTotals(cargo = currentCargo) {
+  const hasActiveCensusFilter = (
+    STATE.censusFilters.rendaMin !== null ||
+    STATE.censusFilters.rendaMax !== null ||
+    STATE.censusFilters.racaVal !== null ||
+    STATE.censusFilters.idadeVal !== null ||
+    STATE.censusFilters.generoVal !== null ||
+    STATE.censusFilters.escolaridadeVal !== null ||
+    STATE.censusFilters.estadoCivilVal !== null ||
+    STATE.censusFilters.saneamentoVal !== null
+  );
+
   const year = String(STATE.currentElectionYear);
   return (year === '2022' || year === '2018' || year === '2014' || year === '2010' || year === '2006')
     && STATE.currentElectionType === 'geral'
@@ -399,6 +410,7 @@ function shouldUseGeneralJsonTotals(cargo = currentCargo) {
     && currentCidadeFilter === 'all'
     && currentBairroFilter === 'all'
     && !currentLocalFilter
+    && !hasActiveCensusFilter
     && (
       String(cargo || '').startsWith('presidente')
       || String(cargo || '').startsWith('governador')
@@ -413,6 +425,17 @@ function shouldUseGeneralOfficialTotals(cargo = currentCargo) {
 }
 
 function shouldUseGeneralCityOfficialTotals(cargo = currentCargo) {
+  const hasActiveCensusFilter = (
+    STATE.censusFilters.rendaMin !== null ||
+    STATE.censusFilters.rendaMax !== null ||
+    STATE.censusFilters.racaVal !== null ||
+    STATE.censusFilters.idadeVal !== null ||
+    STATE.censusFilters.generoVal !== null ||
+    STATE.censusFilters.escolaridadeVal !== null ||
+    STATE.censusFilters.estadoCivilVal !== null ||
+    STATE.censusFilters.saneamentoVal !== null
+  );
+
   const year = String(STATE.currentElectionYear);
   return (year === '2022' || year === '2018' || year === '2014' || year === '2010' || year === '2006')
     && STATE.currentElectionType === 'geral'
@@ -420,6 +443,7 @@ function shouldUseGeneralCityOfficialTotals(cargo = currentCargo) {
     && currentCidadeFilter !== 'all'
     && currentBairroFilter === 'all'
     && !currentLocalFilter
+    && !hasActiveCensusFilter
     && String(cargo || '').endsWith('_sup')
     && !String(cargo || '').startsWith('deputado');
 }
