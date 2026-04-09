@@ -741,7 +741,20 @@ function filterFeature(feature) {
 
 
   // Helper para somar chaves variadas
-  const getVal = (candidates) => getNumericPropValue(props, candidates);
+  const getVal = (candidates) => {
+    for (const key of candidates) {
+      if (props[key] !== undefined) return ensureNumber(props[key]);
+
+      const upperKey = String(key).toUpperCase();
+      for (const propKey in props) {
+        if (String(propKey).toUpperCase() === upperKey) {
+          return ensureNumber(props[propKey]);
+        }
+      }
+    }
+
+    return 0;
+  };
 
   // Helper de checagem genérica Pct ou Absoluto Calculado
   const checkDynamic = (filterVal, filterMode, type) => {
