@@ -673,21 +673,7 @@ function filterFeature(feature) {
     }
   }
 
-  // Filtros de Texto
-  if (STATE.currentElectionType === 'geral' && currentCidadeFilter !== 'all') {
-    if (getProp(props, 'nm_localidade') !== currentCidadeFilter) return false;
-  }
-
-  if (currentBairroFilter !== 'all') {
-    const bairro = getProp(props, 'ds_bairro');
-    if (!bairro || bairro.trim() !== currentBairroFilter) return false;
-  }
-
-  const searchTxt = currentLocalFilter.trim();
-  if (searchTxt.length > 2) {
-    const nomeLocal = norm(getProp(props, 'nm_locvot'));
-    if (!nomeLocal.includes(searchTxt)) return false;
-  }
+  if (!matchesLocationFilters(props)) return false;
 
   // --- FILTRO DE DESEMPENHO (porcentagem mínima) ---
   if (currentVizMode.startsWith('desempenho') && performanceFilterMinPct > 0) {

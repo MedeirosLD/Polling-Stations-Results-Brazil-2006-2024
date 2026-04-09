@@ -92,9 +92,14 @@ async function onClickLoadData_General_legado() {
 
     if (!dataFound) throw new Error("Nenhum dado encontrado.");
 
+    currentMesorregiaoFilter = 'all';
+    currentMicrorregiaoFilter = 'all';
+    populateRegionalDropdowns();
     populateCidadeDropdown();
     [dom.filterBox, dom.vizBox].forEach(el => el.classList.remove('section-hidden'));
 
+    if (mesorregiaoCombobox) mesorregiaoCombobox.disable(ufToLoad === 'BR');
+    if (microrregiaoCombobox) microrregiaoCombobox.disable(ufToLoad === 'BR');
     if (cidadeCombobox) {
       cidadeCombobox.disable(false);
       cidadeCombobox.setValue("Todos os municípios");
@@ -381,9 +386,14 @@ async function onClickLoadData_Deputies_legado(uf, year) {
     console.log(`[onClickLoadData_Deputies] currentCargo definido como: ${currentCargo}`);
 
     // Setup UI
+    currentMesorregiaoFilter = 'all';
+    currentMicrorregiaoFilter = 'all';
+    populateRegionalDropdowns();
     populateCidadeDropdown();
     [dom.filterBox, dom.vizBox].forEach(el => el.classList.remove('section-hidden'));
 
+    if (mesorregiaoCombobox) mesorregiaoCombobox.disable(uf === 'BR');
+    if (microrregiaoCombobox) microrregiaoCombobox.disable(uf === 'BR');
     if (cidadeCombobox) {
       cidadeCombobox.disable(false);
       cidadeCombobox.setValue("Todos os municípios");

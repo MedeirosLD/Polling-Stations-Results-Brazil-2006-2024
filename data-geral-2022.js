@@ -407,6 +407,7 @@ function shouldUseGeneralJsonTotals(cargo = currentCargo) {
   return (year === '2022' || year === '2018' || year === '2014' || year === '2010' || year === '2006')
     && STATE.currentElectionType === 'geral'
     && STATE.isFilterAggregationActive
+    && !hasRegionalScopeFilters()
     && currentCidadeFilter === 'all'
     && currentBairroFilter === 'all'
     && !currentLocalFilter
@@ -468,13 +469,18 @@ function shouldUseGeneralDeputyJsonTotals(cargo = currentCargo) {
 }
 
 function finalizeGeneralLoadUI(ufToLoad) {
+  currentMesorregiaoFilter = 'all';
+  currentMicrorregiaoFilter = 'all';
   currentCidadeFilter = 'all';
   currentBairroFilter = 'all';
   currentLocalFilter = '';
 
+  populateRegionalDropdowns();
   populateCidadeDropdown();
   [dom.filterBox, dom.vizBox].forEach((el) => el.classList.remove('section-hidden'));
 
+  if (mesorregiaoCombobox) mesorregiaoCombobox.disable(ufToLoad === 'BR');
+  if (microrregiaoCombobox) microrregiaoCombobox.disable(ufToLoad === 'BR');
   if (cidadeCombobox) {
     cidadeCombobox.disable(false);
     cidadeCombobox.setValue('Todos os municipios');

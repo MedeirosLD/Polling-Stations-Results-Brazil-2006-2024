@@ -309,7 +309,10 @@ function updateApplyButtonText() {
     }
   } else {
     // Modo GERAL
-    if (isAllCities) {
+    const regionalLabel = getRegionalFilterSummaryLabel();
+    if (isAllCities && regionalLabel) {
+      btnText = 'Filtros automáticos';
+    } else if (isAllCities) {
       const uf = dom.selectUFGeneral.value;
       btnText = 'Filtros automáticos';
     } else {
@@ -453,6 +456,7 @@ function updateCensusControlsForYear() {
 function updateConditionalUI() {
   const show2T = STATE.dataHas2T[currentCargo] || false;
   updateCensusControlsForYear();
+  if (typeof syncRegionalFilterVisibility === 'function') syncRegionalFilterVisibility();
   syncVizColorStyleControl();
   if (currentVizMode.startsWith('desempenho')) updateVizModeUI();
   // Turn visibility is handled by setupTurnTabs now.

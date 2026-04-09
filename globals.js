@@ -413,6 +413,8 @@ let performanceModeStats = {
 };
 // Filtro de porcentagem mínima para modo Desempenho
 let performanceFilterMinPct = 0;
+let currentMesorregiaoFilter = 'all';
+let currentMicrorregiaoFilter = 'all';
 let currentCidadeFilter = 'all';
 let currentBairroFilter = 'all';
 let currentLocalFilter = '';
@@ -515,6 +517,139 @@ if (typeof window !== 'undefined') {
 let uniqueCidades = new Set();
 let uniqueBairros = new Set();
 let dom = {};
+let REGIONAL_FILTERS_PROMISE = null;
+let REGIONAL_FILTERS_INDEX = {
+  mesoByUf: new Map(),
+  microByUf: new Map()
+};
+
+function getCurrentGeneralRegionalUF() {
+  const uf = String(dom.selectUFGeneral?.value || '').toUpperCase();
+  return (STATE.currentElectionType === 'geral' && uf && uf !== 'BR') ? uf : '';
+}
+
+function getFeatureMunicipioIdentity(props) {
+  return {
+    code: String(
+      getProp(props, 'cod_localidade_ibge')
+      || getProp(props, 'codigo_ibge')
+      || getProp(props, 'COD_LOCALIDADE_IBGE')
+      || ''
+    ).trim(),
+    slug: normalizeMunicipioSlug(getProp(props, 'nm_localidade'))
+  };
+}
+
+function buildRegionalFilterIndex(rawByUf = {}) {
+  const index = new Map();
+  Object.entries(rawByUf || {}).forEach(([uf, regions]) => {
+    const regionEntries = [];
+    Object.entries(regions || {}).forEach(([regionName, municipios]) => {
+      const municipioCodes = new Set();
+      const municipioSlugs = new Set();
+      (municipios || []).forEach((municipio) => {
+        const code = String(municipio?.codigo_ibge || '').trim();
+        const slug = normalizeMunicipioSlug(municipio?.nome_municipio);
+        if (code) municipioCodes.add(code);
+        if (slug) municipioSlugs.add(slug);
+      });
+      regionEntries.push({
+        label: regionName,
+        key: norm(regionName),
+        municipioCodes,
+        municipioSlugs
+      });
+    });
+    index.set(String(uf || '').toUpperCase(), regionEntries.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR')));
+  });
+  return index;
+}
+
+async function ensureRegionalFiltersLoaded() {
+  if (REGIONAL_FILTERS_INDEX.mesoByUf.size && REGIONAL_FILTERS_INDEX.microByUf.size) return REGIONAL_FILTERS_INDEX;
+  if (REGIONAL_FILTERS_PROMISE) return REGIONAL_FILTERS_PROMISE;
+
+  REGIONAL_FILTERS_PROMISE = Promise.all([
+    fetch('resultados_geo/municipios_por_mesorregiao.json').then((res) => {
+      if (!res.ok) throw new Error('Falha ao carregar mesorregiões');
+      return res.json();
+    }),
+    fetch('resultados_geo/municipios_por_microrregiao.json').then((res) => {
+      if (!res.ok) throw new Error('Falha ao carregar microrregiões');
+      return res.json();
+    })
+  ]).then(([mesoJson, microJson]) => {
+    REGIONAL_FILTERS_INDEX = {
+      mesoByUf: buildRegionalFilterIndex(mesoJson),
+      microByUf: buildRegionalFilterIndex(microJson)
+    };
+    return REGIONAL_FILTERS_INDEX;
+  });
+
+  return REGIONAL_FILTERS_PROMISE;
+}
+
+function getRegionalEntries(kind, uf = getCurrentGeneralRegionalUF()) {
+  const source = kind === 'micro' ? REGIONAL_FILTERS_INDEX.microByUf : REGIONAL_FILTERS_INDEX.mesoByUf;
+  return source.get(String(uf || '').toUpperCase()) || [];
+}
+
+function getSelectedRegionalEntry(kind, uf = getCurrentGeneralRegionalUF()) {
+  const filterValue = kind === 'micro' ? currentMicrorregiaoFilter : currentMesorregiaoFilter;
+  if (filterValue === 'all') return null;
+  return getRegionalEntries(kind, uf).find((entry) => entry.label === filterValue || entry.key === norm(filterValue)) || null;
+}
+
+function hasRegionalScopeFilters() {
+  return currentMesorregiaoFilter !== 'all' || currentMicrorregiaoFilter !== 'all';
+}
+
+function matchesRegionalScope(props) {
+  if (STATE.currentElectionType !== 'geral') return true;
+  if (!hasRegionalScopeFilters()) return true;
+  const uf = getCurrentGeneralRegionalUF();
+  if (!uf) return false;
+
+  const { code, slug } = getFeatureMunicipioIdentity(props);
+  const mesoEntry = getSelectedRegionalEntry('meso', uf);
+  if (mesoEntry) {
+    const matchMeso = (code && mesoEntry.municipioCodes.has(code)) || (slug && mesoEntry.municipioSlugs.has(slug));
+    if (!matchMeso) return false;
+  }
+  const microEntry = getSelectedRegionalEntry('micro', uf);
+  if (microEntry) {
+    const matchMicro = (code && microEntry.municipioCodes.has(code)) || (slug && microEntry.municipioSlugs.has(slug));
+    if (!matchMicro) return false;
+  }
+  return true;
+}
+
+function matchesLocationFilters(props, options = {}) {
+  const { ignoreCidade = false, ignoreBairro = false, ignoreLocal = false } = options;
+  if (!matchesRegionalScope(props)) return false;
+  if (!ignoreCidade && STATE.currentElectionType === 'geral' && currentCidadeFilter !== 'all') {
+    if (getProp(props, 'nm_localidade') !== currentCidadeFilter) return false;
+  }
+  if (!ignoreBairro && currentBairroFilter !== 'all') {
+    const bairro = getProp(props, 'ds_bairro');
+    if (!bairro || bairro.trim() !== currentBairroFilter) return false;
+  }
+  if (!ignoreLocal) {
+    const searchTxt = currentLocalFilter.trim();
+    if (searchTxt.length > 2) {
+      const nomeLocal = norm(getProp(props, 'nm_locvot'));
+      if (!nomeLocal.includes(searchTxt)) return false;
+    }
+  }
+  return true;
+}
+
+function getRegionalFilterSummaryLabel() {
+  const parts = [];
+  if (currentMesorregiaoFilter !== 'all') parts.push(`Mesorregião ${currentMesorregiaoFilter}`);
+  if (currentMicrorregiaoFilter !== 'all') parts.push(`Microrregião ${currentMicrorregiaoFilter}`);
+  return parts.join(' • ');
+}
 
 // ====== MULTI-SELECTION GLOBALS ======
 let isSelectorsActive = false;

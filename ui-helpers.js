@@ -262,6 +262,15 @@ async function init() {
   dom.filterBox = document.getElementById('filterBox');
 
   // Combobox DOM
+  dom.regionalFilterRow = document.getElementById('regionalFilterRow');
+  dom.boxMesorregiao = document.getElementById('boxMesorregiao');
+  dom.inputMesorregiao = document.getElementById('inputMesorregiao');
+  dom.listMesorregiao = document.getElementById('listMesorregiao');
+
+  dom.boxMicrorregiao = document.getElementById('boxMicrorregiao');
+  dom.inputMicrorregiao = document.getElementById('inputMicrorregiao');
+  dom.listMicrorregiao = document.getElementById('listMicrorregiao');
+
   dom.boxCidade = document.getElementById('boxCidade');
   dom.inputCidade = document.getElementById('inputCidade');
   dom.listCidade = document.getElementById('listCidade');

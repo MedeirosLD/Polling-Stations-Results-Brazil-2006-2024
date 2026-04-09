@@ -337,6 +337,13 @@ function setupControls() {
 
   // LISTENER DE MUDANÇA DE UF - Carrega automaticamente nas eleições gerais
   dom.selectUFGeneral.addEventListener('change', () => {
+    currentMesorregiaoFilter = 'all';
+    currentMicrorregiaoFilter = 'all';
+    currentCidadeFilter = 'all';
+    currentBairroFilter = 'all';
+    currentLocalFilter = '';
+    if (dom.searchLocal) dom.searchLocal.value = '';
+    populateRegionalDropdowns();
     updateLoadButtonState();
   });
 
@@ -383,6 +390,44 @@ function setupControls() {
 
   // FILTROS
   // INIT COMBOBOXES
+  mesorregiaoCombobox = createCombobox({
+    box: dom.boxMesorregiao,
+    input: dom.inputMesorregiao,
+    list: dom.listMesorregiao
+  }, (val) => {
+    currentMesorregiaoFilter = val;
+    currentMicrorregiaoFilter = 'all';
+    if (microrregiaoCombobox) microrregiaoCombobox.setValue('Todas as microrregiões');
+    currentCidadeFilter = 'all';
+    currentBairroFilter = 'all';
+    clearSelection(false);
+    markFiltersDirty();
+    populateRegionalDropdowns();
+    populateCidadeDropdown();
+    populateBairroDropdown();
+    updateApplyButtonText();
+    debouncedAutoApplyFilters();
+  });
+
+  microrregiaoCombobox = createCombobox({
+    box: dom.boxMicrorregiao,
+    input: dom.inputMicrorregiao,
+    list: dom.listMicrorregiao
+  }, (val) => {
+    currentMesorregiaoFilter = 'all';
+    if (mesorregiaoCombobox) mesorregiaoCombobox.setValue('Todas as mesorregiões');
+    currentMicrorregiaoFilter = val;
+    currentCidadeFilter = 'all';
+    currentBairroFilter = 'all';
+    clearSelection(false);
+    markFiltersDirty();
+    populateRegionalDropdowns();
+    populateCidadeDropdown();
+    populateBairroDropdown();
+    updateApplyButtonText();
+    debouncedAutoApplyFilters();
+  });
+
   cidadeCombobox = createCombobox({
     box: dom.boxCidade,
     input: dom.inputCidade,
@@ -420,7 +465,10 @@ function setupControls() {
   });
 
   const shouldAutoFrameFilteredArea = () => (
-    currentCidadeFilter !== 'all' || currentBairroFilter !== 'all'
+    currentMesorregiaoFilter !== 'all' ||
+    currentMicrorregiaoFilter !== 'all' ||
+    currentCidadeFilter !== 'all' ||
+    currentBairroFilter !== 'all'
   );
 
   const syncFilteredSelectionAndFrame = () => {

@@ -64,7 +64,10 @@ function updateSelectionUI(isFilterAggregation = false) {
         dom.resultsSubtitle.textContent = `${count} locais correspondem ao filtro`;
       } else {
         let title = currentCidadeFilter;
-        if (title === 'all') {
+        const regionalLabel = getRegionalFilterSummaryLabel();
+        if (title === 'all' && regionalLabel) {
+          title = regionalLabel;
+        } else if (title === 'all') {
           const uf = dom.selectUFGeneral.value || 'BR';
           title = `Estado Completo (${uf})`;
         }
@@ -660,6 +663,7 @@ function renderResultsPanel(props, cargo) {
 
   const isEstadoCompleto = !officialGeneralSummary && STATE.isFilterAggregationActive &&
     STATE.currentElectionType === 'geral' &&
+    !hasRegionalScopeFilters() &&
     currentCidadeFilter === 'all';
 
   let totalBase = totalValidos;
@@ -859,6 +863,7 @@ function renderDeputyResults(cargo) {
   const usarResultadosCompletos = shouldUseGeneralDeputyJsonTotals(cargo) || (
     STATE.isFilterAggregationActive &&
     STATE.currentElectionType === 'geral' &&
+    !hasRegionalScopeFilters() &&
     currentCidadeFilter === 'all' &&
     selectedLocationIDs.size > 100
   );
@@ -906,6 +911,7 @@ function renderDeputyResults(cargo) {
   const totalValidos = totalVotes;
   const isParcialDeputy = STATE.isFilterAggregationActive &&
     STATE.currentElectionType === 'geral' &&
+    !hasRegionalScopeFilters() &&
     currentCidadeFilter === 'all' &&
     !usarResultadosCompletos;
   const turnoutStats = getTurnoutStatsForSelection(null, cargo, '1T');

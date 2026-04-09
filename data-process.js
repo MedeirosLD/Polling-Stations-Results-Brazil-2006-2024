@@ -275,8 +275,62 @@ function createCombobox(elements, onSelect) {
   };
 }
 
+let mesorregiaoCombobox = null;
+let microrregiaoCombobox = null;
 let cidadeCombobox = null;
 let bairroCombobox = null;
+
+function syncRegionalFilterVisibility() {
+  const showRegional = STATE.currentElectionType === 'geral';
+  if (dom.regionalFilterRow) dom.regionalFilterRow.classList.toggle('section-hidden', !showRegional);
+  const enabled = showRegional && !!getCurrentGeneralRegionalUF();
+  const lockMeso = currentMicrorregiaoFilter !== 'all';
+  const lockMicro = currentMesorregiaoFilter !== 'all';
+  if (mesorregiaoCombobox) mesorregiaoCombobox.disable(!enabled || lockMeso);
+  if (microrregiaoCombobox) microrregiaoCombobox.disable(!enabled || lockMicro);
+}
+
+async function populateRegionalDropdowns() {
+  if (!mesorregiaoCombobox || !microrregiaoCombobox) return;
+  syncRegionalFilterVisibility();
+  const uf = getCurrentGeneralRegionalUF();
+  if (!uf) {
+    mesorregiaoCombobox.setItems([], 'Todas as mesorregiões');
+    microrregiaoCombobox.setItems([], 'Todas as microrregiões');
+    return;
+  }
+
+  await ensureRegionalFiltersLoaded();
+
+  const mesoItems = getRegionalEntries('meso', uf).map((entry) => ({
+    label: entry.label,
+    info: `${entry.municipioCodes.size || entry.municipioSlugs.size} municípios`,
+    color: 'var(--muted)'
+  }));
+  mesorregiaoCombobox.setItems(mesoItems, 'Todas as mesorregiões');
+  mesorregiaoCombobox.setValue(currentMesorregiaoFilter === 'all' ? 'Todas as mesorregiões' : currentMesorregiaoFilter);
+
+  const selectedMeso = getSelectedRegionalEntry('meso', uf);
+  let microEntries = getRegionalEntries('micro', uf);
+  if (selectedMeso) {
+    microEntries = microEntries.filter((entry) => {
+      for (const code of entry.municipioCodes) if (selectedMeso.municipioCodes.has(code)) return true;
+      for (const slug of entry.municipioSlugs) if (selectedMeso.municipioSlugs.has(slug)) return true;
+      return false;
+    });
+  }
+  if (currentMicrorregiaoFilter !== 'all' && !microEntries.some((entry) => entry.label === currentMicrorregiaoFilter)) {
+    currentMicrorregiaoFilter = 'all';
+  }
+  const microItems = microEntries.map((entry) => ({
+    label: entry.label,
+    info: `${entry.municipioCodes.size || entry.municipioSlugs.size} municípios`,
+    color: 'var(--muted)'
+  }));
+  microrregiaoCombobox.setItems(microItems, 'Todas as microrregiões');
+  microrregiaoCombobox.setValue(currentMicrorregiaoFilter === 'all' ? 'Todas as microrregiões' : currentMicrorregiaoFilter);
+  syncRegionalFilterVisibility();
+}
 
 function populateCidadeDropdown() {
   if (!cidadeCombobox) return;
@@ -291,6 +345,7 @@ function populateCidadeDropdown() {
   const features = geojson.features;
   for (let i = 0; i < features.length; i++) {
     const p = features[i].properties;
+    if (!matchesRegionalScope(p)) continue;
     const cidade = p.nm_localidade; // Acesso direto é mais rápido que getProp
     if (cidade) {
       if (!cityGroups.has(cidade)) cityGroups.set(cidade, []);
@@ -378,7 +433,9 @@ function populateBairroDropdown() {
     const props = f.properties;
     let adicionar = false;
 
-    if (STATE.currentElectionType === 'geral') {
+    if (!matchesRegionalScope(props)) {
+      adicionar = false;
+    } else if (STATE.currentElectionType === 'geral') {
       if (getProp(props, 'nm_localidade') === currentCidadeFilter) adicionar = true;
     } else {
       adicionar = true;
