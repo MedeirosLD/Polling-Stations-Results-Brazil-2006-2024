@@ -684,11 +684,22 @@ function aggregateVotesFromResults(resultsByLocation) {
 }
 
 function shouldUseMunicipalOfficialTotals() {
+  const censusFilters = STATE.censusFilters || {};
+  const hasActiveCensusFilters = [
+    censusFilters.rendaMin,
+    censusFilters.rendaMax,
+    censusFilters.racaVal,
+    censusFilters.idadeVal,
+    censusFilters.generoVal,
+    censusFilters.escolaridadeVal,
+    censusFilters.estadoCivilVal,
+    censusFilters.saneamentoVal
+  ].some((value) => value !== null && value !== undefined && Number(value) > 0);
   const year = String(STATE.currentElectionYear);
   return (year === '2024' || year === '2020' || year === '2016' || year === '2012' || year === '2008')
     && STATE.currentElectionType === 'municipal'
     && STATE.isFilterAggregationActive
+    && !hasActiveCensusFilters
     && currentBairroFilter === 'all'
     && !currentLocalFilter;
 }
-
