@@ -311,6 +311,10 @@ async function loadMajoritariaCargo2010(cargo, uf) {
     officialTotals: {
       '1T': buildGeneralOfficialSummary(mergedTurno1, '1T'),
       ...(mergedTurno2 ? { '2T': buildGeneralOfficialSummary(mergedTurno2, '2T') } : {})
+    },
+    officialCityTotals: {
+      '1T': buildGeneralOfficialSummariesByCity(mergedTurno1, '1T', geojson),
+      ...(mergedTurno2 ? { '2T': buildGeneralOfficialSummariesByCity(mergedTurno2, '2T', geojson) } : {})
     }
   };
 }
@@ -354,6 +358,7 @@ async function onClickLoadData_Geral_2010() {
   currentDataCollection_2022 = {};
   STATE.spatialIndex2022 = { presidente: null, governador: null, senador: null };
   STATE.generalOfficialTotals = {};
+  STATE.generalOfficialTotalsByCity = {};
   uniqueCidades.clear();
   uniqueBairros.clear();
   clearSelection(true);
@@ -378,6 +383,7 @@ async function onClickLoadData_Geral_2010() {
       currentDataCollection[cargoKey] = loaded.geojson;
       processLoadedGeoJSON(loaded.geojson, cargoKey);
       STATE.generalOfficialTotals[cargoKey] = loaded.officialTotals || {};
+      STATE.generalOfficialTotalsByCity[cargoKey] = loaded.officialCityTotals || {};
       dataFound = true;
     });
 
@@ -437,6 +443,7 @@ async function onClickLoadData_Deputies_2010(uf, year) {
       currentDataCollection = {};
       STATE.spatialIndex2022 = { presidente: null, governador: null, senador: null };
       STATE.generalOfficialTotals = {};
+      STATE.generalOfficialTotalsByCity = {};
       uniqueCidades.clear();
       uniqueBairros.clear();
 

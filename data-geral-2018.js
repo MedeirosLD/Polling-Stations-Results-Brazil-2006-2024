@@ -212,10 +212,13 @@ async function loadGeneralScopeBase2018(ufs, resultKeys) {
 function buildGeneralMajoritariaArchiveSpec2018(cargo, uf, turno, subtype = 'ord') {
   const ufNorm = String(uf || '').toUpperCase();
   const isSenador = cargo === 'senador';
+  const isGovernador = cargo === 'governador';
   const subtypeNorm = subtype === 'sup' ? 'sup' : 'ord';
   const basename = isSenador
     ? `senador_2018_${subtypeNorm}_t${turno}_${ufNorm}`
-    : `${cargo}_2018_t${turno}_${ufNorm}`;
+    : isGovernador
+      ? `governador_2018_${subtypeNorm}_t${turno}_${ufNorm}`
+      : `${cargo}_2018_t${turno}_${ufNorm}`;
   return {
     zipUrl: `${DATA_BASE_URL}Majoritarias 2018/${basename}.zip`,
     filename: `${basename}.json`
@@ -326,6 +329,19 @@ async function buildDeputyBaseGeojson2018(uf) {
   return filterGeneralFeatures2018(baseGeo, resultKeys);
 }
 
+function areGeneralOfficialSummariesEqual(a, b) {
+  const normalizeSummary = (summary) => JSON.stringify({
+    totalValidos: ensureNumber(summary?.totalValidos),
+    brancos: ensureNumber(summary?.brancos),
+    nulos: ensureNumber(summary?.nulos),
+    comparecimento: ensureNumber(summary?.comparecimento),
+    votesById: Object.entries(summary?.votesById || {}).sort(([ka], [kb]) => ka.localeCompare(kb)),
+    votesByDisplayKey: Object.entries(summary?.votesByDisplayKey || {}).sort(([ka], [kb]) => ka.localeCompare(kb))
+  });
+  return normalizeSummary(a?.['1T']) === normalizeSummary(b?.['1T'])
+    && normalizeSummary(a?.['2T']) === normalizeSummary(b?.['2T']);
+}
+
 async function onClickLoadData_Geral_2018() {
   const uf = dom.selectUFGeneral.value;
   const year = STATE.currentElectionYear;
@@ -388,6 +404,15 @@ async function onClickLoadData_Geral_2018() {
       if (!loaded?.geojson?.features?.length) return;
 
       const cargoKey = `${cargo}_${subtype}`;
+      if (subtype === 'sup') {
+        const ordCargoKey = `${cargo}_ord`;
+        const ordLoaded = currentDataCollection[ordCargoKey];
+        const ordOfficialTotals = STATE.generalOfficialTotals[ordCargoKey];
+        if (ordLoaded && ordOfficialTotals && areGeneralOfficialSummariesEqual(ordOfficialTotals, loaded.officialTotals || {})) {
+          return;
+        }
+      }
+
       currentDataCollection[cargoKey] = loaded.geojson;
       processLoadedGeoJSON(loaded.geojson, cargoKey);
       STATE.generalOfficialTotals[cargoKey] = loaded.officialTotals || {};

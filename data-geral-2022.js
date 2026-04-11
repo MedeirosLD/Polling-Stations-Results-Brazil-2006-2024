@@ -445,7 +445,6 @@ function shouldUseGeneralCityOfficialTotals(cargo = currentCargo) {
     && currentBairroFilter === 'all'
     && !currentLocalFilter
     && !hasActiveCensusFilter
-    && String(cargo || '').endsWith('_sup')
     && !String(cargo || '').startsWith('deputado');
 }
 
