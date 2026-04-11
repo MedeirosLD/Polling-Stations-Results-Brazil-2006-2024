@@ -217,7 +217,7 @@ function buildGeneralMajoritariaArchiveSpec2018(cargo, uf, turno, subtype = 'ord
   const basename = isSenador
     ? `senador_2018_${subtypeNorm}_t${turno}_${ufNorm}`
     : isGovernador
-      ? `governador_2018_${subtypeNorm}_t${turno}_${ufNorm}`
+      ? `governador_2018_t${turno}_${ufNorm}`
       : `${cargo}_2018_t${turno}_${ufNorm}`;
   return {
     zipUrl: `${DATA_BASE_URL}Majoritarias 2018/${basename}.zip`,
@@ -390,7 +390,6 @@ async function onClickLoadData_Geral_2018() {
           { cargo: 'presidente', subtype: 'ord' },
           { cargo: 'governador', subtype: 'ord' },
           { cargo: 'senador', subtype: 'ord' },
-          { cargo: 'governador', subtype: 'sup' },
           { cargo: 'senador', subtype: 'sup' }
         ];
 
