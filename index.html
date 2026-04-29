@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=20260429" />
 </head>
 
 <body data-theme="light">
@@ -577,8 +577,16 @@
                                     <div class="profile-content" id="profileIdadeChart"></div>
                                 </div>
                                 <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Pirâmide Etária</h4>
+                                    <div class="profile-content" id="profilePiramideEtariaChart"></div>
+                                </div>
+                                <div class="profile-section collapsed">
                                     <h4 onclick="this.parentElement.classList.toggle('collapsed')">Escolaridade</h4>
                                     <div class="profile-content" id="profileEscolaridadeChart"></div>
+                                </div>
+                                <div class="profile-section collapsed">
+                                    <h4 onclick="this.parentElement.classList.toggle('collapsed')">Escolaridade por Gênero</h4>
+                                    <div class="profile-content" id="profileEscolaridadeGeneroChart"></div>
                                 </div>
                                 <div class="profile-section collapsed">
                                     <h4 onclick="this.parentElement.classList.toggle('collapsed')">Estado Civil</h4>
@@ -1665,13 +1673,13 @@
         <script src="utils.js?v=20260407"></script>
 
         <!-- 3. Init, loadMunicipalIndex, toggleCandidateDetails, scheduleAutoLoad -->
-        <script src="ui-helpers.js?v=20260407"></script>
+        <script src="ui-helpers.js?v=20260429"></script>
 
         <!-- 4. setupControls, setupTabs, setupSliders, updateElectionTypeUI -->
         <script src="ui-controls.js?v=20260407"></script>
 
         <!-- 5. Tooltip, neighborhood profile, updateConditionalUI, updateApplyButtonText -->
-        <script src="ui-results.js?v=20260407"></script>
+        <script src="ui-results.js?v=20260429"></script>
 
         <!-- 6. Helpers ZIP/GPKG, SQLite, buildMunicipalFeature*, turnout functions -->
         <script src="data-zip.js?v=20260407"></script>

@@ -308,6 +308,8 @@ async function init() {
   dom.profileRendaVal = document.getElementById('profileRendaVal');
   dom.profileRacaChart = document.getElementById('profileRacaChart');
   dom.profileIdadeChart = document.getElementById('profileIdadeChart');
+  dom.profilePiramideEtariaChart = document.getElementById('profilePiramideEtariaChart');
+  dom.profileEscolaridadeGeneroChart = document.getElementById('profileEscolaridadeGeneroChart');
   dom.profileSaneamentoChart = document.getElementById('profileSaneamentoChart');
   dom.profileAlfabetizacaoBar = document.getElementById('profileAlfabetizacaoBar');
   dom.profileAlfabetizacaoVal = document.getElementById('profileAlfabetizacaoVal');

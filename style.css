@@ -842,6 +842,7 @@ body {
     background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    overflow: hidden;
     transition: border-color 0.15s;
 }
 
@@ -1451,6 +1452,136 @@ body {
     text-align: right;
     font-weight: 600;
     font-size: 12px;
+}
+
+.age-pyramid {
+    display: grid;
+    gap: 5px;
+    padding: 2px 0;
+}
+
+.age-pyramid-head,
+.age-pyramid-row {
+    display: grid;
+    grid-template-columns: minmax(90px, 1fr) 58px minmax(90px, 1fr);
+    align-items: center;
+    column-gap: 8px;
+}
+
+.age-pyramid-head {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.age-pyramid-legend {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    color: var(--text-sec);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.age-pyramid-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.age-pyramid-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.age-pyramid-dot-f {
+    background: #ec4899;
+}
+
+.age-pyramid-dot-m {
+    background: var(--accent);
+}
+
+.age-pyramid-head span:first-child {
+    text-align: right;
+}
+
+.age-pyramid-head span:last-child {
+    text-align: left;
+}
+
+.age-pyramid-label {
+    color: var(--text-sec);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.education-gender-pyramid .age-pyramid-row {
+    grid-template-columns: minmax(72px, 1fr) 96px minmax(72px, 1fr);
+}
+
+.education-gender-pyramid .age-pyramid-label {
+    font-size: 10px;
+    white-space: normal;
+    line-height: 1.1;
+}
+
+.age-pyramid-side {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.age-pyramid-left {
+    justify-content: flex-end;
+    border-right: 1px solid var(--border);
+    padding-right: 8px;
+}
+
+.age-pyramid-right {
+    justify-content: flex-start;
+    border-left: 1px solid var(--border);
+    padding-left: 8px;
+}
+
+.age-pyramid-bar {
+    height: 12px;
+    border-radius: 4px;
+    min-width: 2px;
+}
+
+.age-pyramid-left .age-pyramid-bar {
+    background: #ec4899;
+}
+
+.age-pyramid-right .age-pyramid-bar {
+    background: var(--accent);
+}
+
+.age-pyramid-value {
+    width: 42px;
+    color: var(--text-sec);
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.age-pyramid-left .age-pyramid-value {
+    text-align: right;
+}
+
+.empty-profile-note {
+    color: var(--muted);
+    font-size: 12px;
+    padding: 8px 0;
+    text-align: center;
 }
 
 .hover-info-tooltip {

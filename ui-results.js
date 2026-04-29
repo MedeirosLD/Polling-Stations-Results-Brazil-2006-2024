@@ -35,6 +35,8 @@ function updateNeighborhoodProfileUI() {
     dom.profileRacaChart.innerHTML = '';
     dom.profileGeneroChart.innerHTML = '';
     dom.profileIdadeChart.innerHTML = '';
+    if (dom.profilePiramideEtariaChart) dom.profilePiramideEtariaChart.innerHTML = '';
+    if (dom.profileEscolaridadeGeneroChart) dom.profileEscolaridadeGeneroChart.innerHTML = '';
     dom.profileSaneamentoChart.innerHTML = '';
     if (document.getElementById('profileEscolaridadeChart')) document.getElementById('profileEscolaridadeChart').innerHTML = '';
     if (document.getElementById('profileEstadoCivilChart')) document.getElementById('profileEstadoCivilChart').innerHTML = '';
@@ -57,7 +59,9 @@ function updateNeighborhoodProfileUI() {
   toggleProfileSection('profileSaneamentoChart', true);
   toggleProfileSection('profileGeneroChart', !isLegacy);
   toggleProfileSection('profileIdadeChart', !isLegacy);
+  toggleProfileSection('profilePiramideEtariaChart', !isLegacy);
   toggleProfileSection('profileEscolaridadeChart', !isLegacy);
+  toggleProfileSection('profileEscolaridadeGeneroChart', !isLegacy);
   toggleProfileSection('profileEstadoCivilChart', !isLegacy);
 
   // --- ACUMULADORES ---
@@ -77,6 +81,34 @@ function updateNeighborhoodProfileUI() {
   // Idade Buckets
   const ageBuckets = {
     '16 - 24': 0, '25 - 34': 0, '35 - 44': 0, '45 - 59': 0, '60 - 74': 0, '75+': 0
+  };
+  const agePyramidBuckets = {
+    '16 anos': 0, '17 anos': 0, '18 anos': 0, '19 anos': 0, '20 anos': 0,
+    '21 a 24': 0, '25 a 29': 0, '30 a 34': 0, '35 a 39': 0, '40 a 44': 0,
+    '45 a 49': 0, '50 a 54': 0, '55 a 59': 0, '60 a 64': 0, '65 a 69': 0,
+    '70 a 74': 0, '75 a 79': 0, '80 a 84': 0, '85 a 89': 0, '90 a 94': 0,
+    '95 a 99': 0, '100+': 0
+  };
+  const ageGenderLabels = [
+    '16 anos', '17 anos', '18 anos', '19 anos', '20 anos',
+    '21 a 24', '25 a 29', '30 a 34', '35 a 39', '40 a 44',
+    '45 a 49', '50 a 54', '55 a 59', '60 a 64', '65 a 69',
+    '70 a 74', '75 a 79', '80 a 84', '85 a 89', '90 a 94',
+    '95 a 99', '100+'
+  ];
+  const ageGenderPyramid = {
+    M: Array(ageGenderLabels.length).fill(0),
+    F: Array(ageGenderLabels.length).fill(0),
+    hasData: false
+  };
+  const educationGenderLabels = [
+    'Analfabeto', 'Lê e Escreve', 'Fund. Incomp.', 'Fund. Comp.',
+    'Médio Incomp.', 'Médio Comp.', 'Sup. Incomp.', 'Sup. Comp.'
+  ];
+  const educationGenderPyramid = {
+    M: Array(educationGenderLabels.length).fill(0),
+    F: Array(educationGenderLabels.length).fill(0),
+    hasData: false
   };
 
   // Pct Media (Raça/Saneamento)
@@ -148,6 +180,28 @@ function updateNeighborhoodProfileUI() {
         abs.SupComp += getVal(p, ['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO']);
 
         // Idade (Varredura inteligente)
+        const ageGender = p.IDADE_GENERO;
+        if (ageGender && Array.isArray(ageGender.M) && Array.isArray(ageGender.F)) {
+          ageGenderLabels.forEach((_, index) => {
+            const male = ensureNumber(ageGender.M[index]);
+            const female = ensureNumber(ageGender.F[index]);
+            ageGenderPyramid.M[index] += male;
+            ageGenderPyramid.F[index] += female;
+            if (male || female) ageGenderPyramid.hasData = true;
+          });
+        }
+
+        const educationGender = p.ESCOLARIDADE_GENERO;
+        if (educationGender && Array.isArray(educationGender.M) && Array.isArray(educationGender.F)) {
+          educationGenderLabels.forEach((_, index) => {
+            const male = ensureNumber(educationGender.M[index]);
+            const female = ensureNumber(educationGender.F[index]);
+            educationGenderPyramid.M[index] += male;
+            educationGenderPyramid.F[index] += female;
+            if (male || female) educationGenderPyramid.hasData = true;
+          });
+        }
+
         for (const key in p) {
           // Procura chaves que contenham "ANOS" ou "anos", ignora "Pct"
           if (key.match(/anos/i) && !key.match(/^Pct/i)) {
@@ -164,6 +218,14 @@ function updateNeighborhoodProfileUI() {
               else if (age >= 45 && age <= 59) ageBuckets['45 - 59'] += v;
               else if (age >= 60 && age <= 74) ageBuckets['60 - 74'] += v;
               else if (age >= 75) ageBuckets['75+'] += v;
+
+              const ageLabelBase = key.replace(/\s+anos?$/i, '').trim();
+              const normalizedAgeKey = key.match(/100/i)
+                ? '100+'
+                : (/^\d+$/.test(ageLabelBase) ? `${ageLabelBase} anos` : ageLabelBase);
+              if (agePyramidBuckets[normalizedAgeKey] !== undefined) {
+                agePyramidBuckets[normalizedAgeKey] += v;
+              }
             }
           }
         }
@@ -176,6 +238,8 @@ function updateNeighborhoodProfileUI() {
     dom.profileRacaChart.innerHTML = '';
     dom.profileGeneroChart.innerHTML = '';
     dom.profileIdadeChart.innerHTML = '';
+    if (dom.profilePiramideEtariaChart) dom.profilePiramideEtariaChart.innerHTML = '';
+    if (dom.profileEscolaridadeGeneroChart) dom.profileEscolaridadeGeneroChart.innerHTML = '';
     dom.profileSaneamentoChart.innerHTML = '';
     if (document.getElementById('profileEscolaridadeChart')) document.getElementById('profileEscolaridadeChart').innerHTML = '';
     if (document.getElementById('profileEstadoCivilChart')) document.getElementById('profileEstadoCivilChart').innerHTML = '';
@@ -226,6 +290,106 @@ function updateNeighborhoodProfileUI() {
     el.innerHTML = html;
   };
 
+  const renderAgePyramid = (id, data) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const total = Object.values(data).reduce((sum, v) => sum + ensureNumber(v), 0);
+    const entries = Object.entries(data);
+    const maxPct = entries.reduce((max, [, v]) => {
+      const pct = total > 0 ? ensureNumber(v) / total * 100 : 0;
+      return Math.max(max, pct);
+    }, 0);
+
+    if (total <= 0 || maxPct <= 0) {
+      el.innerHTML = '<div class="empty-profile-note">Sem dados etários para a seleção.</div>';
+      return;
+    }
+
+    const rows = entries.map(([label, value]) => {
+      const pct = total > 0 ? ensureNumber(value) / total * 100 : 0;
+      const width = maxPct > 0 ? pct / maxPct * 100 : 0;
+      const display = `${fmtInt(value)} (${pct.toFixed(1)}%)`;
+      return `
+        <div class="age-pyramid-row" onmousemove="showHoverTooltip(event, '${label}: ${display}')" onmouseleave="hideHoverTooltip()">
+          <div class="age-pyramid-side age-pyramid-left">
+            <span class="age-pyramid-value">${pct.toFixed(1)}%</span>
+            <div class="age-pyramid-bar" style="width:${width}%;"></div>
+          </div>
+          <div class="age-pyramid-label">${label}</div>
+          <div class="age-pyramid-side age-pyramid-right">
+            <div class="age-pyramid-bar" style="width:${width}%;"></div>
+            <span class="age-pyramid-value">${fmtInt(value)}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="age-pyramid">
+        <div class="age-pyramid-head">
+          <span>%</span>
+          <span>Faixa</span>
+          <span>Eleitores</span>
+        </div>
+        ${rows}
+      </div>`;
+  };
+
+  const renderAgeGenderPyramid = (id, labels, genderData, fallbackData, options = {}) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    if (!genderData?.hasData) {
+      if (fallbackData) {
+        renderAgePyramid(id, fallbackData);
+      } else {
+        el.innerHTML = `<div class="empty-profile-note">${options.emptyMessage || 'Sem dados por gênero para a seleção.'}</div>`;
+      }
+      return;
+    }
+
+    const entries = labels.map((label, index) => ({
+      label,
+      male: ensureNumber(genderData.M[index]),
+      female: ensureNumber(genderData.F[index])
+    }));
+    const maxValue = entries.reduce((max, row) => Math.max(max, row.male, row.female), 0);
+
+    if (maxValue <= 0) {
+      el.innerHTML = `<div class="empty-profile-note">${options.emptyMessage || 'Sem dados por gênero para a seleção.'}</div>`;
+      return;
+    }
+
+    const rows = entries.map(({ label, male, female }) => {
+      const femaleWidth = female / maxValue * 100;
+      const maleWidth = male / maxValue * 100;
+      const ageTotal = male + female;
+      const femalePct = ageTotal > 0 ? (female / ageTotal * 100).toFixed(1) : '0.0';
+      const malePct = ageTotal > 0 ? (male / ageTotal * 100).toFixed(1) : '0.0';
+      return `
+        <div class="age-pyramid-row" onmouseleave="hideHoverTooltip()">
+          <div class="age-pyramid-side age-pyramid-left" onmousemove="showHoverTooltip(event, '${label} • Feminino: ${femalePct}%')">
+            <span class="age-pyramid-value">${fmtInt(female)}</span>
+            <div class="age-pyramid-bar" style="width:${femaleWidth}%;"></div>
+          </div>
+          <div class="age-pyramid-label">${label}</div>
+          <div class="age-pyramid-side age-pyramid-right" onmousemove="showHoverTooltip(event, '${label} • Masculino: ${malePct}%')">
+            <div class="age-pyramid-bar" style="width:${maleWidth}%;"></div>
+            <span class="age-pyramid-value">${fmtInt(male)}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="age-pyramid ${options.className || ''}">
+        <div class="age-pyramid-legend">
+          <span><i class="age-pyramid-dot age-pyramid-dot-f"></i> Feminino</span>
+          <span><i class="age-pyramid-dot age-pyramid-dot-m"></i> Masculino</span>
+        </div>
+        ${rows}
+      </div>`;
+  };
+
   // Render Groups
   render('profileRacaChart', {
     'Branca': pctSum.Branca, 'Preta': pctSum.Preta, 'Parda': pctSum.Parda,
@@ -244,7 +408,12 @@ function updateNeighborhoodProfileUI() {
       'Médio Incomp.': abs.MedIncomp, 'Médio Comp.': abs.MedComp,
       'Sup. Incomp.': abs.SupIncomp, 'Sup. Comp.': abs.SupComp
     }, true);
+    renderAgeGenderPyramid('profileEscolaridadeGeneroChart', educationGenderLabels, educationGenderPyramid, null, {
+      className: 'education-gender-pyramid',
+      emptyMessage: 'Sem dados de escolaridade por gênero para a seleção.'
+    });
     render('profileIdadeChart', ageBuckets, true);
+    renderAgeGenderPyramid('profilePiramideEtariaChart', ageGenderLabels, ageGenderPyramid, agePyramidBuckets);
   }
 
   // Saneamento Special Render
