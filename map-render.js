@@ -742,6 +742,57 @@ function filterFeature(feature) {
     return 0;
   };
 
+  const ageGenderOrder = [
+    ['16-24', 0], ['16-24', 1], ['16-24', 2], ['16-24', 3], ['16-24', 4],
+    ['16-24', 5], ['25-34', 6], ['25-34', 7], ['35-44', 8], ['35-44', 9],
+    ['45-59', 10], ['45-59', 11], ['45-59', 12], ['60-74', 13], ['60-74', 14],
+    ['60-74', 15], ['75-100', 16], ['75-100', 17], ['75-100', 18],
+    ['75-100', 19], ['75-100', 20], ['75-100', 21]
+  ];
+  const educationGenderModes = {
+    'Analfabeto': 0,
+    'Lê e Escreve': 1,
+    'Fund. Incomp.': 2,
+    'Fund. Completo': 3,
+    'Médio Incomp.': 4,
+    'Médio Completo': 5,
+    'Superior Incompleto': 6,
+    'Superior Completo': 7
+  };
+
+  const calcAgeGenderPct = (mode, gender) => {
+    if (gender === 'total') return null;
+    const data = props.IDADE_GENERO;
+    if (!data || !Array.isArray(data.M) || !Array.isArray(data.F)) return null;
+
+    let num = 0;
+    let den = 0;
+    for (const [bucket, index] of ageGenderOrder) {
+      const male = ensureNumber(data.M[index]);
+      const female = ensureNumber(data.F[index]);
+      den += male + female;
+      if (bucket === mode) num += gender === 'F' ? female : male;
+    }
+    if (den < 10) return null;
+    return (num / den) * 100;
+  };
+
+  const calcEducationGenderPct = (mode, gender) => {
+    if (gender === 'total') return null;
+    const data = props.ESCOLARIDADE_GENERO;
+    if (!data || !Array.isArray(data.M) || !Array.isArray(data.F)) return null;
+
+    const index = educationGenderModes[mode];
+    if (index === undefined) return null;
+
+    const den = data.M.reduce((sum, value) => sum + ensureNumber(value), 0)
+      + data.F.reduce((sum, value) => sum + ensureNumber(value), 0);
+    if (den < 10) return null;
+
+    const num = gender === 'F' ? ensureNumber(data.F[index]) : ensureNumber(data.M[index]);
+    return (num / den) * 100;
+  };
+
   // Helper de checagem genérica Pct ou Absoluto Calculado
   const checkDynamic = (filterVal, filterMode, type) => {
     if (filterVal === null) return true;
@@ -812,6 +863,12 @@ function filterFeature(feature) {
       return (num / den * 100) >= filterVal;
     }
     else if (type === 'escolaridade') {
+      const educationGenderMode = STATE.censusFilters.escolaridadeGeneroMode || 'total';
+      if (educationGenderMode !== 'total') {
+        const scopedPct = calcEducationGenderPct(filterMode, educationGenderMode);
+        return scopedPct !== null && scopedPct >= filterVal;
+      }
+
       const ana = getVal(['ANALFABETO', 'Analfabeto', 'Pct Analfabeto']);
       const le = getVal(['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve', 'Pct Lê e Escreve']);
       const fi = getVal(['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO', 'Pct Fundamental Incompleto']);
@@ -845,6 +902,12 @@ function filterFeature(feature) {
 
     // Idade
     if (type === 'idade') {
+      const ageGenderMode = STATE.censusFilters.idadeGeneroMode || 'total';
+      if (ageGenderMode !== 'total') {
+        const scopedPct = calcAgeGenderPct(filterMode, ageGenderMode);
+        return scopedPct !== null && scopedPct >= filterVal;
+      }
+
       // Calcular buckets
       let buckets = { '16-24': 0, '25-34': 0, '35-44': 0, '45-59': 0, '60-74': 0, '75-100': 0 };
       let totalAge = 0;
@@ -1676,7 +1739,8 @@ function getActiveCensusFilterLabel() {
 
   // 3. Filtro de Idade
   if (f.idadeVal > 0) {
-    return `Idade ${f.idadeMode}: Acima de ${f.idadeVal}% dos eleitores`;
+    const gender = f.idadeGeneroMode === 'F' ? ' feminino' : (f.idadeGeneroMode === 'M' ? ' masculino' : '');
+    return `Idade${gender} ${f.idadeMode}: Acima de ${f.idadeVal}% dos eleitores`;
   }
 
   // 4. Filtro de Gênero
@@ -1687,7 +1751,8 @@ function getActiveCensusFilterLabel() {
 
   // 5. Filtro de Escolaridade
   if (f.escolaridadeVal > 0) {
-    return `Escolaridade (${f.escolaridadeMode}): Acima de ${f.escolaridadeVal}%`;
+    const gender = f.escolaridadeGeneroMode === 'F' ? ' feminino' : (f.escolaridadeGeneroMode === 'M' ? ' masculino' : '');
+    return `Escolaridade${gender} (${f.escolaridadeMode}): Acima de ${f.escolaridadeVal}%`;
   }
 
   // 6. Filtro de Estado Civil

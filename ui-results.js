@@ -583,7 +583,9 @@ function resetUnavailableCensusFiltersForYear() {
 
   STATE.censusFilters.generoVal = null;
   STATE.censusFilters.idadeVal = null;
+  STATE.censusFilters.idadeGeneroMode = 'total';
   STATE.censusFilters.escolaridadeVal = null;
+  STATE.censusFilters.escolaridadeGeneroMode = 'total';
   STATE.censusFilters.estadoCivilVal = null;
 }
 

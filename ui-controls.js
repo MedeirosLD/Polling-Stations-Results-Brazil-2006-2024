@@ -1044,10 +1044,43 @@ function setupSliders() {
     });
   }
 
+  function setupModeOnlyFilter(idSelect, stateKeyMode, relatedStateKeyVal) {
+    const select = document.getElementById(idSelect);
+    if (!select) return;
+
+    const validModes = Array.from(select.options).map(option => option.value);
+    const initialMode = validModes.includes(STATE.censusFilters[stateKeyMode])
+      ? STATE.censusFilters[stateKeyMode]
+      : select.value;
+    select.value = initialMode;
+    STATE.censusFilters[stateKeyMode] = initialMode;
+
+    select.addEventListener('change', () => {
+      STATE.censusFilters[stateKeyMode] = select.value;
+
+      const geojson = currentDataCollection[currentCargo];
+      if (geojson && typeof updateAvailabilityBars === 'function') {
+        updateAvailabilityBars(geojson);
+      }
+
+      if (STATE.censusFilters[relatedStateKeyVal] !== null) {
+        debouncedMarkDirty();
+        updateApplyButtonText();
+        debouncedAutoApplyFilters();
+      } else if (currentDataCollection[currentCargo] && !STATE.isLoadingDataset) {
+        clearSelection(false);
+        applyFiltersAndRedraw();
+        clearPendingFilterChanges();
+      }
+    });
+  }
+
   setupDynamicFilter('sliderRaca', 'selectRaca', 'dispRaca', 'valDispRaca', 'racaVal', 'racaMode');
   setupDynamicFilter('sliderIdosos', 'selectIdade', 'dispIdosos', 'valDispIdosos', 'idadeVal', 'idadeMode');
+  setupModeOnlyFilter('selectIdadeGenero', 'idadeGeneroMode', 'idadeVal');
   setupDynamicFilter('sliderGenero', 'selectGenero', 'dispGenero', 'valDispGenero', 'generoVal', 'generoMode');
   setupDynamicFilter('sliderEscolaridade', 'selectEscolaridade', 'dispEscolaridade', 'valDispEscolaridade', 'escolaridadeVal', 'escolaridadeMode');
+  setupModeOnlyFilter('selectEscolaridadeGenero', 'escolaridadeGeneroMode', 'escolaridadeVal');
   setupDynamicFilter('sliderEstadoCivil', 'selectEstadoCivil', 'dispEstadoCivil', 'valDispEstadoCivil', 'estadoCivilVal', 'estadoCivilMode');
   setupDynamicFilter('sliderSaneamento', 'selectSaneamento', 'dispSaneamento', 'valDispSaneamento', 'saneamentoVal', 'saneamentoMode');
 }

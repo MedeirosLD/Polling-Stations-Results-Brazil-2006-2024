@@ -490,6 +490,7 @@ const STATE = {
     // Idade
     idadeVal: null,
     idadeMode: '16-24',
+    idadeGeneroMode: 'total',
 
     // Gênero
     generoVal: null,
@@ -498,6 +499,7 @@ const STATE = {
     // Escolaridade (Novo)
     escolaridadeVal: null,
     escolaridadeMode: 'Superior Completo',
+    escolaridadeGeneroMode: 'total',
 
     // Estado Civil (Novo)
     estadoCivilVal: null,

@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=20260429" />
+    <link rel="stylesheet" href="style.css?v=20260430" />
 </head>
 
 <body data-theme="light">
@@ -276,6 +276,12 @@
                                             <option value="60-74">60 a 74 anos</option>
                                             <option value="75-100">75+ anos</option>
                                         </select>
+                                        <select id="selectIdadeGenero" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="total" selected>Total</option>
+                                            <option value="F">Feminino</option>
+                                            <option value="M">Masculino</option>
+                                        </select>
                                         <span class="slider-value" id="dispIdosos">0%</span>
                                     </div>
                                     <div class="slider-wrapper">
@@ -352,6 +358,12 @@
                                             <option value="Fund. Incomp.">Fund. Incomp.</option>
                                             <option value="Lê e Escreve">Lê e Escreve</option>
                                             <option value="Analfabeto">Analfabeto</option>
+                                        </select>
+                                        <select id="selectEscolaridadeGenero" class="select"
+                                            style="width:auto; padding:4px 8px; font-size:13px;">
+                                            <option value="total" selected>Total</option>
+                                            <option value="F">Feminino</option>
+                                            <option value="M">Masculino</option>
                                         </select>
                                         <span class="slider-value" id="dispEscolaridade">0%</span>
                                     </div>
@@ -1667,7 +1679,7 @@
         <!-- ===== App modular (substitui app.js) ===== -->
 
         <!-- 1. Variáveis globais, caches, STATE, cores, partidos -->
-        <script src="globals.js?v=20260407"></script>
+        <script src="globals.js?v=20260430"></script>
 
         <!-- 2. Utilitários puros: getProp, norm, gradiente, parseCandidateKey -->
         <script src="utils.js?v=20260407"></script>
@@ -1676,10 +1688,10 @@
         <script src="ui-helpers.js?v=20260429"></script>
 
         <!-- 4. setupControls, setupTabs, setupSliders, updateElectionTypeUI -->
-        <script src="ui-controls.js?v=20260407"></script>
+        <script src="ui-controls.js?v=20260430"></script>
 
         <!-- 5. Tooltip, neighborhood profile, updateConditionalUI, updateApplyButtonText -->
-        <script src="ui-results.js?v=20260429"></script>
+        <script src="ui-results.js?v=20260430"></script>
 
         <!-- 6. Helpers ZIP/GPKG, SQLite, buildMunicipalFeature*, turnout functions -->
         <script src="data-zip.js?v=20260407"></script>
@@ -1704,10 +1716,10 @@
         <script src="data-loader.js?v=20260407"></script>
 
         <!-- 12. Renderização do mapa, filtros, seleção por box -->
-        <script src="map-render.js?v=20260407"></script>
+        <script src="map-render.js?v=20260430"></script>
 
         <!-- 13. Painel de resultados, modais, precomputeWinners, exports window.* -->
-        <script src="results-panel.js?v=20260407"></script>
+        <script src="results-panel.js?v=20260430"></script>
 
         <!-- ===== Análise Socioeconômica (ISE) ===== -->
         <script src="https://d3js.org/d3.v7.min.js"></script>

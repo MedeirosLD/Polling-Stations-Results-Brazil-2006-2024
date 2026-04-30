@@ -667,6 +667,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-bottom: 8px;
 }
 
@@ -679,6 +681,40 @@ body {
     font-size: 14px;
     font-weight: 600;
     color: var(--accent);
+    margin-left: auto;
+}
+
+.slider-header .select {
+    width: auto !important;
+    min-width: 118px;
+    height: 32px;
+    padding: 6px 30px 6px 10px !important;
+    font-size: 12px !important;
+    font-weight: 600;
+    color: var(--text);
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+}
+
+.slider-header .select:hover {
+    border-color: var(--muted);
+    background-color: var(--input-bg);
+}
+
+.slider-header .select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+#selectEscolaridade {
+    min-width: 164px;
+}
+
+#selectIdadeGenero,
+#selectEscolaridadeGenero {
+    min-width: 112px;
 }
 
 /* Slider Simples */

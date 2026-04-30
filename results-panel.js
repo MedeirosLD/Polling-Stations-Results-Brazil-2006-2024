@@ -1143,8 +1143,10 @@ function updateAvailabilityBars(geojson) {
   const mRaca = STATE.censusFilters.racaMode;
   const mGenero = STATE.censusFilters.generoMode;
   const mIdade = STATE.censusFilters.idadeMode;
+  const mIdadeGenero = STATE.censusFilters.idadeGeneroMode || 'total';
   const mSaneamento = STATE.censusFilters.saneamentoMode;
   const mEscolaridade = STATE.censusFilters.escolaridadeMode;
+  const mEscolaridadeGenero = STATE.censusFilters.escolaridadeGeneroMode || 'total';
   const mEstadoCivil = STATE.censusFilters.estadoCivilMode;
 
   let minRenda = Infinity, maxRenda = -Infinity;
@@ -1158,6 +1160,23 @@ function updateAvailabilityBars(geojson) {
   let hasData = false;
   const features = geojson.features;
   const total = features.length;
+  const ageGenderOrder = [
+    ['16-24', 0], ['16-24', 1], ['16-24', 2], ['16-24', 3], ['16-24', 4],
+    ['16-24', 5], ['25-34', 6], ['25-34', 7], ['35-44', 8], ['35-44', 9],
+    ['45-59', 10], ['45-59', 11], ['45-59', 12], ['60-74', 13], ['60-74', 14],
+    ['60-74', 15], ['75-100', 16], ['75-100', 17], ['75-100', 18],
+    ['75-100', 19], ['75-100', 20], ['75-100', 21]
+  ];
+  const educationGenderModes = {
+    'Analfabeto': 0,
+    'Lê e Escreve': 1,
+    'Fund. Incomp.': 2,
+    'Fund. Completo': 3,
+    'Médio Incomp.': 4,
+    'Médio Completo': 5,
+    'Superior Incompleto': 6,
+    'Superior Completo': 7
+  };
 
   // --- HELPER DE CÁLCULO ---
   const calcPct = (props, type, mode) => {
@@ -1182,6 +1201,20 @@ function updateAvailabilityBars(geojson) {
 
     // --- IDADE (CORRIGIDO) ---
     if (type === 'idade') {
+      if (mIdadeGenero !== 'total') {
+        const data = props.IDADE_GENERO;
+        if (!data || !Array.isArray(data.M) || !Array.isArray(data.F)) return null;
+
+        for (const [bucket, index] of ageGenderOrder) {
+          const male = ensureNumber(data.M[index]);
+          const female = ensureNumber(data.F[index]);
+          den += male + female;
+          if (bucket === mode) num += mIdadeGenero === 'F' ? female : male;
+        }
+        if (den < 10) return null;
+        return (num / den) * 100;
+      }
+
       let buckets = { '16-24': 0, '25-34': 0, '35-44': 0, '45-59': 0, '60-74': 0, '75-100': 0 };
       let totalAge = 0;
       let foundAny = false;
@@ -1263,6 +1296,19 @@ function updateAvailabilityBars(geojson) {
     }
     // --- ESCOLARIDADE ---
     else if (type === 'escolaridade') {
+      if (mEscolaridadeGenero !== 'total') {
+        const data = props.ESCOLARIDADE_GENERO;
+        const index = educationGenderModes[mode];
+        if (!data || !Array.isArray(data.M) || !Array.isArray(data.F) || index === undefined) return null;
+
+        den = data.M.reduce((sum, value) => sum + ensureNumber(value), 0)
+          + data.F.reduce((sum, value) => sum + ensureNumber(value), 0);
+        if (den < 10) return null;
+
+        num = mEscolaridadeGenero === 'F' ? ensureNumber(data.F[index]) : ensureNumber(data.M[index]);
+        return (num / den) * 100;
+      }
+
       let acc = { ana: 0, le: 0, fi: 0, fc: 0, mi: 0, mc: 0, si: 0, sc: 0 };
       for (const k in props) {
         if (!isValidKey(k, props[k])) continue;
