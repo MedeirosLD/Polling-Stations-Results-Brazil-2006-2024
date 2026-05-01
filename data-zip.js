@@ -7,6 +7,58 @@ function normalizeMunicipioSlug(value) {
     .replace(/^_+|_+$/g, '');
 }
 
+const HISTORICAL_MUNICIPIO_SLUG_ALIASES = {
+  AP: {
+    PEDRA_BRANCA_DO_AMAPARI: ['AGUA_BRANCA_DO_AMAPARI']
+  },
+  BA: {
+    BARRO_PRETO: ['GOVERNADOR_LOMANTO_JUNIOR']
+  },
+  CE: {
+    ITAPAJE: ['ITAPAGE']
+  },
+  MG: {
+    BRAZOPOLIS: ['BRASOPOLIS']
+  },
+  PA: {
+    SANTA_IZABEL_DO_PARA: ['SANTA_ISABEL_DO_PARA']
+  },
+  PB: {
+    JOCA_CLAUDINO: ['SANTAREM'],
+    SAO_DOMINGOS: ['SAO_DOMINGOS_DE_POMBAL']
+  },
+  PE: {
+    BELEM_DO_SAO_FRANCISCO: ['BELEM_DE_SAO_FRANCISCO'],
+    ILHA_DE_ITAMARACA: ['ITAMARACA']
+  },
+  RO: {
+    NOVA_BRASILANDIA_D_OESTE: ['NOVA_BRASILANDIA_DO_OESTE'],
+    SAO_FELIPE_D_OESTE: ['SAO_FELIPE_DO_OESTE']
+  },
+  SC: {
+    LUIZ_ALVES: ['LUIS_ALVES']
+  },
+  TO: {
+    COUTO_MAGALHAES: ['COUTO_DE_MAGALHAES'],
+    SAO_VALERIO: ['SAO_VALERIO_DA_NATIVIDADE', 'SAO_VALERIO_DO_TOCANTINS'],
+    TABOCAO: ['FORTALEZA_DO_TABOCAO']
+  }
+};
+
+function getMunicipioSlugCandidates(uf, municipio) {
+  const canonical = normalizeMunicipioSlug(municipio);
+  const ufNorm = String(uf || '').toUpperCase();
+  const ufAliases = ufNorm
+    ? (HISTORICAL_MUNICIPIO_SLUG_ALIASES[ufNorm] || {})
+    : Object.values(HISTORICAL_MUNICIPIO_SLUG_ALIASES).reduce((acc, aliases) => ({ ...acc, ...aliases }), {});
+  return [canonical, ...(ufAliases[canonical] || [])].filter(Boolean);
+}
+
+function municipioSlugMatches(value, candidates) {
+  const slug = normalizeMunicipioSlug(value);
+  return (candidates || []).includes(slug);
+}
+
 function cloneFeatureCollection(geojson) {
   return {
     type: 'FeatureCollection',
