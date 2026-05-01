@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=20260430" />
+    <link rel="stylesheet" href="style.css?v=20260501" />
 </head>
 
 <body data-theme="light">
@@ -159,6 +159,43 @@
                         disabled>
                         Carregar Dados
                     </button>
+                </div>
+
+                <!-- SEÇÃO: VISUALIZAÇÃO (acesso principal ao modo do mapa) -->
+                <div class="section section-collapsible section-hidden viz-section" id="vizBox">
+                    <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                        <h3>Modo do Mapa</h3>
+                    </div>
+                    <div class="section-body">
+                        <div class="ctrl">
+                            <label>Escolha como colorir os locais</label>
+                            <div class="chip-group viz-mode-group" id="vizModeChips">
+                                <button class="chip-button viz-mode-chip active" data-value="vencedor">
+                                    <span class="viz-mode-title">Vencedor</span>
+                                    <span class="viz-mode-desc">Cores pelo candidato mais votado</span>
+                                </button>
+                                <button class="chip-button viz-mode-chip" data-value="desempenho">
+                                    <span class="viz-mode-title">Desempenho</span>
+                                    <span class="viz-mode-desc">Percentual de um candidato escolhido</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ctrl section-hidden" id="vizCandidatoBox" style="margin-top:10px;">
+                            <label for="selectVizCandidato">Candidato para desempenho</label>
+                            <!-- Original select for non-deputy -->
+                            <select id="selectVizCandidato" class="select" disabled></select>
+
+                            <!-- Deputy search UI (hidden by default) -->
+                            <div id="deputySearchBox" class="deputy-search-box" style="display:none;">
+                                <div class="search-input-wrapper">
+                                    <input type="text" id="deputySearchInput" class="search-input"
+                                        placeholder="Buscar por nome ou número..." autocomplete="off">
+                                    <div id="deputySearchResults" class="search-results"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
 
                 <!-- SEÇÃO: FILTROS (Colapsável) -->
@@ -434,37 +471,6 @@
                                 Filtrar Inaptos
                             </button>
                         </div>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO: VISUALIZAÇÃO (Colapsável, começa fechada) -->
-                <div class="section section-collapsible section-hidden collapsed" id="vizBox">
-                    <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
-                        <h3>Visualização do Mapa</h3>
-                    </div>
-                    <div class="section-body">
-                        <div class="ctrl">
-                            <label>Modo de Cor</label>
-                            <div class="chip-group" id="vizModeChips">
-                                <button class="chip-button active" data-value="vencedor">Vencedor</button>
-                                <button class="chip-button" data-value="desempenho">Desempenho</button>
-                            </div>
-                        </div>
-                        <div class="ctrl section-hidden" id="vizCandidatoBox" style="margin-top:10px;">
-                            <label for="selectVizCandidato">Candidato (para modo Desempenho)</label>
-                            <!-- Original select for non-deputy -->
-                            <select id="selectVizCandidato" class="select" disabled></select>
-
-                            <!-- Deputy search UI (hidden by default) -->
-                            <div id="deputySearchBox" class="deputy-search-box" style="display:none;">
-                                <div class="search-input-wrapper">
-                                    <input type="text" id="deputySearchInput" class="search-input"
-                                        placeholder="Buscar por nome ou número..." autocomplete="off">
-                                    <div id="deputySearchResults" class="search-results"></div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
 

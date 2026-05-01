@@ -903,6 +903,59 @@ body {
     display: none;
 }
 
+.viz-section {
+    background: var(--surface);
+    border-color: rgba(37, 99, 235, 0.28);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+}
+
+.viz-section .section-header {
+    background: rgba(37, 99, 235, 0.06);
+}
+
+.viz-section .section-header h3 {
+    color: var(--accent);
+}
+
+.viz-mode-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.viz-mode-chip {
+    min-width: 0;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 3px;
+    padding: 9px 10px;
+    text-align: left;
+    white-space: normal;
+    line-height: 1.15;
+}
+
+.viz-mode-chip.active {
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
+}
+
+.viz-mode-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.viz-mode-desc {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.viz-mode-chip.active .viz-mode-desc {
+    color: rgba(255, 255, 255, 0.82);
+}
+
 /* ===== TOOLBAR ===== */
 .toolbar {
     display: flex;
