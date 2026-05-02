@@ -510,6 +510,9 @@ function updateApplyButtonText() {
 }
 
 function updateVizModeUI() {
+  syncPresidentShiftVizModeAvailability();
+  syncPresidentShiftCompareControls();
+
   if (currentVizMode.startsWith('desempenho')) {
     const turno = (currentTurno === 2 && STATE.dataHas2T[currentCargo]) ? '2T' : '1T';
     populateVizCandidatoDropdown(turno);
@@ -540,6 +543,92 @@ function updateVizModeUI() {
     // Limpar estatísticas e UI ao sair do modo desempenho
     performanceModeStats = { candidato: null, minPct: 0, maxPct: 0, avgPct: 0, totalLocais: 0 };
     updatePerformanceStatsUI();
+  }
+}
+
+function getDefaultPresidentShiftYears() {
+  const loadedYear = parseInt(STATE.currentElectionYear, 10);
+  const years = Array.isArray(PRESIDENT_SHIFT_YEARS) ? PRESIDENT_SHIFT_YEARS : [2006, 2010, 2014, 2018, 2022];
+  const toYear = years.includes(loadedYear) ? loadedYear : years[years.length - 1];
+  const toIndex = years.indexOf(toYear);
+  const fromYear = toIndex > 0 ? years[toIndex - 1] : years[0];
+  return {
+    fromYear: toYear,
+    toYear: fromYear === toYear ? '' : fromYear
+  };
+}
+
+function populatePresidentShiftYearSelects() {
+  if (!dom.selectShiftFromYear || !dom.selectShiftToYear) return;
+  const years = Array.isArray(PRESIDENT_SHIFT_YEARS) ? PRESIDENT_SHIFT_YEARS : [2006, 2010, 2014, 2018, 2022];
+  const loadedYear = years.includes(parseInt(STATE.currentElectionYear, 10))
+    ? parseInt(STATE.currentElectionYear, 10)
+    : years[years.length - 1];
+  const pastYears = years.filter((year) => year < loadedYear).sort((a, b) => b - a);
+  const fill = (select, selectedYear) => {
+    select.innerHTML = years.map((year) => (
+      `<option value="${year}" ${parseInt(selectedYear, 10) === year ? 'selected' : ''}>${year}</option>`
+    )).join('');
+  };
+  const fillPast = (select, selectedYear) => {
+    select.innerHTML = pastYears.map((year) => (
+      `<option value="${year}" ${parseInt(selectedYear, 10) === year ? 'selected' : ''}>${year}</option>`
+    )).join('');
+  };
+
+  if (parseInt(presidentShiftFromYear, 10) !== loadedYear
+    || !pastYears.includes(parseInt(presidentShiftToYear, 10))) {
+    const defaults = getDefaultPresidentShiftYears();
+    presidentShiftFromYear = defaults.fromYear;
+    presidentShiftToYear = defaults.toYear;
+  }
+
+  fill(dom.selectShiftFromYear, presidentShiftFromYear);
+  fillPast(dom.selectShiftToYear, presidentShiftToYear);
+}
+
+function syncPresidentShiftCompareControls() {
+  if (!dom.shiftCompareBox) return;
+  const showControls = currentVizMode === 'shift_presidente_2t' && String(currentCargo || '').startsWith('presidente');
+  dom.shiftCompareBox.classList.toggle('section-hidden', !showControls);
+  dom.shiftCompareBox.style.display = showControls ? '' : 'none';
+  if (!showControls) {
+    if (dom.selectShiftFromYear) dom.selectShiftFromYear.disabled = true;
+    if (dom.selectShiftToYear) dom.selectShiftToYear.disabled = true;
+    return;
+  }
+
+  const defaults = getDefaultPresidentShiftYears();
+  presidentShiftFromYear = defaults.fromYear;
+  if (!presidentShiftUserSelectedYears) {
+    presidentShiftToYear = defaults.toYear;
+  }
+  populatePresidentShiftYearSelects();
+  if (dom.selectShiftFromYear) dom.selectShiftFromYear.disabled = true;
+  if (dom.selectShiftToYear) dom.selectShiftToYear.disabled = !presidentShiftToYear;
+}
+
+function syncPresidentShiftVizModeAvailability() {
+  if (!dom.vizModeChips) return;
+  const shiftButton = dom.vizModeChips.querySelector('[data-value="shift_presidente_2t"]');
+  if (!shiftButton) return;
+
+  const years = Array.isArray(PRESIDENT_SHIFT_YEARS) ? PRESIDENT_SHIFT_YEARS : [2006, 2010, 2014, 2018, 2022];
+  const loadedYear = parseInt(STATE.currentElectionYear, 10);
+  const hasPastYear = years.some((year) => year < loadedYear);
+  const isPresidentCargo = String(currentCargo || '').startsWith('presidente');
+  const canUseShift = isPresidentCargo && hasPastYear;
+  shiftButton.disabled = !canUseShift;
+  shiftButton.classList.toggle('disabled', !canUseShift);
+  shiftButton.title = canUseShift
+    ? 'Shift do 2º turno presidencial'
+    : 'Disponível apenas para Presidente com eleição presidencial anterior';
+
+  if (!canUseShift && currentVizMode === 'shift_presidente_2t') {
+    currentVizMode = 'vencedor';
+    dom.vizModeChips.querySelectorAll('.chip-button').forEach((button) => {
+      button.classList.toggle('active', button.dataset.value === currentVizMode);
+    });
   }
 }
 
@@ -629,7 +718,9 @@ function updateConditionalUI() {
   updateCensusControlsForYear();
   if (typeof syncRegionalFilterVisibility === 'function') syncRegionalFilterVisibility();
   syncVizColorStyleControl();
-  if (currentVizMode.startsWith('desempenho')) updateVizModeUI();
+  syncPresidentShiftVizModeAvailability();
+  syncPresidentShiftCompareControls();
+  updateVizModeUI();
   // Turn visibility is handled by setupTurnTabs now.
 }
 

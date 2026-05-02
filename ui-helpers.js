@@ -286,6 +286,9 @@ async function init() {
   dom.vizBox = document.getElementById('vizBox');
   dom.vizCandidatoBox = document.getElementById('vizCandidatoBox');
   dom.selectVizCandidato = document.getElementById('selectVizCandidato');
+  dom.shiftCompareBox = document.getElementById('shiftCompareBox');
+  dom.selectShiftFromYear = document.getElementById('selectShiftFromYear');
+  dom.selectShiftToYear = document.getElementById('selectShiftToYear');
   dom.selectVizSize = document.getElementById('selectVizSize');
   dom.selectVizColorStyle = document.getElementById('selectVizColorStyle');
   dom.vizModeChips = document.getElementById('vizModeChips');

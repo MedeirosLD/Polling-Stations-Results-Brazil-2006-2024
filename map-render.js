@@ -486,8 +486,275 @@ function renderDeputySearchResults(results, container, query) {
 
 // Variável para guardar o listener de movimento
 let moveEndListener = null;
+let presidentShiftCanvasLayer = null;
+let presidentShiftRenderToken = 0;
+let PRESIDENT_SHIFT_TOOLTIP_CACHE = new Map();
+const PRESIDENT_SHIFT_COLORS = {
+  left: '#cf3339',
+  right: '#1d7fbd'
+};
+
+function getPreviousPresidentRunoffYear(year) {
+  const previousByYear = {
+    2010: 2006,
+    2014: 2010,
+    2018: 2014,
+    2022: 2018
+  };
+  return previousByYear[parseInt(year, 10)] || null;
+}
+
+function isPresidentShiftMode() {
+  return currentVizMode === 'shift_presidente_2t';
+}
+
+function isPresidentShiftModeActive() {
+  return isPresidentShiftMode()
+    && String(currentCargo || '').startsWith('presidente')
+    && currentTurno === 2
+    && Number.isFinite(parseInt(presidentShiftFromYear, 10))
+    && Number.isFinite(parseInt(presidentShiftToYear, 10))
+    && parseInt(presidentShiftToYear, 10) < parseInt(presidentShiftFromYear, 10);
+}
+
+function removePresidentShiftOverlay() {
+  presidentShiftRenderToken++;
+  PRESIDENT_SHIFT_TOOLTIP_CACHE = new Map();
+  if (presidentShiftCanvasLayer && map?.hasLayer?.(presidentShiftCanvasLayer)) {
+    map.removeLayer(presidentShiftCanvasLayer);
+  }
+  presidentShiftCanvasLayer = null;
+}
+
+function formatShiftPctPoints(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '-';
+  return `${(Math.abs(n) * 100).toFixed(1).replace('.', ',')} p.p.`;
+}
+
+function formatHistoryTurnPct(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '-';
+  return `${(n * 100).toFixed(1).replace('.', ',')}%`;
+}
+
+function getPresidentShiftTooltipHtml(props, shiftInfo = null) {
+  const nomeLocal = escapeHtml(getProp(props, 'nm_locvot') || 'Local');
+  const nomeCidade = escapeHtml(getProp(props, 'nm_localidade') || 'Cidade');
+  if (!isPresidentShiftModeActive() || !shiftInfo) {
+    return `
+      <div class="basic-map-tooltip">
+        <strong>${nomeLocal}</strong>
+        <small>${nomeCidade}</small>
+      </div>
+    `;
+  }
+
+  const toLeft = shiftInfo.shift > 0;
+  const sideText = toLeft ? 'mais PT' : 'mais PSDB/Bolsonaro';
+  const color = toLeft ? PRESIDENT_SHIFT_COLORS.left : PRESIDENT_SHIFT_COLORS.right;
+  const current = shiftInfo.currentTurn || {};
+  const previous = shiftInfo.previousTurn || {};
+
+  return `
+    <div class="shift-tooltip" style="--shift-color:${color}">
+      <div class="shift-tooltip-head">
+        <strong>${nomeLocal}</strong>
+        <small>${nomeCidade}</small>
+      </div>
+      <div class="shift-tooltip-swing">
+        <span class="shift-tooltip-arrow">${toLeft ? '←' : '→'}</span>
+        <span><b>${formatShiftPctPoints(shiftInfo.shift)}</b> ${sideText}</span>
+      </div>
+      <div class="shift-tooltip-results">
+        <div class="shift-tooltip-row">
+          <span>${escapeHtml(shiftInfo.currentYear)}</span>
+          <strong>${escapeHtml(current.vencedor || '-')}</strong>
+          <em>${escapeHtml(current.partido || '')}</em>
+          <b>${formatHistoryTurnPct(current.pct)}</b>
+        </div>
+        <div class="shift-tooltip-row muted">
+          <span>${escapeHtml(shiftInfo.previousYear)}</span>
+          <strong>${escapeHtml(previous.vencedor || '-')}</strong>
+          <em>${escapeHtml(previous.partido || '')}</em>
+          <b>${formatHistoryTurnPct(previous.pct)}</b>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function createPresidentShiftCanvasLayer() {
+  return L.Layer.extend({
+    initialize(options = {}) {
+      L.setOptions(this, options);
+      this._data = [];
+      this._redraw = this._redraw.bind(this);
+      this._animateZoom = this._animateZoom.bind(this);
+    },
+    onAdd(targetMap) {
+      this._map = targetMap;
+      this._canvas = L.DomUtil.create('canvas', 'president-shift-canvas leaflet-zoom-animated');
+      this._canvas.style.position = 'absolute';
+      this._canvas.style.pointerEvents = 'none';
+      this._canvas.style.zIndex = 450;
+      this._canvas.style.transformOrigin = '0 0';
+      targetMap.getPanes().overlayPane.appendChild(this._canvas);
+      this._redraw();
+    },
+    onRemove(targetMap) {
+      if (this._canvas?.parentNode) this._canvas.parentNode.removeChild(this._canvas);
+      this._canvas = null;
+      this._map = null;
+    },
+    getEvents() {
+      const events = {
+        resize: this._redraw,
+        moveend: this._redraw,
+        zoomend: this._redraw
+      };
+      if (this._map?.options?.zoomAnimation && L.Browser.any3d) {
+        events.zoomanim = this._animateZoom;
+      }
+      return events;
+    },
+    setData(data) {
+      this._data = Array.isArray(data) ? data : [];
+      this._redraw();
+    },
+    _animateZoom(event) {
+      if (!this._map || !this._canvas) return;
+      const scale = this._map.getZoomScale(event.zoom);
+      const offset = this._map._latLngBoundsToNewLayerBounds(
+        this._map.getBounds(),
+        event.zoom,
+        event.center
+      ).min;
+      L.DomUtil.setTransform(this._canvas, offset, scale);
+    },
+    _redraw() {
+      if (!this._map || !this._canvas) return;
+      const size = this._map.getSize();
+      const topLeft = this._map.containerPointToLayerPoint([0, 0]);
+      if (L.DomUtil.setTransform) {
+        L.DomUtil.setTransform(this._canvas, topLeft, 1);
+      } else {
+        L.DomUtil.setPosition(this._canvas, topLeft);
+      }
+
+      const ratio = window.devicePixelRatio || 1;
+      this._canvas.width = Math.max(1, Math.round(size.x * ratio));
+      this._canvas.height = Math.max(1, Math.round(size.y * ratio));
+      this._canvas.style.width = `${size.x}px`;
+      this._canvas.style.height = `${size.y}px`;
+
+      const ctx = this._canvas.getContext('2d');
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, size.x, size.y);
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'round';
+      const zoom = this._map.getZoom() || 7;
+      const zoomCompact = Math.max(0.58, Math.min(1, 0.58 + ((zoom - 6) * 0.09)));
+
+      (this._data || []).forEach((item) => {
+        const point = this._map.latLngToContainerPoint(item.latlng);
+        if (point.x < -40 || point.y < -40 || point.x > size.x + 40 || point.y > size.y + 40) return;
+
+        const absShift = Math.abs(item.shift);
+        if (!Number.isFinite(absShift) || absShift < 0.002) return;
+
+        const isLeft = item.shift > 0;
+        const color = isLeft ? PRESIDENT_SHIFT_COLORS.left : PRESIDENT_SHIFT_COLORS.right;
+        const baseLength = Math.max(5, Math.min(20, 4 + (absShift * 58)));
+        const length = baseLength * zoomCompact;
+        const head = Math.max(3, Math.min(5.8, length * 0.34));
+        const lineWidth = Math.max(0.75, Math.min(1.9, 0.75 + (absShift * 4.8))) * zoomCompact;
+        const dx = isLeft ? -length : length;
+        const dy = -length * 0.28;
+        const startX = point.x - dx / 2;
+        const startY = point.y - dy / 2;
+        const endX = point.x + dx / 2;
+        const endY = point.y + dy / 2;
+        const angle = Math.atan2(dy, dx);
+        const headAngle = Math.PI / 7;
+
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.globalAlpha = Math.max(0.38, Math.min(0.84, 0.38 + absShift * 1.55));
+        ctx.lineWidth = lineWidth;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(
+          endX - head * Math.cos(angle - headAngle),
+          endY - head * Math.sin(angle - headAngle)
+        );
+        ctx.lineTo(
+          endX - head * Math.cos(angle + headAngle),
+          endY - head * Math.sin(angle + headAngle)
+        );
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+  });
+}
+
+async function updatePresidentShiftOverlay() {
+  if (!isPresidentShiftModeActive() || !currentLayer?.eachLayer || typeof window.resolvePresidentRunoffShiftForProps !== 'function') {
+    removePresidentShiftOverlay();
+    return;
+  }
+
+  const token = ++presidentShiftRenderToken;
+  const currentYear = parseInt(presidentShiftFromYear, 10);
+  const previousYear = parseInt(presidentShiftToYear, 10);
+  const candidates = [];
+
+  currentLayer.eachLayer((layer) => {
+    const props = layer?.feature?.properties;
+    const latlng = typeof layer?.getLatLng === 'function' ? layer.getLatLng() : null;
+    if (props && latlng) candidates.push({ props, latlng });
+  });
+
+  const data = [];
+  const tooltipCache = new Map();
+  for (let index = 0; index < candidates.length; index++) {
+    if (token !== presidentShiftRenderToken) return;
+    const item = candidates[index];
+    try {
+      const shift = await window.resolvePresidentRunoffShiftForProps(item.props, currentYear, previousYear);
+      if (shift && Number.isFinite(shift.shift)) {
+        const id = resolveFeatureSelectionId(item.props);
+        data.push({ latlng: item.latlng, shift: shift.shift });
+        if (id) tooltipCache.set(id, shift);
+      }
+    } catch (error) {
+      if (index === 0) console.warn('[Shift presidencial] Histórico indisponível:', error);
+    }
+  }
+
+  if (token !== presidentShiftRenderToken) return;
+  PRESIDENT_SHIFT_TOOLTIP_CACHE = tooltipCache;
+  if (!presidentShiftCanvasLayer) {
+    const ShiftLayer = createPresidentShiftCanvasLayer();
+    presidentShiftCanvasLayer = new ShiftLayer();
+  }
+  if (!map.hasLayer(presidentShiftCanvasLayer)) presidentShiftCanvasLayer.addTo(map);
+  presidentShiftCanvasLayer.setData(data);
+}
 
 function applyFiltersAndRedraw() {
+  if (isPresidentShiftMode()) {
+    removePresidentShiftOverlay();
+  }
+
   // Limpeza PROFUNDA das camadas
   if (currentLayer) {
     try {
@@ -510,6 +777,7 @@ function applyFiltersAndRedraw() {
 
   const geojson = currentDataCollection[currentCargo];
   if (!geojson) {
+    removePresidentShiftOverlay();
     return;
   }
 
@@ -559,6 +827,7 @@ function applyFiltersAndRedraw() {
   }
 
   syncResultsPanelToCurrentView();
+  updatePresidentShiftOverlay();
 
   if (STATE.isLoadingDataset) {
     clearPendingFilterChanges();
@@ -643,6 +912,7 @@ function refreshTurnDependentUI() {
   }
 
   syncResultsPanelToCurrentView();
+  updatePresidentShiftOverlay();
 }
 
 
@@ -1165,6 +1435,15 @@ function getFeatureStyle(feature) {
   let fillOpacity = DEFAULT_POINT_FILL_OPACITY;
   let pctVal = 0;
 
+  if (isPresidentShiftModeActive()) {
+    return {
+      stroke: false,
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      opacity: 0
+    };
+  }
+
   // SPECIAL HANDLING FOR DEPUTIES AND VEREADORES
   const isDeputy = currentCargo.startsWith('deputado');
   const isVereador = currentCargo.startsWith('vereador');
@@ -1177,7 +1456,7 @@ function getFeatureStyle(feature) {
     const { total, winner, winnerVotes, winningParty } = depData;
     let fillColor = DEFAULT_SWATCH, fillOpacity = DEFAULT_POINT_FILL_OPACITY, pctVal = 0;
 
-    if (currentVizMode.startsWith('vencedor')) {
+    if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
       if (STATE.vereadorViewMode === 'party') {
         if (winningParty) {
           fillColor = colorForParty(winningParty);
@@ -1210,7 +1489,7 @@ function getFeatureStyle(feature) {
         } else { fillColor = '#888888'; fillOpacity = 0.15; }
       }
     }
-    if (currentVizColorStyle === 'gradient' && currentVizMode.startsWith('vencedor'))
+    if (currentVizColorStyle === 'gradient' && (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()))
       fillColor = getUniversalGradientColor(fillColor, pctVal);
 
     const localId = resolveFeatureSelectionId(props);
@@ -1233,7 +1512,7 @@ function getFeatureStyle(feature) {
 
     const { total, winner, winnerVotes, winningParty } = depData;
 
-    if (currentVizMode.startsWith('vencedor')) {
+    if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
       if (STATE.deputyViewMode === 'party') {
         if (winningParty) {
           fillColor = colorForParty(winningParty);
@@ -1281,7 +1560,7 @@ function getFeatureStyle(feature) {
     }
 
     // Gradient Logic (only for vencedor mode; desempenho applies its own gradient above)
-    if (currentVizColorStyle === 'gradient' && currentVizMode.startsWith('vencedor')) {
+    if (currentVizColorStyle === 'gradient' && (currentVizMode.startsWith('vencedor') || isPresidentShiftMode())) {
       fillColor = getUniversalGradientColor(fillColor, pctVal);
     }
 
@@ -1298,7 +1577,7 @@ function getFeatureStyle(feature) {
   const { totalValidos } = getVotosValidos(props, currentCargo, turnoKey, STATE.filterInaptos);
 
   // 1. Determine Base Color and Percentage based on Mode
-  if (currentVizMode.startsWith('vencedor')) {
+  if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
     const { nome, partido, votos } = getVencedor(props, currentCargo, turnoKey, STATE.filterInaptos);
     fillColor = getColorForCandidate(nome, partido);
     pctVal = (totalValidos > 0) ? (votos / totalValidos) * 100 : 0;
@@ -1414,9 +1693,27 @@ function getVencedor(props, cargo, turno, filtrarInaptos) {
 
 function onEachFeature(feature, layer) {
   const props = feature.properties;
-  const nomeLocal = getProp(props, 'nm_locvot') || 'Local';
-  const nomeCidade = getProp(props, 'nm_localidade') || 'Cidade';
-  layer.bindTooltip(`<b>${nomeLocal}</b><br>${nomeCidade}`, { sticky: true });
+  layer.bindTooltip(() => {
+    const id = resolveFeatureSelectionId(props);
+    return getPresidentShiftTooltipHtml(props, PRESIDENT_SHIFT_TOOLTIP_CACHE.get(id));
+  }, { sticky: true, className: 'feature-map-tooltip' });
+  layer.on('mouseover', async () => {
+    if (!isPresidentShiftModeActive() || typeof window.resolvePresidentRunoffShiftForProps !== 'function') return;
+    const id = resolveFeatureSelectionId(props);
+    if (!id || PRESIDENT_SHIFT_TOOLTIP_CACHE.has(id)) return;
+    try {
+      const currentYear = parseInt(presidentShiftFromYear, 10);
+      const previousYear = parseInt(presidentShiftToYear, 10);
+      const shift = await window.resolvePresidentRunoffShiftForProps(props, currentYear, previousYear);
+      if (!shift || !Number.isFinite(shift.shift)) return;
+      PRESIDENT_SHIFT_TOOLTIP_CACHE.set(id, shift);
+      if (typeof layer.setTooltipContent === 'function') {
+        layer.setTooltipContent(getPresidentShiftTooltipHtml(props, shift));
+      }
+    } catch (error) {
+      // Tooltip continua no formato simples.
+    }
+  });
   layer.on('click', onFeatureClick);
 }
 

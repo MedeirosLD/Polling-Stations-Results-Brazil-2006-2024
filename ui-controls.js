@@ -574,7 +574,13 @@ function setupControls() {
   dom.vizModeChips.addEventListener('click', (e) => {
     const btn = e.target.closest('.chip-button');
     if (!btn) return;
+    if (btn.disabled || btn.classList.contains('disabled')) return;
     currentVizMode = btn.dataset.value;
+    if (currentVizMode === 'shift_presidente_2t'
+      && String(currentCargo || '').startsWith('presidente')
+      && STATE.dataHas2T[currentCargo]) {
+      currentTurno = 2;
+    }
     dom.vizModeChips.querySelectorAll('.chip-button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     updateVizModeUI();
@@ -594,6 +600,14 @@ function setupControls() {
   dom.selectVizSize?.addEventListener('change', (e) => {
     currentVizSize = e.target.value || 'fixo';
     applyFiltersAndRedraw();
+  });
+  dom.selectShiftFromYear?.addEventListener('change', (e) => {
+    presidentShiftFromYear = parseInt(e.target.value, 10);
+  });
+  dom.selectShiftToYear?.addEventListener('change', (e) => {
+    presidentShiftUserSelectedYears = true;
+    presidentShiftToYear = parseInt(e.target.value, 10);
+    if (currentVizMode === 'shift_presidente_2t') applyFiltersAndRedraw();
   });
   dom.selectVizCandidato.addEventListener('change', () => {
     if (currentVizMode.startsWith('desempenho')) {

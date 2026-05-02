@@ -11,7 +11,7 @@ const MAJOR_HISTORY_CONFIG = {
     title: 'Histórico presidencial',
     folder: 'Historico Presidente',
     filePrefix: 'historico_presidente',
-    cacheVersion: '20260501c'
+    cacheVersion: '20260502a'
   },
   governador: {
     cargo: 'governador',
@@ -19,7 +19,7 @@ const MAJOR_HISTORY_CONFIG = {
     title: 'Histórico governador',
     folder: 'Historico Governador',
     filePrefix: 'historico_governador',
-    cacheVersion: '20260501b'
+    cacheVersion: '20260501c'
   },
   senador: {
     cargo: 'senador',
@@ -27,7 +27,7 @@ const MAJOR_HISTORY_CONFIG = {
     title: 'Histórico senador',
     folder: 'Historico Senador',
     filePrefix: 'historico_senador',
-    cacheVersion: '20260501'
+    cacheVersion: '20260501b'
   },
   prefeito: {
     cargo: 'prefeito',
@@ -35,7 +35,7 @@ const MAJOR_HISTORY_CONFIG = {
     title: 'Histórico prefeito',
     folder: 'Historico Prefeito',
     filePrefix: 'historico_prefeito',
-    cacheVersion: '20260501b',
+    cacheVersion: '20260501c',
     municipal: true
   }
 };
@@ -117,6 +117,10 @@ function getHistoryNameCoreTokens(value) {
   return normalizeHistoryText(value)
     .split(' ')
     .filter((token) => token.length > 1 && !stopwords.has(token));
+}
+
+function getHistoryLooseNameCoreTokens(value) {
+  return getHistoryNameCoreTokens(value).map((token) => token.replace(/Y/g, 'I'));
 }
 
 function getHistoryNameCorePairKeys(tokens) {
@@ -281,6 +285,81 @@ async function fetchJsonFromNestedZipEntry(outerZipUrl, innerZipName, jsonName) 
 async function loadPresidentHistoryUf(uf) {
   return loadMajorHistoryUf('presidente', uf);
 }
+
+function getPresidentRunoffShiftSide(turn) {
+  const party = String(turn?.partido || '').toUpperCase();
+  const name = normalizeHistoryText(turn?.vencedor || '');
+  if (party === 'PT' || ['LULA', 'DILMA', 'FERNANDO HADDAD'].some((token) => name.includes(token))) {
+    return 'left';
+  }
+  if (['PSDB', 'PSL', 'PL'].includes(party)
+    || ['GERALDO ALCKMIN', 'JOSE SERRA', 'AECIO NEVES', 'JAIR BOLSONARO'].some((token) => name.includes(token))) {
+    return 'right';
+  }
+  return '';
+}
+
+function getPresidentRunoffSideForCandidate(name, party) {
+  const partyNorm = String(party || '').toUpperCase();
+  const nameNorm = normalizeHistoryText(name || '');
+  if (partyNorm === 'PT' || ['LULA', 'DILMA', 'FERNANDO HADDAD'].some((token) => nameNorm.includes(token))) {
+    return 'left';
+  }
+  if (['PSDB', 'PSL', 'PL'].includes(partyNorm)
+    || ['GERALDO ALCKMIN', 'JOSE SERRA', 'AECIO NEVES', 'JAIR BOLSONARO'].some((token) => nameNorm.includes(token))) {
+    return 'right';
+  }
+  return '';
+}
+
+function getPresidentRunoffSignedMargin(record) {
+  const turn = (record?.turnos || []).find((item) => String(item.turno || '').toUpperCase() === '2T');
+  if (!turn) return null;
+  const winnerSide = getPresidentRunoffShiftSide(turn);
+  if (!winnerSide) return null;
+
+  const winnerPct = Math.max(0, ensureNumber(turn.pct));
+  const runnerSide = getPresidentRunoffSideForCandidate(turn.segundo, turn.segundo_partido);
+  const runnerPct = Math.max(0, ensureNumber(turn.segundo_pct));
+
+  if (winnerSide === 'left') {
+    return winnerPct - (runnerSide === 'right' ? runnerPct : 0);
+  }
+  return (runnerSide === 'left' ? runnerPct : 0) - winnerPct;
+}
+
+function getPresidentRunoffRecordByYear(records, props, year) {
+  const displayRecords = getPresidentHistoryDisplayRecords(records, props);
+  return displayRecords.find((record) => String(record.ano) === String(year)) || null;
+}
+
+async function resolvePresidentRunoffShiftForProps(props, currentYear, previousYear) {
+  if (!props || !currentYear || !previousYear) return null;
+  const history = await loadMajorHistoryForProps('presidente', props);
+  const resolved = resolvePresidentHistoryIdentity(history, props);
+  if (!resolved?.identity?.records?.length) return null;
+
+  const currentRecord = getPresidentRunoffRecordByYear(resolved.identity.records, props, currentYear);
+  const previousRecord = getPresidentRunoffRecordByYear(resolved.identity.records, props, previousYear);
+  const currentMargin = getPresidentRunoffSignedMargin(currentRecord);
+  const previousMargin = getPresidentRunoffSignedMargin(previousRecord);
+  if (!Number.isFinite(currentMargin) || !Number.isFinite(previousMargin)) return null;
+
+  const currentTurn = (currentRecord?.turnos || []).find((item) => String(item.turno || '').toUpperCase() === '2T') || null;
+  const previousTurn = (previousRecord?.turnos || []).find((item) => String(item.turno || '').toUpperCase() === '2T') || null;
+
+  return {
+    shift: currentMargin - previousMargin,
+    currentMargin,
+    previousMargin,
+    currentYear: String(currentYear),
+    previousYear: String(previousYear),
+    currentTurn,
+    previousTurn,
+    match: resolved.match
+  };
+}
+
 function buildPresidentHistoryAliases(props) {
   const aliases = [];
   const pushAlias = (kind, value) => {
@@ -298,6 +377,8 @@ function buildPresidentHistoryAliases(props) {
   const name = normalizeHistoryText(getProp(props, 'nm_locvot'));
   const coreTokens = getHistoryNameCoreTokens(getProp(props, 'nm_locvot'));
   const core = coreTokens.join(' ');
+  const looseCoreTokens = getHistoryLooseNameCoreTokens(getProp(props, 'nm_locvot'));
+  const looseCore = looseCoreTokens.join(' ');
   const schoolNumbers = getHistorySchoolNumberTokens(getProp(props, 'nm_locvot'));
   const bairro = normalizeHistoryText(getProp(props, 'ds_bairro'));
   const address = normalizeHistoryText(getProp(props, 'ds_endereco') || getProp(props, 'ds_enderec'));
@@ -319,6 +400,9 @@ function buildPresidentHistoryAliases(props) {
     getHistoryNameCorePairKeys(coreTokens).forEach((pairKey) => {
       pushAlias('name_core_pair_bairro', `${uf}|${city}|${bairro}|${pairKey}`);
     });
+  }
+  if (uf && city && looseCore && looseCoreTokens.length >= 3 && looseCore.length >= 14) {
+    pushAlias('name_core_city_loose', `${uf}|${city}|${looseCore}`);
   }
   schoolNumbers.forEach((numberToken) => {
     if (uf && city && bairro) {
@@ -353,6 +437,7 @@ function resolvePresidentHistoryIdentity(history, props) {
         name_city: 0.6,
         name_core_bairro: 0.58,
         name_core_pair_bairro: 0.52,
+        name_core_city_loose: 0.54,
         school_number_bairro: 0.56,
         address_bairro: 0.65,
         coord: 0.4
@@ -693,5 +778,6 @@ async function updatePresidentHistoryPanel(props) {
 
 if (typeof window !== 'undefined') {
   window.updatePresidentHistoryPanel = updatePresidentHistoryPanel;
+  window.resolvePresidentRunoffShiftForProps = resolvePresidentRunoffShiftForProps;
 }
 

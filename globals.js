@@ -386,6 +386,10 @@ let currentOffice = 'presidente'; // 'presidente', 'governador', 'senador', 'dep
 let currentSubType = 'ord'; // 'ord' (Federal/Ord) or 'est' (Estadual) or 'sup'
 
 let currentVizMode = 'vencedor';
+const PRESIDENT_SHIFT_YEARS = [2006, 2010, 2014, 2018, 2022];
+let presidentShiftFromYear = 2018;
+let presidentShiftToYear = 2022;
+let presidentShiftUserSelectedYears = false;
 // Cache: nome_upper → id, rebuilt when cargo/data changes
 let deputyNameToIdCache = {};
 

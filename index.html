@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=20260501" />
+    <link rel="stylesheet" href="style.css?v=20260502d" />
 </head>
 
 <body data-theme="light">
@@ -178,6 +178,10 @@
                                     <span class="viz-mode-title">Desempenho</span>
                                     <span class="viz-mode-desc">Percentual de um candidato escolhido</span>
                                 </button>
+                                <button class="chip-button viz-mode-chip" data-value="shift_presidente_2t">
+                                    <span class="viz-mode-title">Shift 2T</span>
+                                    <span class="viz-mode-desc">Mudança PT x PSDB/Bolsonaro</span>
+                                </button>
                             </div>
                         </div>
                         <div class="ctrl section-hidden" id="vizCandidatoBox" style="margin-top:10px;">
@@ -191,6 +195,30 @@
                                     <input type="text" id="deputySearchInput" class="search-input"
                                         placeholder="Buscar por nome ou número..." autocomplete="off">
                                     <div id="deputySearchResults" class="search-results"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ctrl section-hidden" id="shiftCompareBox" style="margin-top:10px;">
+                            <div class="shift-compare-head">
+                                <label>Comparar shift presidencial</label>
+                                <details class="shift-help">
+                                    <summary>Como funciona</summary>
+                                    <div class="shift-help-popover">
+                                        <strong>Shift 2T</strong>
+                                        <p>Compara o 2º turno presidencial do ano carregado com uma eleição anterior.</p>
+                                        <p><span class="shift-help-red">Vermelho</span> indica deslocamento para PT. <span class="shift-help-blue">Azul</span> indica deslocamento para PSDB/Bolsonaro.</p>
+                                        <p>Quanto maior a seta, maior a mudança em pontos percentuais no local.</p>
+                                    </div>
+                                </details>
+                            </div>
+                            <div class="shift-compare-row">
+                                <div>
+                                    <small>Base</small>
+                                    <select id="selectShiftFromYear" class="select"></select>
+                                </div>
+                                <div>
+                                    <small>Comparar</small>
+                                    <select id="selectShiftToYear" class="select"></select>
                                 </div>
                             </div>
                         </div>
@@ -1685,19 +1713,19 @@
         <!-- ===== App modular (substitui app.js) ===== -->
 
         <!-- 1. Variáveis globais, caches, STATE, cores, partidos -->
-        <script src="globals.js?v=20260430"></script>
+        <script src="globals.js?v=20260502b"></script>
 
         <!-- 2. Utilitários puros: getProp, norm, gradiente, parseCandidateKey -->
         <script src="utils.js?v=20260407"></script>
 
         <!-- 3. Init, loadMunicipalIndex, toggleCandidateDetails, scheduleAutoLoad -->
-        <script src="ui-helpers.js?v=20260429"></script>
+        <script src="ui-helpers.js?v=20260502a"></script>
 
         <!-- 4. setupControls, setupTabs, setupSliders, updateElectionTypeUI -->
-        <script src="ui-controls.js?v=20260430"></script>
+        <script src="ui-controls.js?v=20260502d"></script>
 
         <!-- 5. Tooltip, neighborhood profile, updateConditionalUI, updateApplyButtonText -->
-        <script src="ui-results.js?v=20260430"></script>
+        <script src="ui-results.js?v=20260502c"></script>
 
         <!-- 6. Helpers ZIP/GPKG, SQLite, buildMunicipalFeature*, turnout functions -->
         <script src="data-zip.js?v=20260501"></script>
@@ -1722,10 +1750,10 @@
         <script src="data-loader.js?v=20260407"></script>
 
         <!-- 12. Renderização do mapa, filtros, seleção por box -->
-        <script src="map-render.js?v=20260430"></script>
+        <script src="map-render.js?v=20260502i"></script>
 
         <!-- 13. Histórico presidencial por local -->
-        <script src="historico-presidente.js?v=20260501o"></script>
+        <script src="historico-presidente.js?v=20260502c"></script>
 
         <!-- 14. Painel de resultados, modais, precomputeWinners, exports window.* -->
         <script src="results-panel.js?v=20260430"></script>
