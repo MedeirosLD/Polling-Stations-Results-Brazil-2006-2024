@@ -634,11 +634,11 @@ function matchesLocationFilters(props, options = {}) {
   const { ignoreCidade = false, ignoreBairro = false, ignoreLocal = false } = options;
   if (!matchesRegionalScope(props)) return false;
   if (!ignoreCidade && STATE.currentElectionType === 'geral' && currentCidadeFilter !== 'all') {
-    if (getProp(props, 'nm_localidade') !== currentCidadeFilter) return false;
+    if (!sameFilterText(getProp(props, 'nm_localidade'), currentCidadeFilter)) return false;
   }
   if (!ignoreBairro && currentBairroFilter !== 'all') {
     const bairro = getProp(props, 'ds_bairro');
-    if (!bairro || bairro.trim() !== currentBairroFilter) return false;
+    if (!bairro || !sameFilterText(bairro, currentBairroFilter)) return false;
   }
   if (!ignoreLocal) {
     const searchTxt = currentLocalFilter.trim();
@@ -648,6 +648,10 @@ function matchesLocationFilters(props, options = {}) {
     }
   }
   return true;
+}
+
+function sameFilterText(a, b) {
+  return norm(a) === norm(b);
 }
 
 function getRegionalFilterSummaryLabel() {

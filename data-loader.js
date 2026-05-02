@@ -100,6 +100,7 @@ async function onClickLoadData_General_legado() {
     populateRegionalDropdowns();
     currentMesorregiaoFilter = preservedMeso;
     currentMicrorregiaoFilter = preservedMicro;
+    currentCidadeFilter = preservedCidade;
     populateCidadeDropdown();
     [dom.filterBox, dom.vizBox].forEach(el => el.classList.remove('section-hidden'));
 
@@ -107,8 +108,11 @@ async function onClickLoadData_General_legado() {
     if (microrregiaoCombobox) microrregiaoCombobox.disable(ufToLoad === 'BR');
     if (cidadeCombobox) {
       cidadeCombobox.disable(false);
-      cidadeCombobox.setValue("Todos os municípios");
-      currentCidadeFilter = preservedCidade;
+      cidadeCombobox.setValue(currentCidadeFilter === 'all' ? "Todos os municípios" : currentCidadeFilter);
+    }
+    if (bairroCombobox) {
+      currentBairroFilter = preservedBairro;
+      populateBairroDropdown();
     }
     if (dom.selectVizColorStyle) dom.selectVizColorStyle.disabled = false;
     if (dom.selectVizSize) dom.selectVizSize.disabled = false;

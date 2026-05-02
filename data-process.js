@@ -280,6 +280,17 @@ let microrregiaoCombobox = null;
 let cidadeCombobox = null;
 let bairroCombobox = null;
 
+function resolveComboboxLabel(items, value) {
+  if (value === 'all') return 'all';
+  const wanted = norm(value);
+  if (!wanted) return value;
+  const found = (items || []).find((item) => {
+    const label = typeof item === 'object' ? item.label : item;
+    return norm(label) === wanted;
+  });
+  return found ? (typeof found === 'object' ? found.label : found) : value;
+}
+
 function syncRegionalFilterVisibility() {
   const showRegional = STATE.currentElectionType === 'geral';
   if (dom.regionalFilterRow) dom.regionalFilterRow.classList.toggle('section-hidden', !showRegional);
@@ -405,6 +416,7 @@ function populateCidadeDropdown() {
   if (currentCidadeFilter === 'all') {
     cidadeCombobox.setValue("Todos os municípios");
   } else {
+    currentCidadeFilter = resolveComboboxLabel(items, currentCidadeFilter);
     cidadeCombobox.setValue(currentCidadeFilter);
   }
 
@@ -436,7 +448,7 @@ function populateBairroDropdown() {
     if (!matchesRegionalScope(props)) {
       adicionar = false;
     } else if (STATE.currentElectionType === 'geral') {
-      if (getProp(props, 'nm_localidade') === currentCidadeFilter) adicionar = true;
+      if (sameFilterText(getProp(props, 'nm_localidade'), currentCidadeFilter)) adicionar = true;
     } else {
       adicionar = true;
     }
@@ -576,6 +588,7 @@ function populateBairroDropdown() {
   if (currentBairroFilter === 'all') {
     bairroCombobox.setValue("Todos os bairros");
   } else {
+    currentBairroFilter = resolveComboboxLabel(items, currentBairroFilter);
     bairroCombobox.setValue(currentBairroFilter);
   }
 

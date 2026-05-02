@@ -477,8 +477,8 @@ function finalizeGeneralLoadUI(ufToLoad) {
   currentMesorregiaoFilter = preservedMeso;
   currentMicrorregiaoFilter = preservedMicro;
   populateRegionalDropdowns();
-  populateCidadeDropdown();
   currentCidadeFilter = preservedCidade;
+  populateCidadeDropdown();
   [dom.filterBox, dom.vizBox].forEach((el) => el.classList.remove('section-hidden'));
 
   if (mesorregiaoCombobox) mesorregiaoCombobox.disable(ufToLoad === 'BR');
