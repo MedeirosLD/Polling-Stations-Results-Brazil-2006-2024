@@ -646,6 +646,29 @@ body {
     border-radius: 3px;
 }
 
+.panel-credit {
+    margin-top: auto;
+    padding: 14px 6px 4px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.panel-credit span {
+    display: block;
+}
+
+.panel-credit a {
+    color: var(--accent);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.panel-credit a:hover {
+    text-decoration: underline;
+}
+
 /* ===== SEÇÕES ===== */
 .section {
     background: var(--surface-2);
