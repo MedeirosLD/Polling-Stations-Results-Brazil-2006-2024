@@ -3,6 +3,7 @@ let PRESIDENT_HISTORY_RENDER_TOKEN = 0;
 let SELECTED_MAJOR_HISTORY_CARGO = 'presidente';
 let HISTORY_CARGO_USER_SELECTED = false;
 let LAST_HISTORY_CONTEXT_CARGO = '';
+let PRESIDENT_HISTORY_USER_EXPANDED = false;
 
 const MAJOR_HISTORY_CONFIG = {
   presidente: {
@@ -660,12 +661,13 @@ function renderPresidentHistoryCard(container, resolved, props, cargo = SELECTED
   const last = records[records.length - 1] || {};
   const title = getProp(props, 'nm_locvot') || last.nome || first.nome || 'Local de votação';
   const subtitle = `${last.municipio || first.municipio || ''}${last.bairro || first.bairro ? ` • ${last.bairro || first.bairro}` : ''}`;
+  const isCollapsed = !PRESIDENT_HISTORY_USER_EXPANDED;
 
   container.classList.remove('hidden');
   container.innerHTML = `
-    <div class="president-history-card">
+    <div class="president-history-card ${isCollapsed ? 'collapsed' : ''}">
       <div class="president-history-header">
-        <button type="button" class="president-history-toggle" aria-expanded="true">
+        <button type="button" class="president-history-toggle" aria-expanded="${String(!isCollapsed)}">
           <span class="history-caret">▼</span>
           <span class="history-header-text">
             <strong>${escapeHtml(config.title)}</strong>
@@ -693,6 +695,7 @@ function renderPresidentHistoryCard(container, resolved, props, cargo = SELECTED
   bindHistoryCargoSwitch(container, props);
   header.addEventListener('click', () => {
     const isCollapsed = card.classList.toggle('collapsed');
+    PRESIDENT_HISTORY_USER_EXPANDED = !isCollapsed;
     header.setAttribute('aria-expanded', String(!isCollapsed));
   });
 }

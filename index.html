@@ -40,6 +40,8 @@
                 <div style="display:flex; align-items:center; gap:6px;">
                     <button id="themeToggle" class="button ghost" title="Mudar tema"
                         style="padding:6px 10px;">🌙</button>
+                    <button id="colorblindToggle" class="button colorblind-toggle" title="Ativar modo daltônico"
+                        aria-pressed="false">Modo daltônico</button>
                     <button id="btnCollapseLeft" class="panel-collapse-btn" title="Minimizar painel"
                         onclick="togglePanel('left')">‹</button>
                 </div>
@@ -205,7 +207,7 @@
                                     <summary>Como funciona</summary>
                                     <div class="shift-help-popover">
                                         <strong>Shift 2T</strong>
-                                        <p>Compara o 2º turno presidencial do ano carregado com uma eleição anterior.</p>
+                                        <p>Compara o 2º turno presidencial do ano carregado com outra eleição da série.</p>
                                         <p><span class="shift-help-red">Vermelho</span> indica deslocamento para PT. <span class="shift-help-blue">Azul</span> indica deslocamento para PSDB/Bolsonaro.</p>
                                         <p>Quanto maior a seta, maior a mudança em pontos percentuais no local.</p>
                                     </div>
@@ -1732,7 +1734,7 @@
         <script src="ui-controls.js?v=20260502d"></script>
 
         <!-- 5. Tooltip, neighborhood profile, updateConditionalUI, updateApplyButtonText -->
-        <script src="ui-results.js?v=20260502d"></script>
+        <script src="ui-results.js?v=20260502e"></script>
 
         <!-- 6. Helpers ZIP/GPKG, SQLite, buildMunicipalFeature*, turnout functions -->
         <script src="data-zip.js?v=20260501"></script>

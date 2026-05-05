@@ -627,7 +627,6 @@ function setupControls() {
       applyFiltersAndRedraw();
     }
   });
-
   dom.btnClearSelection.addEventListener('click', () => {
     clearSelection(true);
     updateApplyButtonText();

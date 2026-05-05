@@ -347,12 +347,138 @@ const PARTY_COLORS = new Map(Object.entries({
 }));
 
 const CUSTOM_CANDIDATE_COLORS = new Map();
+const CUSTOM_COLORBLIND_CANDIDATE_COLORS = new Map();
+const CUSTOM_COLORBLIND_PARTY_COLORS = new Map();
+const COLORBLIND_AUTO_PARTY_COLORS = new Map();
+let isColorblindMode = false;
+
+const COLORBLIND_PARTY_COLORS = new Map(Object.entries({
+  'PT': '#D55E00', 'PCDOB': '#8B5A00', 'PC DO B': '#8B5A00', 'PCB': '#6B4C00', 'PSTU': '#E69F00', 'PCO': '#9C3D00', 'UP': '#000000',
+  'PL': '#0072B2', 'PR': '#0072B2', 'PDS': '#0072B2', 'PRONA': '#0072B2', 'PSL': '#00588A', 'PRTB': '#00588A', 'PATRIOTA': '#00588A',
+  'PSDB': '#56B4E9', 'CIDADANIA': '#CC79A7', 'PPS': '#CC79A7',
+  'MDB': '#D55E00', 'PMDB': '#D55E00', 'PV': '#009E73', 'REDE': '#44AA99', 'PODE': '#009E73',
+  'PP': '#3366CC', 'PSD': '#E69F00', 'UNIÃO': '#0072B2', 'UNIÃƒO': '#0072B2', 'DEM': '#0072B2', 'PFL': '#0072B2',
+  'PSB': '#F0E442', 'PDT': '#009E73', 'SOLIDARIEDADE': '#E69F00', 'SD': '#E69F00',
+  'PSOL': '#882255', 'REPUBLICANOS': '#56B4E9', 'PRB': '#56B4E9',
+  'NOVO': '#E69F00', 'AVANTE': '#44AA99', 'DC': '#999933', 'PSC': '#117733',
+  'TOSSUP': '#999999'
+}));
+
+const COLORBLIND_SAFE_PALETTE = [
+  '#0072B2', '#D55E00', '#009E73', '#CC79A7', '#E69F00', '#56B4E9',
+  '#882255', '#000000', '#117733', '#332288', '#88CCEE', '#AA4499',
+  '#44AA99', '#999933', '#DDCC77'
+];
+const COLORBLIND_MIN_DISTANCE = 82;
+
+function getActiveCandidateColorMap() {
+  return isColorblindMode ? CUSTOM_COLORBLIND_CANDIDATE_COLORS : CUSTOM_CANDIDATE_COLORS;
+}
+
+function normalizeColorblindPartyKey(partido) {
+  const key = String(partido || '').toUpperCase();
+  if (key === 'PMDB') return 'MDB';
+  if (key === 'UNIÃƒO') return 'UNIÃO';
+  return key;
+}
+
+function parseHexColor(hex) {
+  const clean = String(hex || '').replace('#', '').trim();
+  if (!/^[0-9a-f]{6}$/i.test(clean)) return null;
+  return [
+    parseInt(clean.slice(0, 2), 16),
+    parseInt(clean.slice(2, 4), 16),
+    parseInt(clean.slice(4, 6), 16)
+  ];
+}
+
+function simulateColorVision(rgb, type) {
+  const matrices = {
+    protanopia: [
+      [0.56667, 0.43333, 0],
+      [0.55833, 0.44167, 0],
+      [0, 0.24167, 0.75833]
+    ],
+    deuteranopia: [
+      [0.625, 0.375, 0],
+      [0.7, 0.3, 0],
+      [0, 0.3, 0.7]
+    ],
+    tritanopia: [
+      [0.95, 0.05, 0],
+      [0, 0.43333, 0.56667],
+      [0, 0.475, 0.525]
+    ]
+  };
+  const matrix = matrices[type];
+  return matrix.map(row => row[0] * rgb[0] + row[1] * rgb[1] + row[2] * rgb[2]);
+}
+
+function rgbDistance(a, b) {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function colorblindDistance(colorA, colorB) {
+  const rgbA = parseHexColor(colorA);
+  const rgbB = parseHexColor(colorB);
+  if (!rgbA || !rgbB) return 999;
+  const normalDistance = rgbDistance(rgbA, rgbB);
+  const simulatedDistance = ['protanopia', 'deuteranopia', 'tritanopia']
+    .map(type => rgbDistance(simulateColorVision(rgbA, type), simulateColorVision(rgbB, type)));
+  return Math.min(normalDistance, ...simulatedDistance);
+}
+
+function getBestColorblindFallback(usedColors, preferredColor) {
+  const candidates = [preferredColor, ...COLORBLIND_SAFE_PALETTE].filter(Boolean);
+  let bestColor = candidates[0] || DEFAULT_SWATCH;
+  let bestDistance = -1;
+
+  candidates.forEach((candidate) => {
+    const nearestDistance = usedColors.length
+      ? Math.min(...usedColors.map(color => colorblindDistance(candidate, color)))
+      : 999;
+    if (nearestDistance > bestDistance) {
+      bestColor = candidate;
+      bestDistance = nearestDistance;
+    }
+  });
+
+  return bestColor;
+}
+
+function getAutoColorblindPartyColor(partido) {
+  const key = normalizeColorblindPartyKey(partido);
+  if (!key) return DEFAULT_SWATCH;
+  if (COLORBLIND_AUTO_PARTY_COLORS.has(key)) return COLORBLIND_AUTO_PARTY_COLORS.get(key);
+
+  const preferredColor = COLORBLIND_PARTY_COLORS.get(key) || PARTY_COLORS.get(key) || DEFAULT_SWATCH;
+  const usedColors = Array.from(COLORBLIND_AUTO_PARTY_COLORS.values());
+  const isTooClose = usedColors.some(color => colorblindDistance(preferredColor, color) < COLORBLIND_MIN_DISTANCE);
+  const color = isTooClose ? getBestColorblindFallback(usedColors, preferredColor) : preferredColor;
+
+  COLORBLIND_AUTO_PARTY_COLORS.set(key, color);
+  return color;
+}
+
+function resetColorblindAutoPalette() {
+  COLORBLIND_AUTO_PARTY_COLORS.clear();
+}
+
+function getEffectivePartyColor(partido) {
+  const key = normalizeColorblindPartyKey(partido);
+  if (isColorblindMode) {
+    if (CUSTOM_COLORBLIND_PARTY_COLORS.has(key)) return CUSTOM_COLORBLIND_PARTY_COLORS.get(key);
+    return getAutoColorblindPartyColor(key);
+  }
+  return PARTY_COLORS.get(key) || DEFAULT_SWATCH;
+}
 
 function getColorForCandidate(nome, partido) {
-  if (CUSTOM_CANDIDATE_COLORS.has(nome)) {
-    return CUSTOM_CANDIDATE_COLORS.get(nome);
+  const customColors = getActiveCandidateColorMap();
+  if (customColors.has(nome)) {
+    return customColors.get(nome);
   }
-  return PARTY_COLORS.get((partido || '').toUpperCase()) || DEFAULT_SWATCH;
+  return getEffectivePartyColor(partido);
 }
 
 const DEFAULT_SWATCH = "#7a8699";
@@ -666,6 +792,10 @@ let isSelectorsActive = false;
 let startSelectionPoint = null;
 let selectionBoxElement = null; // DOM Element for the box
 let isDragSelection = false; // Flag to track if last selection was drag
+let mobileAreaSelectionMode = false;
+let mobileSelectionButton = null;
+let mobileSelectionConfirmPanel = null;
+let pendingMobileSelectionIDs = new Set();
 
 // ====== FUNÇÃO DE LIMPEZA COMPLETA DE DEPUTADOS ======
 function clearDeputyData() {

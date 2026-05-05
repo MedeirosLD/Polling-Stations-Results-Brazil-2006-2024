@@ -551,10 +551,10 @@ function getDefaultPresidentShiftYears() {
   const years = Array.isArray(PRESIDENT_SHIFT_YEARS) ? PRESIDENT_SHIFT_YEARS : [2006, 2010, 2014, 2018, 2022];
   const toYear = years.includes(loadedYear) ? loadedYear : years[years.length - 1];
   const toIndex = years.indexOf(toYear);
-  const fromYear = toIndex > 0 ? years[toIndex - 1] : years[0];
+  const compareYear = toIndex > 0 ? years[toIndex - 1] : years[toIndex + 1];
   return {
     fromYear: toYear,
-    toYear: fromYear === toYear ? '' : fromYear
+    toYear: compareYear || ''
   };
 }
 
@@ -564,27 +564,29 @@ function populatePresidentShiftYearSelects() {
   const loadedYear = years.includes(parseInt(STATE.currentElectionYear, 10))
     ? parseInt(STATE.currentElectionYear, 10)
     : years[years.length - 1];
-  const pastYears = years.filter((year) => year < loadedYear).sort((a, b) => b - a);
+  const comparisonYears = years
+    .filter((year) => year !== loadedYear)
+    .sort((a, b) => a - b);
   const fill = (select, selectedYear) => {
     select.innerHTML = years.map((year) => (
       `<option value="${year}" ${parseInt(selectedYear, 10) === year ? 'selected' : ''}>${year}</option>`
     )).join('');
   };
-  const fillPast = (select, selectedYear) => {
-    select.innerHTML = pastYears.map((year) => (
+  const fillComparison = (select, selectedYear) => {
+    select.innerHTML = comparisonYears.map((year) => (
       `<option value="${year}" ${parseInt(selectedYear, 10) === year ? 'selected' : ''}>${year}</option>`
     )).join('');
   };
 
   if (parseInt(presidentShiftFromYear, 10) !== loadedYear
-    || !pastYears.includes(parseInt(presidentShiftToYear, 10))) {
+    || !comparisonYears.includes(parseInt(presidentShiftToYear, 10))) {
     const defaults = getDefaultPresidentShiftYears();
     presidentShiftFromYear = defaults.fromYear;
     presidentShiftToYear = defaults.toYear;
   }
 
   fill(dom.selectShiftFromYear, presidentShiftFromYear);
-  fillPast(dom.selectShiftToYear, presidentShiftToYear);
+  fillComparison(dom.selectShiftToYear, presidentShiftToYear);
 }
 
 function syncPresidentShiftCompareControls() {
@@ -615,14 +617,14 @@ function syncPresidentShiftVizModeAvailability() {
 
   const years = Array.isArray(PRESIDENT_SHIFT_YEARS) ? PRESIDENT_SHIFT_YEARS : [2006, 2010, 2014, 2018, 2022];
   const loadedYear = parseInt(STATE.currentElectionYear, 10);
-  const hasPastYear = years.some((year) => year < loadedYear);
+  const hasComparableYear = years.some((year) => year !== loadedYear);
   const isPresidentCargo = String(currentCargo || '').startsWith('presidente');
-  const canUseShift = isPresidentCargo && hasPastYear;
+  const canUseShift = isPresidentCargo && hasComparableYear;
   shiftButton.disabled = !canUseShift;
   shiftButton.classList.toggle('disabled', !canUseShift);
   shiftButton.title = canUseShift
     ? 'Shift do 2º turno presidencial'
-    : 'Disponível apenas para Presidente com eleição presidencial anterior';
+    : 'Disponível apenas para Presidente com ano comparável';
 
   if (!canUseShift && currentVizMode === 'shift_presidente_2t') {
     currentVizMode = 'vencedor';

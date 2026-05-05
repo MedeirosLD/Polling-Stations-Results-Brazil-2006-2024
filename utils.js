@@ -40,9 +40,30 @@ function getFeatureSelectionId(properties) {
   return '';
 }
 
+function getNumericPropValue(properties, candidateKeys) {
+  if (!properties || !Array.isArray(candidateKeys)) return 0;
+
+  for (const key of candidateKeys) {
+    if (properties[key] !== undefined) return ensureNumber(properties[key]);
+
+    const upperKey = String(key).toUpperCase();
+    for (const propKey in properties) {
+      if (propKey.toUpperCase() === upperKey) return ensureNumber(properties[propKey]);
+    }
+  }
+
+  return 0;
+}
+
+function isLimitedCensusYear2006() {
+  return String(window.STATE?.currentElectionYear || '') === '2006';
+}
+
 if (typeof window !== 'undefined') {
   window.getProp = getProp;
   window.getFeatureSelectionId = getFeatureSelectionId;
+  window.getNumericPropValue = getNumericPropValue;
+  window.isLimitedCensusYear2006 = isLimitedCensusYear2006;
 }
 
 const norm = s => (s || "").normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/'/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
@@ -57,7 +78,11 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value);
 }
-function colorForParty(sg) { return PARTY_COLORS.get((sg || '').toUpperCase()) || DEFAULT_SWATCH; }
+function colorForParty(sg) {
+  return typeof getEffectivePartyColor === 'function'
+    ? getEffectivePartyColor(sg)
+    : (PARTY_COLORS.get((sg || '').toUpperCase()) || DEFAULT_SWATCH);
+}
 function fmtPct(x) { return isFinite(x) ? (x * 100).toFixed(2).replace('.', ',') + "%" : "-"; }
 function fmtInt(n) { return (n || 0).toLocaleString('pt-BR'); }
 function ensureNumber(v) {

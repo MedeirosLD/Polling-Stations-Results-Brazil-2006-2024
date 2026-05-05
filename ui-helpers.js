@@ -50,6 +50,21 @@ function scheduleAutoLoadCurrentSelection(delay = 80) {
   }, delay);
 }
 
+function updateColorblindToggleUI() {
+  if (!dom.colorblindToggle) return;
+
+  dom.colorblindToggle.classList.toggle('active', isColorblindMode);
+  dom.colorblindToggle.innerHTML = `
+    <span class="colorblind-icon" aria-hidden="true"></span>
+    <span class="colorblind-label">Daltônico</span>
+    <span class="colorblind-state">${isColorblindMode ? 'Ativo' : 'Inativo'}</span>
+  `;
+  dom.colorblindToggle.title = isColorblindMode
+    ? 'Modo daltônico ativo em todo o site'
+    : 'Ativar modo daltônico em todo o site';
+  dom.colorblindToggle.setAttribute('aria-pressed', String(isColorblindMode));
+}
+
 function parseCandidateKey(key) {
   const result = { nome: 'N/D', partido: 'N/D', status: 'N/D', key: key };
   const turnoMatch = key.match(/ (1T|2T)$/);
@@ -222,6 +237,7 @@ async function loadMunicipalIndex() {
 async function init() {
   document.body.dataset.theme = 'light';
   mapCanvasRenderer = L.canvas({ padding: 0.5, tolerance: 10 });
+  if (typeof loadColorPreferences === 'function') loadColorPreferences();
 
   await loadMunicipalIndex();
 
@@ -243,6 +259,21 @@ async function init() {
     }
     applyFiltersAndRedraw();
   });
+  dom.colorblindToggle = document.getElementById('colorblindToggle');
+  if (dom.colorblindToggle) {
+    isColorblindMode = localStorage.getItem('visualizadorColorblindMode') === 'true';
+    document.body.dataset.colorMode = isColorblindMode ? 'colorblind' : 'default';
+    updateColorblindToggleUI();
+    dom.colorblindToggle.addEventListener('click', () => {
+      isColorblindMode = !isColorblindMode;
+      localStorage.setItem('visualizadorColorblindMode', String(isColorblindMode));
+      document.body.dataset.colorMode = isColorblindMode ? 'colorblind' : 'default';
+      if (typeof resetColorblindAutoPalette === 'function') resetColorblindAutoPalette();
+      updateColorblindToggleUI();
+      refreshColorModeUI();
+      showToast(isColorblindMode ? 'Modo daltônico ativado em todo o site.' : 'Modo daltônico desativado.', 'info', 1800);
+    });
+  }
 
   dom.electionChips = document.getElementById('electionChips');
   dom.loaderBoxGeneral = document.getElementById('loaderBoxGeneral');

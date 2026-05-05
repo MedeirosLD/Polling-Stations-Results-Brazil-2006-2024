@@ -113,7 +113,6 @@ function updateSelectionUI(isFilterAggregation = false) {
   }
 }
 
-
 function cleanPartyName(value) {
   return value ? value.trim().toUpperCase() : '';
 }
@@ -459,6 +458,7 @@ function ensureCandidateColorPopover() {
         <span>Cor personalizada</span>
         <input id="candidateColorHexInput" type="text" maxlength="7" placeholder="#2563EB" />
       </label>
+      <div class="candidate-color-mode-note" id="candidateColorModeNote"></div>
       <div class="candidate-color-actions">
         <button type="button" class="button ghost" data-color-action="reset">Cor padrão</button>
         <button type="button" class="button primary" data-color-action="apply">Aplicar</button>
@@ -582,6 +582,12 @@ function openCandidateColorPopover(triggerEl, nome, partido, currentColor) {
 
   popover.querySelector('#candidateColorPopoverName').textContent = nome;
   popover.querySelector('#candidateColorPopoverParty').textContent = partido || 'Sem partido';
+  const modeNote = popover.querySelector('#candidateColorModeNote');
+  if (modeNote) {
+    modeNote.textContent = isColorblindMode
+      ? 'Esta cor sera usada apenas no modo daltonico.'
+      : 'Esta cor sera usada no modo de cores normal.';
+  }
   setCandidateColorPopoverValue(currentColor);
 
   popover.classList.remove('hidden');
@@ -609,13 +615,17 @@ function applyCandidateColorPopover() {
     showToast('Digite uma cor hexadecimal válida.', 'warn', 2200);
     return;
   }
-  setCandidateColor(activeCandidateColorTarget.nome, color);
+  setCandidateColor(activeCandidateColorTarget.nome, color, activeCandidateColorTarget.partido);
   closeCandidateColorPopover();
 }
 
 function resetCandidateColorPopover() {
   if (!activeCandidateColorTarget?.nome) return;
-  CUSTOM_CANDIDATE_COLORS.delete(activeCandidateColorTarget.nome);
+  getActiveCandidateColorMap().delete(activeCandidateColorTarget.nome);
+  if (isColorblindMode && activeCandidateColorTarget.partido) {
+    CUSTOM_COLORBLIND_PARTY_COLORS.delete(String(activeCandidateColorTarget.partido).toUpperCase());
+  }
+  saveColorPreferences();
   updateSelectionUI(STATE.isFilterAggregationActive);
   if (currentLayer) currentLayer.setStyle(getFeatureStyle);
   closeCandidateColorPopover();
@@ -1132,10 +1142,61 @@ function renderDeputyResults(cargo) {
     `;
 }
 
-function setCandidateColor(nome, novaCor) {
-  CUSTOM_CANDIDATE_COLORS.set(nome, novaCor);
+function setCandidateColor(nome, novaCor, partido = '') {
+  getActiveCandidateColorMap().set(nome, novaCor);
+  if (isColorblindMode && partido) {
+    CUSTOM_COLORBLIND_PARTY_COLORS.set(String(partido).toUpperCase(), novaCor);
+  }
+  saveColorPreferences();
   updateSelectionUI(STATE.isFilterAggregationActive);
   if (currentLayer) currentLayer.setStyle(getFeatureStyle);
+}
+
+function refreshColorModeUI() {
+  if (typeof resetColorblindAutoPalette === 'function') resetColorblindAutoPalette();
+  if (currentLayer) {
+    if (typeof currentLayer.setStyle === 'function') currentLayer.setStyle(getFeatureStyle);
+    currentLayer.eachLayer?.((layer) => {
+      if (typeof layer.setStyle === 'function' && layer.feature) {
+        layer.setStyle(getFeatureStyle(layer.feature));
+      }
+    });
+  }
+  if (selectedLocationIDs.size > 0) {
+    updateSelectionUI(STATE.isFilterAggregationActive);
+  } else if (typeof syncResultsPanelToCurrentView === 'function') {
+    syncResultsPanelToCurrentView();
+  }
+  updatePerformanceStatsUI?.();
+}
+
+function saveColorPreferences() {
+  try {
+    localStorage.setItem('visualizadorCustomCandidateColors', JSON.stringify(Object.fromEntries(CUSTOM_CANDIDATE_COLORS)));
+    localStorage.setItem('visualizadorCustomColorblindCandidateColors', JSON.stringify(Object.fromEntries(CUSTOM_COLORBLIND_CANDIDATE_COLORS)));
+    localStorage.setItem('visualizadorCustomColorblindPartyColors', JSON.stringify(Object.fromEntries(CUSTOM_COLORBLIND_PARTY_COLORS)));
+  } catch (error) {
+    console.warn('Nao foi possivel salvar preferencias de cor:', error);
+  }
+}
+
+function loadColorPreferences() {
+  const loadMap = (storageKey, targetMap) => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return;
+      Object.entries(JSON.parse(raw)).forEach(([key, value]) => {
+        const normalized = normalizeCandidateHexColor(value);
+        if (normalized) targetMap.set(key, normalized);
+      });
+    } catch (error) {
+      console.warn('Nao foi possivel carregar preferencias de cor:', error);
+    }
+  };
+
+  loadMap('visualizadorCustomCandidateColors', CUSTOM_CANDIDATE_COLORS);
+  loadMap('visualizadorCustomColorblindCandidateColors', CUSTOM_COLORBLIND_CANDIDATE_COLORS);
+  loadMap('visualizadorCustomColorblindPartyColors', CUSTOM_COLORBLIND_PARTY_COLORS);
 }
 
 // ====== VISUAL AVAILABILITY BAR LOGIC ======

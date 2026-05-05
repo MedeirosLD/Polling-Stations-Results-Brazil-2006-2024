@@ -411,7 +411,7 @@ function renderDeputySearchResults(results, container, query) {
 
   container.innerHTML = results.map((c, idx) => {
     const isSelected = selectedValue === `${c.nome} (${c.partido})`;
-    const partyColor = PARTY_COLORS.get(c.partido.toUpperCase()) || DEFAULT_SWATCH;
+    const partyColor = colorForParty(c.partido);
 
     // Highlight match
     let displayName = toTitleCase(c.nome);
@@ -514,7 +514,7 @@ function isPresidentShiftModeActive() {
     && currentTurno === 2
     && Number.isFinite(parseInt(presidentShiftFromYear, 10))
     && Number.isFinite(parseInt(presidentShiftToYear, 10))
-    && parseInt(presidentShiftToYear, 10) < parseInt(presidentShiftFromYear, 10);
+    && parseInt(presidentShiftToYear, 10) !== parseInt(presidentShiftFromYear, 10);
 }
 
 function removePresidentShiftOverlay() {
@@ -713,8 +713,10 @@ async function updatePresidentShiftOverlay() {
   }
 
   const token = ++presidentShiftRenderToken;
-  const currentYear = parseInt(presidentShiftFromYear, 10);
-  const previousYear = parseInt(presidentShiftToYear, 10);
+  const baseYear = parseInt(presidentShiftFromYear, 10);
+  const compareYear = parseInt(presidentShiftToYear, 10);
+  const currentYear = Math.max(baseYear, compareYear);
+  const previousYear = Math.min(baseYear, compareYear);
   const candidates = [];
 
   currentLayer.eachLayer((layer) => {
@@ -751,6 +753,7 @@ async function updatePresidentShiftOverlay() {
 }
 
 function applyFiltersAndRedraw() {
+  if (typeof resetColorblindAutoPalette === 'function') resetColorblindAutoPalette();
   if (isPresidentShiftMode()) {
     removePresidentShiftOverlay();
   }
@@ -1702,8 +1705,10 @@ function onEachFeature(feature, layer) {
     const id = resolveFeatureSelectionId(props);
     if (!id || PRESIDENT_SHIFT_TOOLTIP_CACHE.has(id)) return;
     try {
-      const currentYear = parseInt(presidentShiftFromYear, 10);
-      const previousYear = parseInt(presidentShiftToYear, 10);
+      const baseYear = parseInt(presidentShiftFromYear, 10);
+      const compareYear = parseInt(presidentShiftToYear, 10);
+      const currentYear = Math.max(baseYear, compareYear);
+      const previousYear = Math.min(baseYear, compareYear);
       const shift = await window.resolvePresidentRunoffShiftForProps(props, currentYear, previousYear);
       if (!shift || !Number.isFinite(shift.shift)) return;
       PRESIDENT_SHIFT_TOOLTIP_CACHE.set(id, shift);
@@ -1866,9 +1871,15 @@ function setupBoxSelection() {
   mapContainer.appendChild(selectionBoxElement);
 
   // Note: We use the map container for events to capture drags over the map
-  mapContainer.addEventListener('mousedown', handleMouseDown);
+  mapContainer.addEventListener('mousedown', handleMouseDown, true);
   window.addEventListener('mousemove', handleMouseMove); // Window to catch drags outside map
   window.addEventListener('mouseup', handleMouseUp);
+
+  setupMobileAreaSelectionControls(mapContainer);
+  mapContainer.addEventListener('touchstart', handleMobileSelectionTouchStart, { passive: false });
+  mapContainer.addEventListener('touchmove', handleMobileSelectionTouchMove, { passive: false });
+  mapContainer.addEventListener('touchend', handleMobileSelectionTouchEnd, { passive: false });
+  mapContainer.addEventListener('touchcancel', cancelMobileAreaSelection, { passive: false });
 }
 
 function handleMouseDown(e) {
@@ -1877,6 +1888,8 @@ function handleMouseDown(e) {
 
   // Only Left Click
   if (e.button !== 0) return;
+
+  if (!currentLayer) return;
 
   isSelectorsActive = true;
 
@@ -1888,17 +1901,196 @@ function handleMouseDown(e) {
   const mapContainer = map.getContainer();
   const rect = mapContainer.getBoundingClientRect();
 
-  startSelectionPoint = {
+  startSelectionPoint = clampPointToMap({
     x: e.clientX - rect.left,
     y: e.clientY - rect.top
-  };
+  });
 
   // Reset and Show Box
   updateSelectionBox(startSelectionPoint.x, startSelectionPoint.y, 0, 0);
   selectionBoxElement.style.display = 'block';
 
-  // Prevent default text selection
+  // Prevent default text selection and Leaflet's native Shift+box zoom.
   e.preventDefault();
+  e.stopPropagation();
+}
+
+function setupMobileAreaSelectionControls(mapContainer) {
+  if (mobileSelectionButton) return;
+
+  mobileSelectionButton = document.createElement('button');
+  mobileSelectionButton.type = 'button';
+  mobileSelectionButton.className = 'mobile-area-select-btn';
+  mobileSelectionButton.textContent = 'Selecionar area';
+  mobileSelectionButton.title = 'Desenhar uma area no mapa';
+  mapContainer.appendChild(mobileSelectionButton);
+
+  mobileSelectionConfirmPanel = document.createElement('div');
+  mobileSelectionConfirmPanel.className = 'mobile-selection-confirm hidden';
+  mobileSelectionConfirmPanel.innerHTML = `
+    <div class="mobile-selection-confirm-text" id="mobileSelectionConfirmText">0 locais encontrados</div>
+    <div class="mobile-selection-confirm-actions">
+      <button type="button" class="button ghost" data-mobile-selection-action="cancel">Cancelar</button>
+      <button type="button" class="button primary" data-mobile-selection-action="confirm">Selecionar</button>
+    </div>
+  `;
+  mapContainer.appendChild(mobileSelectionConfirmPanel);
+
+  mobileSelectionButton.addEventListener('click', () => {
+    setMobileAreaSelectionMode(!mobileAreaSelectionMode);
+  });
+
+  mobileSelectionConfirmPanel.addEventListener('click', (event) => {
+    const action = event.target.closest('[data-mobile-selection-action]')?.dataset.mobileSelectionAction;
+    if (action === 'confirm') confirmMobileAreaSelection();
+    if (action === 'cancel') cancelMobileAreaSelection();
+  });
+}
+
+function setMobileAreaSelectionMode(active) {
+  mobileAreaSelectionMode = !!active;
+  pendingMobileSelectionIDs.clear();
+
+  if (mobileSelectionButton) {
+    mobileSelectionButton.classList.toggle('active', mobileAreaSelectionMode);
+    mobileSelectionButton.textContent = mobileAreaSelectionMode ? 'Desenhe no mapa' : 'Selecionar area';
+  }
+
+  if (mobileSelectionConfirmPanel) {
+    mobileSelectionConfirmPanel.classList.add('hidden');
+  }
+
+  const mapContainer = map?.getContainer?.();
+  if (mapContainer) {
+    mapContainer.classList.toggle('mobile-area-selection-active', mobileAreaSelectionMode);
+  }
+
+  if (!mobileAreaSelectionMode) {
+    isSelectorsActive = false;
+    if (selectionBoxElement) selectionBoxElement.style.display = 'none';
+    if (map?.dragging) map.dragging.enable();
+    if (map?.boxZoom) map.boxZoom.enable();
+  } else {
+    if (!currentLayer) {
+      showToast('Carregue dados antes de selecionar uma area.', 'info', 2200);
+      setMobileAreaSelectionMode(false);
+    } else {
+      showToast('Arraste no mapa para desenhar a area de selecao.', 'info', 2200);
+    }
+  }
+}
+
+function getTouchPointInMap(touch) {
+  const mapContainer = map.getContainer();
+  const rect = mapContainer.getBoundingClientRect();
+  return clampPointToMap({
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  });
+}
+
+function handleMobileSelectionTouchStart(e) {
+  if (!mobileAreaSelectionMode || !currentLayer) return;
+  if (e.touches.length !== 1) return;
+  if (e.target.closest('.mobile-area-select-btn, .mobile-selection-confirm')) return;
+
+  e.preventDefault();
+  isSelectorsActive = true;
+  pendingMobileSelectionIDs.clear();
+
+  map.dragging.disable();
+  if (map.boxZoom) map.boxZoom.disable();
+
+  startSelectionPoint = getTouchPointInMap(e.touches[0]);
+  updateSelectionBox(startSelectionPoint.x, startSelectionPoint.y, 0, 0);
+  selectionBoxElement.style.display = 'block';
+}
+
+function handleMobileSelectionTouchMove(e) {
+  if (!mobileAreaSelectionMode || !isSelectorsActive || e.touches.length !== 1) return;
+
+  e.preventDefault();
+  const current = getTouchPointInMap(e.touches[0]);
+  const x = Math.min(startSelectionPoint.x, current.x);
+  const y = Math.min(startSelectionPoint.y, current.y);
+  const width = Math.abs(current.x - startSelectionPoint.x);
+  const height = Math.abs(current.y - startSelectionPoint.y);
+
+  updateSelectionBox(x, y, width, height);
+}
+
+function handleMobileSelectionTouchEnd(e) {
+  if (!mobileAreaSelectionMode || !isSelectorsActive) return;
+
+  e.preventDefault();
+  isSelectorsActive = false;
+  selectionBoxElement.style.display = 'none';
+
+  const changedTouch = e.changedTouches?.[0];
+  if (!changedTouch) {
+    cancelMobileAreaSelection();
+    return;
+  }
+
+  const endPoint = getTouchPointInMap(changedTouch);
+  const dist = Math.sqrt(Math.pow(endPoint.x - startSelectionPoint.x, 2) + Math.pow(endPoint.y - startSelectionPoint.y, 2));
+  if (dist < 12) {
+    showToast('Arraste para desenhar uma area maior.', 'info', 1800);
+    setMobileAreaSelectionMode(false);
+    return;
+  }
+
+  const minX = Math.min(startSelectionPoint.x, endPoint.x);
+  const maxX = Math.max(startSelectionPoint.x, endPoint.x);
+  const minY = Math.min(startSelectionPoint.y, endPoint.y);
+  const maxY = Math.max(startSelectionPoint.y, endPoint.y);
+
+  const bounds = L.latLngBounds(
+    map.containerPointToLatLng(L.point(minX, minY)),
+    map.containerPointToLatLng(L.point(maxX, maxY))
+  );
+
+  pendingMobileSelectionIDs = getFeatureIdsInBounds(bounds);
+  showMobileSelectionConfirmation();
+}
+
+function showMobileSelectionConfirmation() {
+  if (!pendingMobileSelectionIDs.size) {
+    showToast('Nenhum local encontrado nessa area.', 'info', 2000);
+    setMobileAreaSelectionMode(false);
+    return;
+  }
+
+  const text = mobileSelectionConfirmPanel?.querySelector('#mobileSelectionConfirmText');
+  if (text) {
+    text.textContent = `${pendingMobileSelectionIDs.size} ${pendingMobileSelectionIDs.size === 1 ? 'local encontrado' : 'locais encontrados'}`;
+  }
+  mobileSelectionConfirmPanel?.classList.remove('hidden');
+}
+
+function confirmMobileAreaSelection() {
+  if (!pendingMobileSelectionIDs.size) {
+    cancelMobileAreaSelection();
+    return;
+  }
+
+  selectedLocationIDs.clear();
+  pendingMobileSelectionIDs.forEach(id => selectedLocationIDs.add(id));
+  pendingMobileSelectionIDs.clear();
+  isDragSelection = true;
+  updateSelectionUI(false);
+  if (currentLayer && currentLayer.resetStyle) currentLayer.resetStyle();
+  setMobileAreaSelectionMode(false);
+
+  if (typeof window.mobileShowPanel === 'function' && window.innerWidth <= 768) {
+    window.mobileShowPanel('right');
+  }
+}
+
+function cancelMobileAreaSelection(e) {
+  if (e?.preventDefault) e.preventDefault();
+  pendingMobileSelectionIDs.clear();
+  setMobileAreaSelectionMode(false);
 }
 
 function handleMouseMove(e) {
@@ -1907,8 +2099,12 @@ function handleMouseMove(e) {
   const mapContainer = map.getContainer();
   const rect = mapContainer.getBoundingClientRect();
 
-  const currentX = e.clientX - rect.left;
-  const currentY = e.clientY - rect.top;
+  const currentPoint = clampPointToMap({
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  });
+  const currentX = currentPoint.x;
+  const currentY = currentPoint.y;
 
   // Calculate box geometry
   const x = Math.min(startSelectionPoint.x, currentX);
@@ -1932,15 +2128,19 @@ function handleMouseUp(e) {
   // Perform Final Selection Logic
   const mapContainer = map.getContainer();
   const rect = mapContainer.getBoundingClientRect();
-  const endX = e.clientX - rect.left;
-  const endY = e.clientY - rect.top;
+  const endPoint = clampPointToMap({
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  });
+  const endX = endPoint.x;
+  const endY = endPoint.y;
 
   // If drag was very small, treat as click and let standard Shift+Click handler work? 
   // Standard Shift+Click is handled by Leaflet layer click.
   // We should only process BLOCK selection if distance > threshold.
   const dist = Math.sqrt(Math.pow(endX - startSelectionPoint.x, 2) + Math.pow(endY - startSelectionPoint.y, 2));
 
-  if (dist < 5) {
+  if (dist < 8) {
     // It was just a click. Leaflet's 'click' event on the layer will handle it.
     // We do nothing here to avoid double-processing or clearing.
     // But wait: mousedown preventDefault() might have blocked it?
@@ -1958,6 +2158,8 @@ function handleMouseUp(e) {
   const minY = Math.min(startSelectionPoint.y, endY);
   const maxY = Math.max(startSelectionPoint.y, endY);
 
+  if ((maxX - minX) < 8 || (maxY - minY) < 8) return;
+
   const p1 = L.point(minX, minY);
   const p2 = L.point(maxX, maxY);
 
@@ -1966,7 +2168,6 @@ function handleMouseUp(e) {
     map.containerPointToLatLng(p2)
   );
 
-  // Identify features inside bounds
   selectFeaturesInBounds(bounds);
 }
 
@@ -1977,10 +2178,52 @@ function updateSelectionBox(x, y, w, h) {
   selectionBoxElement.style.height = h + 'px';
 }
 
-function selectFeaturesInBounds(bounds) {
-  if (!currentLayer) return;
+function clampPointToMap(point) {
+  const size = map?.getSize?.();
+  const maxX = Math.max(0, (size?.x || 0));
+  const maxY = Math.max(0, (size?.y || 0));
 
+  return {
+    x: Math.max(0, Math.min(maxX, Number(point?.x) || 0)),
+    y: Math.max(0, Math.min(maxY, Number(point?.y) || 0))
+  };
+}
+
+function isValidSelectionBounds(bounds) {
+  if (!bounds || !bounds.isValid?.()) return false;
+  const south = bounds.getSouth();
+  const north = bounds.getNorth();
+  const west = bounds.getWest();
+  const east = bounds.getEast();
+  return [south, north, west, east].every(Number.isFinite)
+    && north > south
+    && east > west
+    && bounds.intersects(map.getBounds());
+}
+
+function selectFeaturesInBounds(bounds) {
+  if (!isValidSelectionBounds(bounds)) return;
+
+  const ids = getFeatureIdsInBounds(bounds);
   let addedCount = 0;
+
+  ids.forEach(id => {
+    selectedLocationIDs.add(id);
+    addedCount++;
+  });
+
+  if (addedCount > 0) {
+    isDragSelection = true;
+    updateSelectionUI(false); // Treat as manual selection
+    // Force style update for newly selected items
+    if (currentLayer && currentLayer.resetStyle) currentLayer.resetStyle();
+  }
+}
+
+function getFeatureIdsInBounds(bounds) {
+  const ids = new Set();
+  if (!currentLayer) return ids;
+  if (!isValidSelectionBounds(bounds)) return ids;
 
   // Recursive helper to find features in bounds
   const findInBounds = (layerNode) => {
@@ -1992,10 +2235,7 @@ function selectFeaturesInBounds(bounds) {
         const props = layerNode.feature && layerNode.feature.properties;
         if (props) {
           const id = resolveFeatureSelectionId(props);
-          if (id) {
-            selectedLocationIDs.add(id);
-            addedCount++;
-          }
+          if (id) ids.add(id);
         }
       }
     }
@@ -2006,13 +2246,7 @@ function selectFeaturesInBounds(bounds) {
   };
 
   findInBounds(currentLayer);
-
-  if (addedCount > 0) {
-    isDragSelection = true;
-    updateSelectionUI(false); // Treat as manual selection
-    // Force style update for newly selected items
-    if (currentLayer && currentLayer.resetStyle) currentLayer.resetStyle();
-  }
+  return ids;
 }
 
 
