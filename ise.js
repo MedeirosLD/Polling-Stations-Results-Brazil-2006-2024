@@ -7,6 +7,13 @@ const ISE_COLORS = { baixo: '#4a9eff', medio: '#f5c842', alto: '#ff6b4a' };
 const ISE_LABELS = { baixo: 'Classe baixa', medio: 'Classe média', alto: 'Classe alta' };
 const ISE_TERCIL_ORDER = ['baixo', 'medio', 'alto'];
 
+function classifyIseAbsolute(value) {
+    const n = Number(value) || 0;
+    if (n <= 30) return 'baixo';
+    if (n <= 60) return 'medio';
+    return 'alto';
+}
+
 function isLimitedCensusYear2006() {
     return String(window.STATE?.currentElectionYear || '') === '2006';
 }
@@ -326,10 +333,10 @@ function processISEData(features, candidatoKey, currentCargo) {
 
         d.x = (nRenda * 0.40) + (nSup * 0.40) + (nEsg * 0.15) + (nIdade * 0.05);
 
-        if (d.x <= 30) d.t = 'baixo';
-        else if (d.x <= 60) d.t = 'medio';
-        else d.t = 'alto';
+    });
 
+    rawFeatures.forEach(d => {
+        d.t = classifyIseAbsolute(d.x);
         if (d.id && window.iseDataMap) window.iseDataMap.set(d.id, d.t);
     });
 
@@ -437,7 +444,6 @@ function drawIseChart(container, id, data, candidateName, candidateColor) {
     if (legEl) {
         const counts = { baixo: 0, medio: 0, alto: 0 };
         data.forEach(d => counts[d.t]++);
-
         const currentFilter = window.STATE && window.STATE.iseFilter ? window.STATE.iseFilter : 'all';
 
         legEl.innerHTML = ISE_TERCIL_ORDER.map(t => {
@@ -451,7 +457,7 @@ function drawIseChart(container, id, data, candidateName, candidateColor) {
                  onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
                  onmouseout="this.style.background='transparent'">
                 <div class="legend-dot" style="width:10px; height:10px; border-radius:50%; background:${ISE_COLORS[t]}; box-shadow: 0 0 2px rgba(0,0,0,0.5)"></div>
-                ${ISE_LABELS[t]} 
+                ${ISE_LABELS[t]}
                 <span class="legend-count" style="color:var(--muted); font-weight:normal;">(${counts[t]})</span>
                 </div>`;
         }).join('');
@@ -990,9 +996,10 @@ function _buildISEDataDeputy(currentLayer, getVotesFn) {
     rawFeatures.forEach(d => {
         const nRenda = Math.min((d.renda / TETO_RENDA) * 100, 100);
         d.x = (nRenda * 0.40) + (d.pctSup * 0.40) + (d.esgotoFinal * 0.15) + (((d.pctIdade - minIdade) / iDif) * 100 * 0.05);
-        if (d.x <= 30) d.t = 'baixo';
-        else if (d.x <= 60) d.t = 'medio';
-        else d.t = 'alto';
+    });
+
+    rawFeatures.forEach(d => {
+        d.t = classifyIseAbsolute(d.x);
         if (d.id && window.iseDataMap) window.iseDataMap.set(d.id, d.t);
     });
     return rawFeatures;
@@ -1771,6 +1778,10 @@ const ISE_FACTORS = {
         ]
     },
 };
+window.ISE_FACTORS = ISE_FACTORS;
+if (typeof window.renderVizSocialMetricControls === 'function') {
+    window.renderVizSocialMetricControls();
+}
 
 // Retorna o valor 0-100 do fator para uma feature
 // Espelha EXATAMENTE a lógica do app.js (getColorForNeighborhood / renderFilterPanel)
@@ -1904,6 +1915,8 @@ function _getFactorValue(props, factorDef) {
 
     return -1;
 }
+window._getFactorValue = _getFactorValue;
+window.getIseFactorValue = _getFactorValue;
 
 // Constrói pontos ISE com eixo X = % do fator (em vez do score ISE composto)
 function processFactorData(features, candidatoKey, currentCargo, factorDef) {
@@ -2254,6 +2267,7 @@ window.setIseAnalysisMode = function (mode) {
     if (btnFactor) btnFactor.classList.toggle('active', mode === 'factor');
     if (factorBox) factorBox.style.display = mode === 'factor' ? 'block' : 'none';
     if (mode === 'factor') _renderFactorSelector();
+    if (typeof window.refreshSocioMetricMap === 'function') window.refreshSocioMetricMap();
     _triggerISERedraw();
 };
 
@@ -2261,6 +2275,7 @@ window.setIseFactor = function (groupId, factorId) {
     window.ISE_FACTOR_STATE.factorGroupId = groupId;
     window.ISE_FACTOR_STATE.factorId = factorId;
     _renderFactorSelector();
+    if (typeof window.refreshSocioMetricMap === 'function') window.refreshSocioMetricMap();
     _triggerISERedraw();
 };
 
@@ -2359,7 +2374,6 @@ function drawIseDiffChart(container, features, keyA, keyB, metaA, metaB, current
         const dB = bMap.get(dA.id);
         if (dB) diff.push({ x: dA.x, y: dA.y - dB.y, t: dA.t, nm: dA.nm, bairro: dA.bairro, cidade: dA.cidade, yA: dA.y, yB: dB.y });
     });
-
     if (diff.length < 3) return;
 
     const card = document.createElement('div');

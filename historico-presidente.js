@@ -172,11 +172,17 @@ function shouldShowPresidentHistory(props) {
     && Object.keys(props).length > 0;
 }
 
-function getAvailableHistoryConfigs() {
-  return Object.values(MAJOR_HISTORY_CONFIG);
+function isDistrictFederalHistoryProps(props) {
+  const uf = String(getProp(props, 'sg_uf') || getProp(props, 'SG_UF') || '').toUpperCase();
+  return uf === 'DF';
 }
 
-function normalizeSelectedHistoryCargo() {
+function getAvailableHistoryConfigs(props = null) {
+  return Object.values(MAJOR_HISTORY_CONFIG)
+    .filter((config) => !(config.cargo === 'prefeito' && isDistrictFederalHistoryProps(props)));
+}
+
+function normalizeSelectedHistoryCargo(props = null) {
   const contextCargo = `${STATE.currentElectionType || ''}:${currentCargo || ''}`;
   const cargoFromContext = getDefaultHistoryCargoFromCurrentCargo();
   if (contextCargo !== LAST_HISTORY_CONTEXT_CARGO) {
@@ -187,7 +193,7 @@ function normalizeSelectedHistoryCargo() {
     SELECTED_MAJOR_HISTORY_CARGO = cargoFromContext;
   }
 
-  const available = getAvailableHistoryConfigs();
+  const available = getAvailableHistoryConfigs(props);
   if (!available.some((config) => config.cargo === SELECTED_MAJOR_HISTORY_CARGO)) {
     SELECTED_MAJOR_HISTORY_CARGO = available[0]?.cargo || 'presidente';
   }
@@ -622,8 +628,8 @@ function renderPresidentHistoryRows(records) {
   return rows.join('');
 }
 
-function renderHistoryCargoSwitch(activeCargo) {
-  const configs = getAvailableHistoryConfigs();
+function renderHistoryCargoSwitch(activeCargo, props = null) {
+  const configs = getAvailableHistoryConfigs(props);
   if (configs.length <= 1) return '';
   return `
     <span class="major-history-switch" role="tablist" aria-label="Cargo do histórico">
@@ -641,11 +647,12 @@ function renderHistoryCargoSwitch(activeCargo) {
 }
 
 function bindHistoryCargoSwitch(container, props) {
+  const availableCargos = new Set(getAvailableHistoryConfigs(props).map((config) => config.cargo));
   container.querySelectorAll('[data-history-cargo]').forEach((button) => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       const cargo = button.getAttribute('data-history-cargo');
-      if (!MAJOR_HISTORY_CONFIG[cargo] || cargo === SELECTED_MAJOR_HISTORY_CARGO) return;
+      if (!MAJOR_HISTORY_CONFIG[cargo] || !availableCargos.has(cargo) || cargo === SELECTED_MAJOR_HISTORY_CARGO) return;
       SELECTED_MAJOR_HISTORY_CARGO = cargo;
       HISTORY_CARGO_USER_SELECTED = true;
       updatePresidentHistoryPanel(props);
@@ -675,7 +682,7 @@ function renderPresidentHistoryCard(container, resolved, props, cargo = SELECTED
           </span>
         </button>
         <div class="major-history-actions">
-          ${renderHistoryCargoSwitch(config.cargo)}
+          ${renderHistoryCargoSwitch(config.cargo, props)}
         </div>
       </div>
       <div class="president-history-body">
@@ -702,7 +709,7 @@ function renderPresidentHistoryCard(container, resolved, props, cargo = SELECTED
 
 async function updatePresidentHistoryPanel(props) {
   const token = ++PRESIDENT_HISTORY_RENDER_TOKEN;
-  const activeCargo = normalizeSelectedHistoryCargo();
+  const activeCargo = normalizeSelectedHistoryCargo(props);
   const config = MAJOR_HISTORY_CONFIG[activeCargo] || MAJOR_HISTORY_CONFIG.presidente;
 
   if (!shouldShowPresidentHistory(props)) {
@@ -723,7 +730,7 @@ async function updatePresidentHistoryPanel(props) {
           </span>
         </button>
         <div class="major-history-actions">
-          ${renderHistoryCargoSwitch(config.cargo)}
+          ${renderHistoryCargoSwitch(config.cargo, props)}
         </div>
       </div>
     </div>
@@ -747,7 +754,7 @@ async function updatePresidentHistoryPanel(props) {
               </span>
             </button>
             <div class="major-history-actions">
-              ${renderHistoryCargoSwitch(config.cargo)}
+              ${renderHistoryCargoSwitch(config.cargo, props)}
             </div>
           </div>
         </div>
@@ -770,7 +777,7 @@ async function updatePresidentHistoryPanel(props) {
             </span>
           </button>
           <div class="major-history-actions">
-            ${renderHistoryCargoSwitch(config.cargo)}
+            ${renderHistoryCargoSwitch(config.cargo, props)}
           </div>
         </div>
       </div>

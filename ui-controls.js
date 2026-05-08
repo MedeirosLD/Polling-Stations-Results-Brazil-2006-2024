@@ -1,4 +1,219 @@
+const SOCIAL_MAP_FACTOR_FALLBACK = {
+  renda: {
+    label: 'Renda',
+    color: '#22c55e',
+    factors: [
+      { id: 'renda_media', label: 'Renda média', keys: ['Renda Media', 'RENDA MEDIA', 'renda'], isCurrency: true, weightNormalizer: 10000 }
+    ]
+  },
+  genero: {
+    label: 'Gênero',
+    color: '#c084fc',
+    factors: [
+      { id: 'mulheres', label: 'Mulheres', keys: ['Pct Mulheres', 'FEMININO', 'MULHERES', 'Mulheres'], isAbs: true },
+      { id: 'homens', label: 'Homens', keys: ['Pct Homens', 'MASCULINO', 'HOMENS', 'Homens'], isAbs: true }
+    ]
+  },
+  raca: {
+    label: 'Cor/Raça',
+    color: '#fb923c',
+    factors: [
+      { id: 'branca', label: 'Branca', keys: ['Pct Branca', 'PCT BRANCA'] },
+      { id: 'preta', label: 'Preta', keys: ['Pct Preta', 'PCT PRETA'] },
+      { id: 'parda', label: 'Parda', keys: ['Pct Parda', 'PCT PARDA'] },
+      { id: 'amarela', label: 'Amarela', keys: ['Pct Amarela', 'PCT AMARELA'] },
+      { id: 'indigena', label: 'Indígena', keys: ['Pct Indigena', 'PCT INDIGENA'] }
+    ]
+  },
+  idade: {
+    label: 'Faixa Etária',
+    color: '#34d399',
+    factors: [
+      { id: 'idade_16_24', label: '16-24', ageRange: [16, 24] },
+      { id: 'idade_25_34', label: '25-34', ageRange: [25, 34] },
+      { id: 'idade_35_44', label: '35-44', ageRange: [35, 44] },
+      { id: 'idade_45_59', label: '45-59', ageRange: [45, 59] },
+      { id: 'idade_60_74', label: '60-74', ageRange: [60, 74] },
+      { id: 'idade_75', label: '75+', ageRange: [75, 200] }
+    ]
+  },
+  escolaridade: {
+    label: 'Escolaridade',
+    color: '#60a5fa',
+    factors: [
+      { id: 'analfabeto', label: 'Analfabeto', keys: ['ANALFABETO', 'Analfabeto'], isAbs: true },
+      { id: 'le_escreve', label: 'Lê/Escreve', keys: ['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve'], isAbs: true },
+      { id: 'fund_incomp', label: 'Fund. Inc.', keys: ['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO'], isAbs: true },
+      { id: 'fund_comp', label: 'Fund. Comp.', keys: ['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO'], isAbs: true },
+      { id: 'med_incomp', label: 'Méd. Inc.', keys: ['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO'], isAbs: true },
+      { id: 'med_comp', label: 'Méd. Comp.', keys: ['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO'], isAbs: true },
+      { id: 'sup_incomp', label: 'Sup. Inc.', keys: ['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO'], isAbs: true },
+      { id: 'sup_comp', label: 'Sup. Comp.', keys: ['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Superior Completo'], isAbs: true }
+    ]
+  },
+  estado_civil: {
+    label: 'Estado Civil',
+    color: '#f472b6',
+    factors: [
+      { id: 'solteiro', label: 'Solteiro', keys: ['SOLTEIRO', 'Solteiro'], isAbs: true },
+      { id: 'casado', label: 'Casado', keys: ['CASADO', 'Casado'], isAbs: true },
+      { id: 'divorciado', label: 'Divorciado', keys: ['DIVORCIADO', 'Divorciado'], isAbs: true },
+      { id: 'separado', label: 'Separado', keys: ['SEPARADO JUDICIALMENTE', 'SEPARADO', 'Separado'], isAbs: true },
+      { id: 'viuvo', label: 'Viúvo', keys: ['VIÚVO', 'VIUVO', 'Viúvo', 'Viuvo'], isAbs: true }
+    ]
+  },
+  saneamento: {
+    label: 'Saneamento',
+    color: '#a3e635',
+    factors: [
+      { id: 'esg_rede', label: 'Rede Geral', keys: ['Pct Esgoto Rede Geral'] },
+      { id: 'esg_fossa', label: 'Fossa Sép.', keys: ['Pct Fossa Septica', 'Pct Fossa Séptica'] },
+      { id: 'esg_inad', label: 'Esg. Inad.', keys: ['Pct Esgoto Inadequado'] }
+    ]
+  },
+  participacao: {
+    label: 'Participação',
+    color: '#38bdf8',
+    factors: [{ id: 'turnout', label: 'Turnout' }]
+  }
+};
+window.SOCIAL_MAP_FACTORS = SOCIAL_MAP_FACTOR_FALLBACK;
+if (!window.SOCIAL_MAP_STATE) window.SOCIAL_MAP_STATE = { groupId: 'ise', factorId: 'ise' };
+
+function getSocialMetricCatalog() {
+  if (!window.SOCIAL_MAP_FACTORS || Object.keys(window.SOCIAL_MAP_FACTORS).length === 0) {
+    window.SOCIAL_MAP_FACTORS = SOCIAL_MAP_FACTOR_FALLBACK;
+  }
+  return window.SOCIAL_MAP_FACTORS;
+}
+
+function getSocialMetricGroupEntries() {
+  const factors = getSocialMetricCatalog();
+  return Object.entries(factors).filter(([groupId, group]) => groupId !== 'renda' && Array.isArray(group?.factors) && group.factors.length > 0);
+}
+
+function refreshPerformanceStatsUI() {
+  if (typeof window.updatePerformanceStatsUI === 'function') window.updatePerformanceStatsUI();
+}
+
+function renderVizSocialMetricControls() {
+  if (!dom.selectSocialMetricGroup || !dom.selectSocialMetric) return;
+
+  const state = window.SOCIAL_MAP_STATE || { groupId: 'ise', factorId: 'ise' };
+  const groups = getSocialMetricGroupEntries();
+  const activeGroup = state.groupId || 'ise';
+
+  dom.selectSocialMetricGroup.innerHTML = [
+    '<option value="ise">Índice ISE</option>',
+    ...groups.map(([groupId, group]) => `<option value="${groupId}">${group.label}</option>`)
+  ].join('');
+
+  dom.selectSocialMetricGroup.value = activeGroup;
+
+  if (activeGroup === 'ise') {
+    dom.selectSocialMetric.innerHTML = '<option value="ise">Índice composto</option>';
+    dom.selectSocialMetric.disabled = true;
+    return;
+  }
+
+  const catalog = getSocialMetricCatalog();
+  const selectedGroup = catalog[activeGroup] || groups[0]?.[1];
+  const selectedGroupId = catalog[activeGroup] ? activeGroup : groups[0]?.[0];
+  const factors = selectedGroup?.factors || [];
+  const activeFactor = factors.some(f => f.id === state.factorId) ? state.factorId : factors[0]?.id;
+
+  if (selectedGroupId && selectedGroupId !== activeGroup) {
+    dom.selectSocialMetricGroup.value = selectedGroupId;
+  }
+  dom.selectSocialMetric.innerHTML = factors
+    .map(factor => `<option value="${factor.id}">${factor.label}</option>`)
+    .join('');
+  dom.selectSocialMetric.value = activeFactor || '';
+  dom.selectSocialMetric.disabled = factors.length === 0;
+}
+
+function applySocialMetricSelection(groupId, factorId = null) {
+  if (!window.SOCIAL_MAP_STATE) window.SOCIAL_MAP_STATE = { groupId: 'ise', factorId: 'ise' };
+
+  if (groupId === 'ise') {
+    window.SOCIAL_MAP_STATE.groupId = 'ise';
+    window.SOCIAL_MAP_STATE.factorId = 'ise';
+    currentVizMode = 'ise_mapa';
+    dom.vizModeChips?.querySelectorAll('.chip-button').forEach(b => b.classList.toggle('active', b.dataset.value === 'ise_mapa'));
+    setVizModeControlVisibility(currentVizMode);
+    if (typeof window.refreshSocioMetricMap === 'function') window.refreshSocioMetricMap();
+    renderVizSocialMetricControls();
+    return;
+  }
+
+  const group = getSocialMetricCatalog()[groupId];
+  if (groupId === 'renda') return;
+  const resolvedFactorId = factorId || group?.factors?.[0]?.id;
+  if (!group || !resolvedFactorId) return;
+
+  window.SOCIAL_MAP_STATE.groupId = groupId;
+  window.SOCIAL_MAP_STATE.factorId = resolvedFactorId;
+  currentVizMode = 'ise_mapa';
+  dom.vizModeChips?.querySelectorAll('.chip-button').forEach(b => b.classList.toggle('active', b.dataset.value === 'ise_mapa'));
+  setVizModeControlVisibility(currentVizMode);
+  if (typeof window.refreshSocioMetricMap === 'function') window.refreshSocioMetricMap();
+  renderVizSocialMetricControls();
+}
+
+function setVizModeControlVisibility(mode = currentVizMode) {
+  const isPerformance = String(mode || '').startsWith('desempenho');
+  const isSocialMetric = mode === 'ise_mapa' || String(mode || '').startsWith('ise_mapa');
+  const isShift = mode === 'shift_presidente_2t';
+
+  const setVisible = (el, visible) => {
+    if (!el) return;
+    el.classList.toggle('section-hidden', !visible);
+    el.hidden = !visible;
+    el.style.display = visible ? '' : 'none';
+  };
+
+  setVisible(dom.vizSocialMetricBox, isSocialMetric);
+  setVisible(dom.vizCandidatoBox, isPerformance);
+  setVisible(dom.shiftCompareBox, isShift);
+}
+
+function updateVizModeUI() {
+  const isPerformance = currentVizMode.startsWith('desempenho');
+  const isSocialMetric = currentVizMode === 'ise_mapa' || currentVizMode.startsWith('ise_mapa');
+
+  setVizModeControlVisibility(currentVizMode);
+  if (isSocialMetric) renderVizSocialMetricControls();
+
+  if (isPerformance) {
+    const turno = (currentTurno === 2 && STATE.dataHas2T[currentCargo]) ? '2T' : '1T';
+    populateVizCandidatoDropdown(turno);
+    dom.vizCandidatoBox.classList.remove('section-hidden');
+    dom.selectVizCandidato.disabled = false;
+
+    const candidatoKey = dom.selectVizCandidato.value;
+    if (candidatoKey) {
+      performanceModeStats = calculateCandidateStats(candidatoKey) || {
+        candidato: candidatoKey, minPct: 0, maxPct: 100, avgPct: 0, totalLocais: 0
+      };
+      refreshPerformanceStatsUI();
+    }
+  } else {
+    dom.selectVizCandidato.disabled = true;
+    dom.selectVizCandidato.style.display = '';
+
+    const deputySearchBox = document.getElementById('deputySearchBox');
+    if (deputySearchBox) deputySearchBox.style.display = 'none';
+
+    performanceModeStats = { candidato: null, minPct: 0, maxPct: 0, avgPct: 0, totalLocais: 0 };
+    refreshPerformanceStatsUI();
+  }
+}
+
+window.renderVizSocialMetricControls = renderVizSocialMetricControls;
+
 function setupControls() {
+  getSocialMetricCatalog();
+
   // Popular UF Geral
   dom.selectUFGeneral.innerHTML = '<option value="" disabled selected>Selecione UF</option>';
   UF_MAP.forEach((nome, sigla) => {
@@ -583,6 +798,7 @@ function setupControls() {
     }
     dom.vizModeChips.querySelectorAll('.chip-button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    setVizModeControlVisibility(currentVizMode);
     updateVizModeUI();
     populateCidadeDropdown();
     if (currentCidadeFilter !== 'all' || STATE.currentElectionType === 'municipal') populateBairroDropdown();
@@ -609,6 +825,15 @@ function setupControls() {
     presidentShiftToYear = parseInt(e.target.value, 10);
     if (currentVizMode === 'shift_presidente_2t') applyFiltersAndRedraw();
   });
+  dom.selectSocialMetricGroup?.addEventListener('change', (e) => {
+    const groupId = e.target.value || 'ise';
+    const firstFactor = groupId === 'ise' ? null : getSocialMetricCatalog()[groupId]?.factors?.[0]?.id;
+    applySocialMetricSelection(groupId, firstFactor);
+  });
+  dom.selectSocialMetric?.addEventListener('change', (e) => {
+    const groupId = dom.selectSocialMetricGroup?.value || 'ise';
+    applySocialMetricSelection(groupId, e.target.value);
+  });
   dom.selectVizCandidato.addEventListener('change', () => {
     if (currentVizMode.startsWith('desempenho')) {
       // Reset filtro ao trocar de candidato
@@ -622,11 +847,13 @@ function setupControls() {
       console.log('📊 Modo Desempenho - Stats:', performanceModeStats);
 
       // Atualizar UI de estatísticas
-      updatePerformanceStatsUI();
+      refreshPerformanceStatsUI();
 
       applyFiltersAndRedraw();
     }
   });
+  setVizModeControlVisibility(currentVizMode);
+
   dom.btnClearSelection.addEventListener('click', () => {
     clearSelection(true);
     updateApplyButtonText();
@@ -934,8 +1161,8 @@ function setupSliders() {
   const dispMax = document.getElementById('dispRendaMax');
 
   const MAX_VAL = 10000; // R$ 10k
-  let valMin = 0;
-  let valMax = MAX_VAL;
+  let valMin = STATE.censusFilters.rendaMin || 0;
+  let valMax = STATE.censusFilters.rendaMax || MAX_VAL;
 
   function updateDualVisuals() {
     const pctMin = (valMin / MAX_VAL) * 100;
@@ -964,42 +1191,87 @@ function setupSliders() {
 
   const debouncedRenda = debounce(updateRendaState, 200);
 
-  // Drag Logic
+  function setRendaFromClientX(clientX, isMin) {
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    if (!rect.width) return;
+
+    const x = clientX - rect.left;
+    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    let val = Math.round((pct / 100) * MAX_VAL / 100) * 100;
+
+    if (isMin) {
+      val = Math.max(0, Math.min(val, valMax - 100));
+      valMin = val;
+    } else {
+      val = Math.min(MAX_VAL, Math.max(val, valMin + 100));
+      valMax = val;
+    }
+
+    updateDualVisuals();
+    debouncedRenda();
+  }
+
+  // Drag Logic: pointer events work for mouse, touch and pen.
   function initDrag(thumb, isMin) {
-    if (!thumb) return;
-    thumb.addEventListener('mousedown', (e) => {
+    if (!thumb || !container) return;
+
+    const startDrag = (e) => {
       e.preventDefault();
-      const containerRect = container.getBoundingClientRect();
-
-      function onMove(moveE) {
-        let x = moveE.clientX - containerRect.left;
-        let pct = Math.max(0, Math.min(100, (x / containerRect.width) * 100));
-        let val = Math.round((pct / 100) * MAX_VAL);
-
-        if (isMin) {
-          val = Math.min(val, valMax - 100);
-          valMin = val;
-        } else {
-          val = Math.max(val, valMin + 100);
-          valMax = val;
-        }
-
-        updateDualVisuals();
-        debouncedRenda();
+      thumb.classList.add('dragging');
+      if (typeof thumb.setPointerCapture === 'function' && e.pointerId !== undefined) {
+        thumb.setPointerCapture(e.pointerId);
       }
+      setRendaFromClientX(e.clientX, isMin);
+    };
 
-      function onUp() {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+    const moveDrag = (e) => {
+      if (!thumb.classList.contains('dragging')) return;
+      e.preventDefault();
+      setRendaFromClientX(e.clientX, isMin);
+    };
+
+    const endDrag = (e) => {
+      thumb.classList.remove('dragging');
+      if (typeof thumb.releasePointerCapture === 'function' && e.pointerId !== undefined) {
+        try { thumb.releasePointerCapture(e.pointerId); } catch (_) { }
       }
+    };
 
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+    thumb.addEventListener('pointerdown', startDrag);
+    thumb.addEventListener('pointermove', moveDrag);
+    thumb.addEventListener('pointerup', endDrag);
+    thumb.addEventListener('pointercancel', endDrag);
+
+    thumb.addEventListener('keydown', (e) => {
+      const step = e.shiftKey ? 1000 : 100;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      if (isMin) {
+        valMin = Math.max(0, Math.min(valMin + (e.key === 'ArrowRight' ? step : -step), valMax - 100));
+      } else {
+        valMax = Math.min(MAX_VAL, Math.max(valMax + (e.key === 'ArrowRight' ? step : -step), valMin + 100));
+      }
+      updateDualVisuals();
+      debouncedRenda();
     });
   }
 
   initDrag(thumbMin, true);
   initDrag(thumbMax, false);
+
+  if (container) {
+    container.addEventListener('pointerdown', (e) => {
+      if (e.target === thumbMin || e.target === thumbMax) return;
+      const rect = container.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const clickedVal = Math.round((pct / 100) * MAX_VAL);
+      const moveMin = Math.abs(clickedVal - valMin) <= Math.abs(clickedVal - valMax);
+      setRendaFromClientX(e.clientX, moveMin);
+    });
+  }
+
+  updateDualVisuals();
 
   // 2. SIMPLE SLIDERS (DYNAMIC)
   // Helper para configurar o par Slider + Select

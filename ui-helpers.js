@@ -271,6 +271,7 @@ async function init() {
       if (typeof resetColorblindAutoPalette === 'function') resetColorblindAutoPalette();
       updateColorblindToggleUI();
       refreshColorModeUI();
+      if (typeof updateMapVizLegend === 'function') updateMapVizLegend();
       showToast(isColorblindMode ? 'Modo daltônico ativado em todo o site.' : 'Modo daltônico desativado.', 'info', 1800);
     });
   }
@@ -317,6 +318,9 @@ async function init() {
   dom.vizBox = document.getElementById('vizBox');
   dom.vizCandidatoBox = document.getElementById('vizCandidatoBox');
   dom.selectVizCandidato = document.getElementById('selectVizCandidato');
+  dom.vizSocialMetricBox = document.getElementById('vizSocialMetricBox');
+  dom.selectSocialMetricGroup = document.getElementById('selectSocialMetricGroup');
+  dom.selectSocialMetric = document.getElementById('selectSocialMetric');
   dom.shiftCompareBox = document.getElementById('shiftCompareBox');
   dom.selectShiftFromYear = document.getElementById('selectShiftFromYear');
   dom.selectShiftToYear = document.getElementById('selectShiftToYear');

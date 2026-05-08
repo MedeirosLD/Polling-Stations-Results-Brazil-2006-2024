@@ -187,6 +187,11 @@ function createCombobox(elements, onSelect) {
   let items = []; // Holds objects: { label: string, info: string, color: string } or strings
   let allLabel = "Todos";
 
+  function isAllValue(value) {
+    const normalizedValue = norm(value || '');
+    return normalizedValue === norm(allLabel) || normalizedValue.startsWith('todos os munic');
+  }
+
   function render(filterText = '') {
     list.innerHTML = '';
     const normFilter = norm(filterText);
@@ -246,7 +251,7 @@ function createCombobox(elements, onSelect) {
     list.classList.toggle('active');
     if (list.classList.contains('active')) {
       const val = input.value;
-      render((val === allLabel || val === '') ? '' : val);
+      render((isAllValue(val) || val === '') ? '' : val);
     }
   });
 
@@ -271,7 +276,15 @@ function createCombobox(elements, onSelect) {
       list.innerHTML = '';
     },
     setValue: (val) => { input.value = val; },
-    disable: (bool) => { input.disabled = bool; if (bool) list.classList.remove('active'); }
+    disable: (bool) => {
+      input.disabled = bool;
+      input.setAttribute('aria-disabled', String(bool));
+      box.classList.toggle('is-disabled', bool);
+      if (bool) {
+        list.classList.remove('active');
+        input.blur();
+      }
+    }
   };
 }
 
@@ -291,20 +304,39 @@ function resolveComboboxLabel(items, value) {
   return found ? (typeof found === 'object' ? found.label : found) : value;
 }
 
+function isCurrentGeneralDistritoFederal() {
+  return STATE.currentElectionType === 'geral' && getCurrentGeneralRegionalUF() === 'DF';
+}
+
 function syncRegionalFilterVisibility() {
   const showRegional = STATE.currentElectionType === 'geral';
   if (dom.regionalFilterRow) dom.regionalFilterRow.classList.toggle('section-hidden', !showRegional);
   const enabled = showRegional && !!getCurrentGeneralRegionalUF();
+  const disableRegional = isCurrentGeneralDistritoFederal();
+  if (disableRegional) {
+    currentMesorregiaoFilter = 'all';
+    currentMicrorregiaoFilter = 'all';
+    if (mesorregiaoCombobox) mesorregiaoCombobox.setValue('Não se aplica no DF');
+    if (microrregiaoCombobox) microrregiaoCombobox.setValue('Não se aplica no DF');
+  }
   const lockMeso = currentMicrorregiaoFilter !== 'all';
   const lockMicro = currentMesorregiaoFilter !== 'all';
-  if (mesorregiaoCombobox) mesorregiaoCombobox.disable(!enabled || lockMeso);
-  if (microrregiaoCombobox) microrregiaoCombobox.disable(!enabled || lockMicro);
+  if (mesorregiaoCombobox) mesorregiaoCombobox.disable(!enabled || disableRegional || lockMeso);
+  if (microrregiaoCombobox) microrregiaoCombobox.disable(!enabled || disableRegional || lockMicro);
 }
 
 async function populateRegionalDropdowns() {
   if (!mesorregiaoCombobox || !microrregiaoCombobox) return;
   syncRegionalFilterVisibility();
   const uf = getCurrentGeneralRegionalUF();
+  if (uf === 'DF') {
+    mesorregiaoCombobox.setItems([], 'Não se aplica no DF');
+    microrregiaoCombobox.setItems([], 'Não se aplica no DF');
+    mesorregiaoCombobox.setValue('Não se aplica no DF');
+    microrregiaoCombobox.setValue('Não se aplica no DF');
+    syncRegionalFilterVisibility();
+    return;
+  }
   if (!uf) {
     mesorregiaoCombobox.setItems([], 'Todas as mesorregiões');
     microrregiaoCombobox.setItems([], 'Todas as microrregiões');
@@ -348,6 +380,7 @@ function populateCidadeDropdown() {
 
   const geojson = currentDataCollection[currentCargo];
   if (!geojson || !geojson.features) return;
+  const lockDistritoFederalCity = isCurrentGeneralDistritoFederal();
 
   // Usa Map para agrupamento mais rápido que objeto comum
   const cityGroups = new Map();
@@ -413,14 +446,18 @@ function populateCidadeDropdown() {
   // Atualização em lote do Combobox
   cidadeCombobox.setItems(items, "Todos os municípios");
 
-  if (currentCidadeFilter === 'all') {
+  if (lockDistritoFederalCity) {
+    const dfCity = cidadeNames[0] || 'Brasília';
+    currentCidadeFilter = dfCity;
+    cidadeCombobox.setValue(dfCity);
+  } else if (currentCidadeFilter === 'all') {
     cidadeCombobox.setValue("Todos os municípios");
   } else {
     currentCidadeFilter = resolveComboboxLabel(items, currentCidadeFilter);
     cidadeCombobox.setValue(currentCidadeFilter);
   }
 
-  cidadeCombobox.disable(false);
+  cidadeCombobox.disable(lockDistritoFederalCity);
 }
 
 function populateBairroDropdown() {
@@ -429,7 +466,7 @@ function populateBairroDropdown() {
 
   if (!bairroCombobox) return;
 
-  if (STATE.currentElectionType === 'geral' && currentCidadeFilter === 'all') {
+  if (STATE.currentElectionType === 'geral' && currentCidadeFilter === 'all' && !isCurrentGeneralDistritoFederal()) {
     bairroCombobox.disable(true);
     bairroCombobox.setValue("");
     return;
@@ -448,7 +485,7 @@ function populateBairroDropdown() {
     if (!matchesRegionalScope(props)) {
       adicionar = false;
     } else if (STATE.currentElectionType === 'geral') {
-      if (sameFilterText(getProp(props, 'nm_localidade'), currentCidadeFilter)) adicionar = true;
+      if (isCurrentGeneralDistritoFederal() || sameFilterText(getProp(props, 'nm_localidade'), currentCidadeFilter)) adicionar = true;
     } else {
       adicionar = true;
     }

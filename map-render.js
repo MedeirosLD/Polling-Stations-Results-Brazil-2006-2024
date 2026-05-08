@@ -539,8 +539,10 @@ function formatHistoryTurnPct(value) {
 }
 
 function getPresidentShiftTooltipHtml(props, shiftInfo = null) {
-  const nomeLocal = escapeHtml(getProp(props, 'nm_locvot') || 'Local');
-  const nomeCidade = escapeHtml(getProp(props, 'nm_localidade') || 'Cidade');
+  const nomeLocalRaw = getProp(props, 'nm_locvot') || 'Local';
+  const nomeCidadeRaw = getProp(props, 'nm_localidade') || 'Cidade';
+  const nomeLocal = escapeHtml(nomeLocalRaw);
+  const nomeCidade = escapeHtml(nomeCidadeRaw);
   if (!isPresidentShiftModeActive() || !shiftInfo) {
     return `
       <div class="basic-map-tooltip">
@@ -582,6 +584,133 @@ function getPresidentShiftTooltipHtml(props, shiftInfo = null) {
       </div>
     </div>
   `;
+}
+
+function getMapFeatureTooltipHtml(props, shiftInfo = null) {
+  try {
+    if (isPresidentShiftModeActive()) {
+      return getPresidentShiftTooltipHtml(props, shiftInfo);
+    }
+
+    const nomeLocalRaw = getProp(props, 'nm_locvot') || 'Local';
+    const nomeCidadeRaw = getProp(props, 'nm_localidade') || 'Cidade';
+    const nomeCidade = escapeHtml(nomeCidadeRaw);
+    const renderScrollText = (value, options = {}) => {
+      const text = String(value || '').trim() || '-';
+      const label = options.titleCase ? toTitleCase(text) : text;
+      const escapedLabel = escapeHtml(label);
+      const tag = options.tag || 'span';
+      const threshold = options.threshold || 30;
+      const shouldMarquee = text.length >= threshold;
+      const className = `map-tooltip-scroll${shouldMarquee ? ' is-marquee' : ''}`;
+      const copy = shouldMarquee ? `<span class="map-tooltip-scroll-copy">${escapedLabel}</span>` : '';
+      return `<${tag} class="${className}" title="${escapeAttribute(label)}"><span class="map-tooltip-scroll-track">${escapedLabel}${copy}</span></${tag}>`;
+    };
+
+    let metricHtml = '';
+    let accentColor = '#2563eb';
+    let toneLabel = 'Mapa';
+
+  if (isVictoryMarginMode()) {
+    const info = getVictoryMarginInfoForFeature(props);
+    if (info) {
+      accentColor = info.color || accentColor;
+      toneLabel = 'Margem de vitoria';
+      const party = info.party ? `<span class="map-tooltip-party">${escapeHtml(info.party)}</span>` : '';
+      metricHtml = `
+        <div class="map-tooltip-result">
+          <div class="map-tooltip-candidate">
+            <span class="map-tooltip-dot"></span>
+            ${renderScrollText(info.label, { titleCase: true, threshold: 24 })}
+            ${party}
+          </div>
+          <div class="map-tooltip-value">
+            <span>Margem</span>
+            <b>${formatPctPointsOne(info.marginPct)}</b>
+          </div>
+        </div>
+      `;
+    }
+  } else if (currentVizMode.startsWith('desempenho')) {
+    const info = getPerformanceInfoForFeature(props);
+    const candidato = dom.selectVizCandidato?.value || '';
+    if (info && candidato) {
+      const parsed = parseCandidateKey(candidato);
+      accentColor = getColorForCandidate(parsed.nome, parsed.partido);
+      toneLabel = 'Desempenho';
+      metricHtml = `
+        <div class="map-tooltip-result">
+          <div class="map-tooltip-candidate">
+            <span class="map-tooltip-dot"></span>
+            ${renderScrollText(parsed.nome, { titleCase: true, threshold: 24 })}
+          </div>
+          <div class="map-tooltip-value">
+            <span>Votos no local</span>
+            <b>${formatPctOne(info.pct)}</b>
+          </div>
+        </div>
+      `;
+    }
+  } else if (currentVizMode.startsWith('vencedor')) {
+    const info = getWinnerLegendInfoForProps(props);
+    if (info) {
+      accentColor = info.color || accentColor;
+      toneLabel = 'Vencedor local';
+      metricHtml = `
+        <div class="map-tooltip-result compact">
+          <div class="map-tooltip-candidate">
+            <span class="map-tooltip-dot"></span>
+            ${renderScrollText(info.label, { titleCase: true, threshold: 24 })}
+          </div>
+        </div>
+      `;
+    }
+  } else if (isIseMapMode()) {
+    const info = getSocioMapMetricForProps(props);
+    if (info) {
+      accentColor = getIseMapColor(info);
+      toneLabel = info.kind === 'factor' ? (info.groupLabel || 'MÃ©trica') : 'ISE no mapa';
+      metricHtml = `
+        <div class="map-tooltip-result">
+          <div class="map-tooltip-candidate">
+            <span class="map-tooltip-dot"></span>
+            <span>${info.kind === 'factor' ? info.label : (ISE_MAP_LABELS[info.tercil] || 'Classe')}</span>
+          </div>
+          <div class="map-tooltip-value">
+            <span>${info.valueLabel || 'Valor'}</span>
+            <b>${info.kind === 'factor' ? formatSocioMetricValue(info.rawValue, info.factorDef) : info.score.toFixed(1).replace('.', ',')}</b>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+    return `
+      <div class="basic-map-tooltip" style="--tooltip-accent:${accentColor};">
+        <div class="map-tooltip-head">
+          <div>
+            ${renderScrollText(nomeLocalRaw, { tag: 'strong', threshold: 20 })}
+            <small>${nomeCidade}</small>
+          </div>
+          <span class="map-tooltip-mode">${toneLabel}</span>
+        </div>
+        ${metricHtml}
+      </div>
+    `;
+  } catch (error) {
+    const fallbackLocal = escapeHtml(getProp(props, 'nm_locvot') || 'Local');
+    const fallbackCidade = escapeHtml(getProp(props, 'nm_localidade') || 'Cidade');
+    return `
+      <div class="basic-map-tooltip">
+        <div class="map-tooltip-head">
+          <div>
+            <strong>${fallbackLocal}</strong>
+            <small>${fallbackCidade}</small>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function createPresidentShiftCanvasLayer() {
@@ -772,6 +901,7 @@ function applyFiltersAndRedraw() {
     }
     currentLayer = null;
   }
+  ISE_MAP_SCORE_CACHE = new WeakMap();
 
   if (moveEndListener) {
     map.off('moveend', moveEndListener);
@@ -781,6 +911,7 @@ function applyFiltersAndRedraw() {
   const geojson = currentDataCollection[currentCargo];
   if (!geojson) {
     removePresidentShiftOverlay();
+    updateMapVizLegend();
     return;
   }
 
@@ -823,6 +954,7 @@ function applyFiltersAndRedraw() {
     CURRENT_VISIBLE_FEATURES_CACHE.push(feature);
     CURRENT_VISIBLE_PROPS_CACHE.push(props);
   });
+  updateMapVizLegend();
 
   // Call ISE Panel update
   if (typeof window.updateISEPanel === 'function') {
@@ -846,6 +978,615 @@ function createPointLayer(feature, latlng) {
 }
 
 const DEFAULT_POINT_FILL_OPACITY = 0.8;
+const VICTORY_MARGIN_NEUTRAL = '#ffe873';
+const ISE_MAP_COLORS = {
+  baixo: '#d8cff2',
+  medio: '#8b63c7',
+  alto: '#35106f'
+};
+const ISE_MAP_COLORBLIND_COLORS = {
+  baixo: '#d8e7f5',
+  medio: '#6d8fc3',
+  alto: '#1f3b73'
+};
+const ISE_MAP_LABELS = {
+  baixo: 'Classe baixa',
+  medio: 'Classe média',
+  alto: 'Classe alta'
+};
+const SOCIO_METRIC_FALLBACK_COLOR = '#2563eb';
+const SOCIO_METRIC_MAX_CURRENCY = 6000;
+let ISE_MAP_SCORE_CACHE = new WeakMap();
+
+function isVictoryMarginMode() {
+  return currentVizMode === 'margem_vitoria' || currentVizMode.startsWith('margem_vitoria');
+}
+
+function isIseMapMode() {
+  return currentVizMode === 'ise_mapa' || currentVizMode.startsWith('ise_mapa');
+}
+
+function getIseMapPalette() {
+  return isColorblindMode ? ISE_MAP_COLORBLIND_COLORS : ISE_MAP_COLORS;
+}
+
+function getActiveSocioMapFactor() {
+  const state = window.SOCIAL_MAP_STATE || { groupId: 'ise', factorId: 'ise' };
+  if (!state || !state.groupId || state.groupId === 'ise') return null;
+  const groups = window.SOCIAL_MAP_FACTORS || {};
+  const group = groups[state.groupId];
+  const factor = group?.factors?.find((item) => item.id === state.factorId);
+  if (!group || !factor) return null;
+  return { groupId: state.groupId, group, factor };
+}
+
+function classifyIseScore(score) {
+  if (score <= 30) return 'baixo';
+  if (score <= 60) return 'medio';
+  return 'alto';
+}
+
+function getIseRangeLabel(tercil) {
+  if (tercil === 'baixo') return '0-30';
+  if (tercil === 'medio') return '30-60';
+  return '60-100';
+}
+
+function formatSocioMetricValue(value, factorDef = null) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '-';
+  if (factorDef?.isCurrency) {
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  }
+  return `${n.toFixed(1).replace('.', ',')}%`;
+}
+
+function getSocioMetricPropVal(props, keys) {
+  for (const key of keys || []) {
+    const direct = props?.[key];
+    if (direct !== undefined && direct !== null && direct !== '') return ensureNumber(String(direct).replace(',', '.'));
+    const upper = String(key).toUpperCase();
+    for (const propKey in props || {}) {
+      if (String(propKey).toUpperCase() === upper) return ensureNumber(String(props[propKey]).replace(',', '.'));
+    }
+  }
+  return 0;
+}
+
+function getSocioFactorValueForProps(props, factorDef) {
+  if (!props || !factorDef) return -1;
+  if (factorDef.id === 'renda_media') {
+    const renda = getSocioMetricPropVal(props, factorDef.keys || ['Renda Media', 'RENDA MEDIA', 'renda']);
+    return renda > 0 ? renda : -1;
+  }
+  if (factorDef.id === 'turnout') {
+    const stats = typeof window.getFeatureTurnoutStats === 'function'
+      ? window.getFeatureTurnoutStats(props, currentCargo, currentTurno)
+      : null;
+    return stats && stats.pct !== null ? stats.pct : -1;
+  }
+  if (factorDef.ageRange) {
+    const [minAge, maxAge] = factorDef.ageRange;
+    let sum = 0;
+    let total = 0;
+    for (const key in props) {
+      if (!/anos/i.test(key) || /^Pct/i.test(key)) continue;
+      const value = ensureNumber(props[key]);
+      if (value <= 0) continue;
+      const match = key.match(/(\d+)/);
+      if (!match) continue;
+      const age = parseInt(match[1], 10);
+      total += value;
+      if (age >= minAge && age <= maxAge) sum += value;
+    }
+    if (total === 0) {
+      for (const key in props) {
+        if (!String(key).startsWith('Pct ') || !String(key).includes('anos')) continue;
+        const value = ensureNumber(props[key]);
+        if (value <= 0) continue;
+        const match = key.match(/(\d+)/);
+        if (!match) continue;
+        const age = parseInt(match[1], 10);
+        total += value;
+        if (age >= minAge && age <= maxAge) sum += value;
+      }
+    }
+    return total > 0 ? (sum / total) * 100 : -1;
+  }
+  if (factorDef.id === 'mulheres' || factorDef.id === 'homens') {
+    const homens = getSocioMetricPropVal(props, ['MASCULINO', 'HOMENS', 'Homens']);
+    const mulheres = getSocioMetricPropVal(props, ['FEMININO', 'MULHERES', 'Mulheres']);
+    const total = homens + mulheres;
+    if (total > 0) return ((factorDef.id === 'mulheres' ? mulheres : homens) / total) * 100;
+    const homensPct = getSocioMetricPropVal(props, ['Pct Homens']);
+    const mulheresPct = getSocioMetricPropVal(props, ['Pct Mulheres']);
+    const totalPct = homensPct + mulheresPct;
+    return totalPct > 0 ? ((factorDef.id === 'mulheres' ? mulheresPct : homensPct) / totalPct) * 100 : -1;
+  }
+  if (['solteiro', 'casado', 'divorciado', 'separado', 'viuvo'].includes(factorDef.id)) {
+    const values = {
+      solteiro: getSocioMetricPropVal(props, ['SOLTEIRO', 'Solteiro']),
+      casado: getSocioMetricPropVal(props, ['CASADO', 'Casado']),
+      divorciado: getSocioMetricPropVal(props, ['DIVORCIADO', 'Divorciado']),
+      separado: getSocioMetricPropVal(props, ['SEPARADO JUDICIALMENTE', 'SEPARADO', 'Separado']),
+      viuvo: getSocioMetricPropVal(props, ['VIÚVO', 'VIUVO', 'Viúvo', 'Viuvo'])
+    };
+    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
+    return total > 0 ? (values[factorDef.id] / total) * 100 : -1;
+  }
+  if (['analfabeto', 'le_escreve', 'fund_incomp', 'fund_comp', 'med_incomp', 'med_comp', 'sup_incomp', 'sup_comp'].includes(factorDef.id)) {
+    const values = {
+      analfabeto: getSocioMetricPropVal(props, ['ANALFABETO', 'Analfabeto']),
+      le_escreve: getSocioMetricPropVal(props, ['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve']),
+      fund_incomp: getSocioMetricPropVal(props, ['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO']),
+      fund_comp: getSocioMetricPropVal(props, ['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO']),
+      med_incomp: getSocioMetricPropVal(props, ['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO']),
+      med_comp: getSocioMetricPropVal(props, ['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO']),
+      sup_incomp: getSocioMetricPropVal(props, ['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO']),
+      sup_comp: getSocioMetricPropVal(props, ['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Superior Completo'])
+    };
+    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
+    return total > 0 ? (values[factorDef.id] / total) * 100 : -1;
+  }
+  const value = getSocioMetricPropVal(props, factorDef.keys || []);
+  return value >= 0 ? value : -1;
+}
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function parseHexColor(hex) {
+  let value = String(hex || '').trim();
+  if (!value.startsWith('#')) return null;
+  if (value.length === 4) {
+    value = `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
+  }
+  if (!/^#[0-9a-f]{6}$/i.test(value)) return null;
+  const num = parseInt(value.slice(1), 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  const toHex = (channel) => Math.round(clampNumber(channel, 0, 255)).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function mixRgb(a, b, t) {
+  const ratio = clampNumber(t, 0, 1);
+  return {
+    r: a.r + (b.r - a.r) * ratio,
+    g: a.g + (b.g - a.g) * ratio,
+    b: a.b + (b.b - a.b) * ratio
+  };
+}
+
+function getSocioMetricPalette(metricInfo = null) {
+  const baseColor = getSocioMetricBaseColor(metricInfo);
+  return {
+    baixo: getSocioMetricGradientColor(baseColor, 12),
+    medio: getSocioMetricGradientColor(baseColor, 50),
+    alto: getSocioMetricGradientColor(baseColor, 92)
+  };
+}
+
+function getSocioMetricBaseColor(metricInfo = null) {
+  if (isColorblindMode) return '#2563eb';
+  if (!metricInfo || metricInfo.kind === 'ise') return '#7c3aed';
+  return metricInfo.groupColor || SOCIO_METRIC_FALLBACK_COLOR;
+}
+
+function getSocioMetricGradientColor(baseColorHex, pct) {
+  if (typeof getUniversalGradientColor === 'function') {
+    return getUniversalGradientColor(baseColorHex, pct);
+  }
+
+  const base = parseHexColor(baseColorHex) || parseHexColor(SOCIO_METRIC_FALLBACK_COLOR);
+  const white = { r: 255, g: 255, b: 255 };
+  const dark = { r: 30, g: 30, b: 35 };
+  const value = clampNumber(pct, 0, 100);
+  if (value < 50) {
+    return rgbToHex(mixRgb(white, base, value / 50));
+  }
+  return rgbToHex(mixRgb(base, dark, (value - 50) / 50));
+}
+
+function getVictoryMarginColor(baseColorHex, marginPct) {
+  const base = parseHexColor(baseColorHex);
+  const neutral = parseHexColor(VICTORY_MARGIN_NEUTRAL);
+  if (!base || !neutral) return baseColorHex || DEFAULT_SWATCH;
+
+  const margin = clampNumber(marginPct, 0, 65);
+  const towardWinner = Math.pow(clampNumber(margin / 35, 0, 1), 1.12);
+  const narrowMarginTint = mixRgb(neutral, base, 0.34);
+  let color = mixRgb(narrowMarginTint, base, towardWinner);
+
+  if (margin > 35) {
+    const darken = clampNumber((margin - 35) / 30, 0, 1) * 0.38;
+    color = mixRgb(color, { r: 28, g: 28, b: 32 }, darken);
+  }
+
+  return rgbToHex(color);
+}
+
+function getVictoryMarginPct(winnerVotes, runnerUpVotes, totalVotes) {
+  const total = Number(totalVotes) || 0;
+  if (total <= 0) return 0;
+  const marginVotes = Math.max(0, (Number(winnerVotes) || 0) - (Number(runnerUpVotes) || 0));
+  return (marginVotes / total) * 100;
+}
+
+function formatPctOne(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '-';
+  return `${n.toFixed(1).replace('.', ',')}%`;
+}
+
+function formatPctPointsOne(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '-';
+  return `${n.toFixed(1).replace('.', ',')} p.p.`;
+}
+
+function getIseMapScoreForProps(props) {
+  if (!props) return null;
+  if (ISE_MAP_SCORE_CACHE.has(props)) {
+    const cached = ISE_MAP_SCORE_CACHE.get(props);
+    if (cached) cached.tercil = classifyIseScore(cached.score);
+    return cached;
+  }
+
+  const read = (keys) => {
+    for (const key of keys) {
+      const val = getProp(props, key);
+      if (val !== null && val !== undefined && val !== '') return ensureNumber(val);
+    }
+    return 0;
+  };
+
+  const renda = read(['Renda Media', 'RENDA MEDIA', 'renda']);
+  if (renda <= 0) {
+    ISE_MAP_SCORE_CACHE.set(props, null);
+    return null;
+  }
+
+  const esgGeral = read(['Pct Esgoto Rede Geral']);
+  const esgFossa = read(['Pct Fossa Septica', 'Pct Fossa Séptica']);
+  const esgInad = read(['Pct Esgoto Inadequado']);
+  const esgTotal = esgGeral + esgFossa + esgInad;
+  const esgotoFinal = esgTotal > 0 ? (esgGeral / esgTotal) * 100 : esgGeral;
+
+  const supComp = read(['ENSINO SUPERIOR COMPLETO', 'SUPERIOR COMPLETO', 'Superior Completo']);
+  const analf = read(['ANALFABETO', 'Analfabeto']);
+  const le = read(['LÊ E ESCREVE', 'LE E ESCREVE', 'Lê e Escreve']);
+  const fi = read(['ENSINO FUNDAMENTAL INCOMPLETO', 'FUNDAMENTAL INCOMPLETO']);
+  const fc = read(['ENSINO FUNDAMENTAL COMPLETO', 'FUNDAMENTAL COMPLETO']);
+  const mi = read(['ENSINO MÉDIO INCOMPLETO', 'MEDIO INCOMPLETO']);
+  const mc = read(['ENSINO MÉDIO COMPLETO', 'MEDIO COMPLETO']);
+  const si = read(['ENSINO SUPERIOR INCOMPLETO', 'SUPERIOR INCOMPLETO']);
+  const totalEsc = supComp + analf + le + fi + fc + mi + mc + si;
+  const pctSup = totalEsc > 0 ? (supComp / totalEsc) * 100 : 0;
+
+  let idade25_59 = 0;
+  let totalIdade = 0;
+  for (const key in props) {
+    if (!/anos/i.test(key) || /^Pct/i.test(key)) continue;
+    const value = ensureNumber(props[key]);
+    if (value <= 0) continue;
+    const match = key.match(/(\d+)/);
+    if (!match) continue;
+    const age = parseInt(match[1], 10);
+    totalIdade += value;
+    if (age >= 25 && age <= 59) idade25_59 += value;
+  }
+  const pctIdade = totalIdade > 0 ? (idade25_59 / totalIdade) * 100 : 0;
+
+  const nRenda = Math.min((renda / 6000) * 100, 100);
+  const score = clampNumber((nRenda * 0.40) + (pctSup * 0.40) + (esgotoFinal * 0.15) + (pctIdade * 0.05), 0, 100);
+  const tercil = classifyIseScore(score);
+  const result = { score, tercil, renda, pctSup, esgotoFinal, pctIdade };
+  ISE_MAP_SCORE_CACHE.set(props, result);
+  return result;
+}
+
+function getSocioMapMetricForProps(props) {
+  const factorSelection = getActiveSocioMapFactor();
+  if (!factorSelection) {
+    const iseInfo = getIseMapScoreForProps(props);
+    return iseInfo ? { ...iseInfo, kind: 'ise', label: 'Índice ISE', valueLabel: 'Nota ISE' } : null;
+  }
+
+  const { group, factor } = factorSelection;
+  const value = getSocioFactorValueForProps(props, factor);
+  if (!Number.isFinite(Number(value)) || Number(value) < 0) return null;
+
+  const score = factor.isCurrency
+    ? clampNumber((Number(value) / SOCIO_METRIC_MAX_CURRENCY) * 100, 0, 100)
+    : clampNumber(Number(value), 0, 100);
+  const tercil = score <= 33.333 ? 'baixo' : (score <= 66.666 ? 'medio' : 'alto');
+
+  return {
+    kind: 'factor',
+    score,
+    rawValue: Number(value),
+    tercil,
+    label: factor.label,
+    groupLabel: group.label,
+    groupColor: group.color,
+    factorDef: factor,
+    valueLabel: factor.isCurrency ? 'Valor' : 'Percentual'
+  };
+}
+
+function getIseMapColor(scoreInfo) {
+  if (!scoreInfo) return '#9ca3af';
+  return getSocioMetricGradientColor(getSocioMetricBaseColor(scoreInfo), scoreInfo.score);
+}
+
+function getVictoryMarginInfoForFeature(props) {
+  if (!props) return null;
+
+  if (currentCargo.startsWith('vereador')) {
+    const data = getVereadorFeatureData(props);
+    if (!data || data.total <= 0) return null;
+    if (STATE.vereadorViewMode === 'party' && data.winningParty) {
+      return {
+        label: data.winningParty,
+        party: data.winningParty,
+        color: colorForParty(data.winningParty),
+        marginPct: getVictoryMarginPct(data.winningPartyVotes, data.runnerUpPartyVotes, data.total)
+      };
+    }
+    if (!data.winner) return null;
+    const meta = STATE.vereadorMetadata[data.winner] || [];
+    const label = meta[0] || data.winner;
+    const party = meta[1] || '';
+    return {
+      label,
+      party,
+      color: getColorForCandidate(label, party),
+      marginPct: getVictoryMarginPct(data.winnerVotes, data.runnerUpVotes, data.total)
+    };
+  }
+
+  if (currentCargo.startsWith('deputado')) {
+    const data = getDeputyFeatureData(props);
+    if (!data || data.total <= 0) return null;
+    if (STATE.deputyViewMode === 'party' && data.winningParty) {
+      return {
+        label: data.winningParty,
+        party: data.winningParty,
+        color: colorForParty(data.winningParty),
+        marginPct: getVictoryMarginPct(data.winningPartyVotes, data.runnerUpPartyVotes, data.total)
+      };
+    }
+    if (!data.winner) return null;
+    const meta = STATE.deputyMetadata[data.winner] || [];
+    const label = meta[0] || data.winner;
+    const party = meta[1] || '';
+    return {
+      label,
+      party,
+      color: getColorForCandidate(label, party),
+      marginPct: getVictoryMarginPct(data.winnerVotes, data.runnerUpVotes, data.total)
+    };
+  }
+
+  const turnoKey = (currentTurno === 2 && STATE.dataHas2T[currentCargo]) ? '2T' : '1T';
+  const { totalValidos } = getVotosValidos(props, currentCargo, turnoKey, STATE.filterInaptos);
+  if (totalValidos <= 0) return null;
+  const { vencedor, segundo } = getTopTwoCandidates(props, currentCargo, turnoKey, STATE.filterInaptos);
+  const color = getColorForCandidate(vencedor.nome, vencedor.partido);
+  return {
+    label: vencedor.nome,
+    party: vencedor.partido,
+    color,
+    marginPct: getVictoryMarginPct(vencedor.votos, segundo.votos, totalValidos)
+  };
+}
+
+function getPerformanceInfoForFeature(props) {
+  if (!props || !currentVizMode.startsWith('desempenho')) return null;
+  const candidato = dom.selectVizCandidato?.value;
+  if (!candidato) return null;
+
+  if (currentCargo.startsWith('deputado') || currentCargo.startsWith('vereador')) {
+    const data = currentCargo.startsWith('vereador')
+      ? getVereadorFeatureData(props)
+      : getDeputyFeatureData(props);
+    if (!data || data.total <= 0 || !data.votes) return null;
+    const candId = getResolvedVisualizationCandidateId(candidato, currentCargo);
+    const votos = candId ? getCandidateVotesForVisualization(data.votes, candId) : null;
+    if (votos === null) return null;
+    return { pct: (votos / data.total) * 100 };
+  }
+
+  const turnoKey = (currentTurno === 2 && STATE.dataHas2T[currentCargo]) ? '2T' : '1T';
+  const { totalValidos } = getVotosValidos(props, currentCargo, turnoKey, STATE.filterInaptos);
+  if (totalValidos <= 0) return null;
+  return { pct: (ensureNumber(getProp(props, candidato)) / totalValidos) * 100 };
+}
+
+function getWinnerLegendInfoForProps(props) {
+  if (!props) return null;
+  if (currentCargo.startsWith('vereador')) {
+    const data = getVereadorFeatureData(props);
+    if (!data || data.total <= 0) return null;
+    if (STATE.vereadorViewMode === 'party' && data.winningParty) {
+      return { label: data.winningParty, color: colorForParty(data.winningParty) };
+    }
+    if (!data.winner) return null;
+    const meta = STATE.vereadorMetadata[data.winner] || [];
+    const label = meta[0] || data.winner;
+    return { label, color: getColorForCandidate(label, meta[1] || '') };
+  }
+  if (currentCargo.startsWith('deputado')) {
+    const data = getDeputyFeatureData(props);
+    if (!data || data.total <= 0) return null;
+    if (STATE.deputyViewMode === 'party' && data.winningParty) {
+      return { label: data.winningParty, color: colorForParty(data.winningParty) };
+    }
+    if (!data.winner) return null;
+    const meta = STATE.deputyMetadata[data.winner] || [];
+    const label = meta[0] || data.winner;
+    return { label, color: getColorForCandidate(label, meta[1] || '') };
+  }
+  const turnoKey = (currentTurno === 2 && STATE.dataHas2T[currentCargo]) ? '2T' : '1T';
+  const winner = getVencedor(props, currentCargo, turnoKey, STATE.filterInaptos);
+  if (!winner || !winner.nome || winner.nome === 'N/D') return null;
+  return { label: winner.nome, color: getColorForCandidate(winner.nome, winner.partido) };
+}
+
+function updateMapVizLegend() {
+  const legend = document.getElementById('mapVizLegend');
+  if (!legend) return;
+  updateMapVizLegendPosition(legend);
+
+  if (!currentLayer || isPresidentShiftModeActive()) {
+    legend.hidden = true;
+    legend.innerHTML = '';
+    return;
+  }
+
+  const propsList = CURRENT_VISIBLE_PROPS_CACHE || [];
+  if (isVictoryMarginMode()) {
+    const sample = propsList.map(getVictoryMarginInfoForFeature).find(Boolean);
+    const sampleColor = sample?.color || '#2563eb';
+    const narrowColor = getVictoryMarginColor(sampleColor, 2);
+    const midColor = getVictoryMarginColor(sampleColor, 16);
+    const highColor = getVictoryMarginColor(sampleColor, 45);
+    legend.hidden = false;
+    legend.innerHTML = `
+      <div class="map-viz-legend-title">Margem de vitoria</div>
+      <div class="map-viz-legend-note">A cor indica o vencedor; a intensidade indica a vantagem sobre o 2o colocado.</div>
+      <div class="map-viz-legend-scale" style="--legend-gradient:linear-gradient(90deg, ${narrowColor}, ${midColor}, ${highColor});"></div>
+      <div class="map-viz-legend-labels">
+        <span>Estreita</span>
+        <span>Ampla</span>
+      </div>
+      <div class="map-viz-legend-items margin-items">
+        <span class="map-viz-legend-item">
+          <span class="map-viz-legend-swatch" style="--swatch:${narrowColor};"></span>
+          <span>Estreita &lt;5 p.p.</span>
+        </span>
+        <span class="map-viz-legend-item">
+          <span class="map-viz-legend-swatch" style="--swatch:${midColor};"></span>
+          <span>Moderada</span>
+        </span>
+        <span class="map-viz-legend-item">
+          <span class="map-viz-legend-swatch" style="--swatch:${highColor};"></span>
+          <span>Ampla &gt;30 p.p.</span>
+        </span>
+      </div>
+    `;
+    return;
+  }
+
+  if (currentVizMode.startsWith('desempenho') && performanceModeStats.candidato) {
+    const candidato = dom.selectVizCandidato?.value || '';
+    const parsed = parseCandidateKey(candidato);
+    const baseColor = getColorForCandidate(parsed.nome, parsed.partido);
+    const min = performanceModeStats.minPct || 0;
+    const max = performanceModeStats.maxPct || 0;
+    const gradientStops = [10, 35, 60, 85]
+      .map((pct) => `${getUniversalGradientColor(baseColor, pct)} ${pct}%`)
+      .join(', ');
+    legend.hidden = false;
+    legend.innerHTML = `
+      <div class="map-viz-legend-title">Desempenho do candidato</div>
+      <div class="map-viz-legend-note">Locais mais escuros concentram maior percentual do candidato selecionado.</div>
+      <div class="map-viz-legend-scale" style="--legend-gradient:linear-gradient(90deg, ${gradientStops});"></div>
+      <div class="map-viz-legend-labels">
+        <span>${formatPctOne(min)}</span>
+        <span>${formatPctOne(max)}</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (isIseMapMode()) {
+    const activeFactor = getActiveSocioMapFactor();
+    const legendMetric = activeFactor
+      ? {
+        kind: 'factor',
+        label: activeFactor.factor.label,
+        groupLabel: activeFactor.group.label,
+        groupColor: activeFactor.group.color,
+        factorDef: activeFactor.factor
+      }
+      : { kind: 'ise', label: 'Índice ISE' };
+    const palette = getSocioMetricPalette(legendMetric);
+    const isFactor = legendMetric.kind === 'factor';
+    legend.hidden = false;
+    legend.innerHTML = `
+      <div class="map-viz-legend-title">${isFactor ? legendMetric.label : 'ISE no mapa'}</div>
+      <div class="map-viz-legend-note">${isFactor ? `Locais coloridos por ${legendMetric.groupLabel.toLowerCase()} no eleitorado.` : 'Modo experimental: locais coloridos pela nota socioeconômica composta (0-100).'}</div>
+      <div class="map-viz-legend-scale" style="--legend-gradient:linear-gradient(90deg, ${palette.baixo}, ${palette.medio}, ${palette.alto});"></div>
+      <div class="map-viz-legend-labels">
+        <span>${isFactor ? 'Menor' : 'Baixa'}</span>
+        <span>${isFactor ? 'Médio' : 'Média'}</span>
+        <span>${isFactor ? 'Maior' : 'Alta'}</span>
+      </div>
+      <div class="map-viz-legend-items margin-items">
+        <span class="map-viz-legend-item"><span class="map-viz-legend-swatch" style="--swatch:${palette.baixo};"></span><span>${isFactor ? formatSocioMetricValue(0, legendMetric.factorDef) : getIseRangeLabel('baixo')}</span></span>
+        <span class="map-viz-legend-item"><span class="map-viz-legend-swatch" style="--swatch:${palette.medio};"></span><span>${isFactor ? formatSocioMetricValue(legendMetric.factorDef?.isCurrency ? SOCIO_METRIC_MAX_CURRENCY / 2 : 50, legendMetric.factorDef) : getIseRangeLabel('medio')}</span></span>
+        <span class="map-viz-legend-item"><span class="map-viz-legend-swatch" style="--swatch:${palette.alto};"></span><span>${isFactor ? `${formatSocioMetricValue(legendMetric.factorDef?.isCurrency ? SOCIO_METRIC_MAX_CURRENCY : 100, legendMetric.factorDef)}+` : getIseRangeLabel('alto')}</span></span>
+      </div>
+    `;
+    return;
+    legend.innerHTML = `
+      <div class="map-viz-legend-title">ISE no mapa</div>
+      <div class="map-viz-legend-note">Modo experimental: locais coloridos pela nota socioeconômica composta (0-100).</div>
+      <div class="map-viz-legend-scale" style="--legend-gradient:linear-gradient(90deg, ${palette.baixo}, ${palette.medio}, ${palette.alto});"></div>
+      <div class="map-viz-legend-labels">
+        <span>Baixa</span>
+        <span>Média</span>
+        <span>Alta</span>
+      </div>
+      <div class="map-viz-legend-items margin-items">
+        <span class="map-viz-legend-item"><span class="map-viz-legend-swatch" style="--swatch:${palette.baixo};"></span><span>${getIseRangeLabel('baixo')}</span></span>
+        <span class="map-viz-legend-item"><span class="map-viz-legend-swatch" style="--swatch:${palette.medio};"></span><span>${getIseRangeLabel('medio')}</span></span>
+        <span class="map-viz-legend-item"><span class="map-viz-legend-swatch" style="--swatch:${palette.alto};"></span><span>${getIseRangeLabel('alto')}</span></span>
+      </div>
+    `;
+    return;
+  }
+
+  legend.hidden = true;
+  legend.innerHTML = '';
+}
+
+function updateMapVizLegendPosition(legend = document.getElementById('mapVizLegend')) {
+  if (!legend || !map) return;
+  const rightPanel = document.getElementById('sideRightPanel');
+  const mapPanel = document.getElementById('mapPanel');
+  if (!rightPanel || !mapPanel || rightPanel.classList.contains('panel-collapsed')) {
+    legend.style.setProperty('--map-legend-right', '14px');
+    return;
+  }
+
+  const panelRect = rightPanel.getBoundingClientRect();
+  const mapRect = mapPanel.getBoundingClientRect();
+  const overlapsMap = panelRect.width > 0 && panelRect.left < mapRect.right && panelRect.right > mapRect.left;
+  const rightOffset = overlapsMap ? Math.max(14, mapRect.right - panelRect.left + 14) : 14;
+  legend.style.setProperty('--map-legend-right', `${Math.round(rightOffset)}px`);
+}
+
+window.refreshSocioMetricMap = function () {
+  ISE_MAP_SCORE_CACHE = new WeakMap();
+  if (currentLayer && isIseMapMode()) {
+    currentLayer.eachLayer((layer) => {
+      if (layer?.feature && typeof layer.setStyle === 'function') {
+        layer.setStyle(getFeatureStyle(layer.feature));
+      }
+    });
+  }
+  updateMapVizLegend();
+};
 
 function getPointRadiusForFeature(feature) {
   let radius = 7;
@@ -916,6 +1657,7 @@ function refreshTurnDependentUI() {
 
   syncResultsPanelToCurrentView();
   updatePresidentShiftOverlay();
+  updateMapVizLegend();
 }
 
 
@@ -1275,12 +2017,14 @@ function getDeputyFeatureData(props) {
   }
 
   let maxV = -1;
+  let secondV = -1;
   let winner = null;
   let total = 0;
 
   // Party
   const partyVotes = {};
   let maxPartyV = -1;
+  let secondPartyV = -1;
   let winningParty = null;
 
   for (const [cand, v] of Object.entries(votes)) {
@@ -1296,9 +2040,14 @@ function getDeputyFeatureData(props) {
 
       // Only real candidates (IDs > 2 digits) compete for winner
       // Legend votes (2-digit IDs like '45') are excluded from candidate winner
-      if (cand.length > 2 && vi > maxV) {
-        maxV = vi;
-        winner = cand;
+      if (cand.length > 2) {
+        if (vi > maxV) {
+          secondV = maxV;
+          maxV = vi;
+          winner = cand;
+        } else if (vi > secondV) {
+          secondV = vi;
+        }
       }
 
       const meta = STATE.deputyMetadata[cand];
@@ -1318,12 +2067,24 @@ function getDeputyFeatureData(props) {
 
   for (const [party, v] of Object.entries(partyVotes)) {
     if (v > maxPartyV) {
+      secondPartyV = maxPartyV;
       maxPartyV = v;
       winningParty = party;
+    } else if (v > secondPartyV) {
+      secondPartyV = v;
     }
   }
 
-  return { total, winner, winnerVotes: maxV, winningParty, votes };
+  return {
+    total,
+    winner,
+    winnerVotes: maxV,
+    runnerUpVotes: Math.max(0, secondV),
+    winningParty,
+    winningPartyVotes: maxPartyV,
+    runnerUpPartyVotes: Math.max(0, secondPartyV),
+    votes
+  };
 }
 
 function getVereadorFeatureData(props) {
@@ -1354,16 +2115,25 @@ function getVereadorFeatureData(props) {
     const locData = STATE.vereadorResults[key];
     if (!locData || !locData[TYPE_KEY]) return null;
     const votes = locData[TYPE_KEY];
-    let tot = 0, win = null, winV = -1;
+    let tot = 0, win = null, winV = -1, secondV = -1;
     const partyVotes = {};
     let maxPartyV = -1;
+    let secondPartyV = -1;
     let winningParty = null;
     for (const [cid, v] of Object.entries(votes)) {
       if (cid === '95' || cid === '96') continue;
       if (STATE.filterInaptos && (STATE.inaptos['vereador_ord']?.['1T'] || []).includes(cid)) continue;
       const vi = parseInt(v) || 0;
       tot += vi;
-      if (cid.length > 2 && vi > winV) { winV = vi; win = cid; }
+      if (cid.length > 2) {
+        if (vi > winV) {
+          secondV = winV;
+          winV = vi;
+          win = cid;
+        } else if (vi > secondV) {
+          secondV = vi;
+        }
+      }
 
       const meta = STATE.vereadorMetadata[cid];
       if (meta) {
@@ -1380,11 +2150,23 @@ function getVereadorFeatureData(props) {
 
     for (const [party, v] of Object.entries(partyVotes)) {
       if (v > maxPartyV) {
+        secondPartyV = maxPartyV;
         maxPartyV = v;
         winningParty = party;
+      } else if (v > secondPartyV) {
+        secondPartyV = v;
       }
     }
-    return { total: tot, winner: win, winnerVotes: winV, winningParty, votes };
+    return {
+      total: tot,
+      winner: win,
+      winnerVotes: winV,
+      runnerUpVotes: Math.max(0, secondV),
+      winningParty,
+      winningPartyVotes: maxPartyV,
+      runnerUpPartyVotes: Math.max(0, secondPartyV),
+      votes
+    };
   }
 
   // Recupera votes map para modo desempenho
@@ -1398,13 +2180,29 @@ function getVereadorFeatureData(props) {
   }
 
   let winningParty = null;
+  let runnerUpVotes = -1;
+  let winningPartyVotes = -1;
+  let runnerUpPartyVotes = -1;
   if (votes) {
     const partyVotes = {};
     let maxPartyV = -1;
+    let secondPartyV = -1;
+    let maxCandV = -1;
+    let secondCandV = -1;
 
     for (const [cid, v] of Object.entries(votes)) {
       if (cid === '95' || cid === '96') continue;
       if (STATE.filterInaptos && (STATE.inaptos['vereador_ord']?.['1T'] || []).includes(cid)) continue;
+      const vi = parseInt(v) || 0;
+
+      if (cid.length > 2) {
+        if (vi > maxCandV) {
+          secondCandV = maxCandV;
+          maxCandV = vi;
+        } else if (vi > secondCandV) {
+          secondCandV = vi;
+        }
+      }
 
       const meta = STATE.vereadorMetadata[cid];
       if (!meta) continue;
@@ -1417,24 +2215,40 @@ function getVereadorFeatureData(props) {
         }
       }
 
-      partyVotes[party] = (partyVotes[party] || 0) + (parseInt(v) || 0);
+      partyVotes[party] = (partyVotes[party] || 0) + vi;
     }
 
     for (const [party, v] of Object.entries(partyVotes)) {
       if (v > maxPartyV) {
+        secondPartyV = maxPartyV;
         maxPartyV = v;
         winningParty = party;
+      } else if (v > secondPartyV) {
+        secondPartyV = v;
       }
     }
+    runnerUpVotes = secondCandV;
+    winningPartyVotes = maxPartyV;
+    runnerUpPartyVotes = secondPartyV;
   }
 
-  return { total, winner, winnerVotes, winningParty, votes };
+  return {
+    total,
+    winner,
+    winnerVotes,
+    runnerUpVotes: Math.max(0, runnerUpVotes),
+    winningParty,
+    winningPartyVotes,
+    runnerUpPartyVotes: Math.max(0, runnerUpPartyVotes),
+    votes
+  };
 }
 
 
 function getFeatureStyle(feature) {
   const props = feature.properties;
   let fillColor = DEFAULT_SWATCH;
+  let outlineColor = DEFAULT_SWATCH;
   let fillOpacity = DEFAULT_POINT_FILL_OPACITY;
   let pctVal = 0;
 
@@ -1447,6 +2261,26 @@ function getFeatureStyle(feature) {
     };
   }
 
+  if (isIseMapMode()) {
+    const scoreInfo = getSocioMapMetricForProps(props);
+    const localId = resolveFeatureSelectionId(props);
+    if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive) {
+      return { stroke: false, fillColor: 'var(--accent)', fillOpacity: DEFAULT_POINT_FILL_OPACITY, opacity: 1 };
+    }
+    if (!scoreInfo) {
+      return { stroke: false, fillColor: '#9ca3af', fillOpacity: 0.22, opacity: 1 };
+    }
+    const palette = getSocioMetricPalette(scoreInfo);
+    return {
+      stroke: true,
+      color: palette[scoreInfo.tercil] || '#9ca3af',
+      weight: 1,
+      opacity: 0.7,
+      fillColor: getIseMapColor(scoreInfo),
+      fillOpacity: 0.86
+    };
+  }
+
   // SPECIAL HANDLING FOR DEPUTIES AND VEREADORES
   const isDeputy = currentCargo.startsWith('deputado');
   const isVereador = currentCargo.startsWith('vereador');
@@ -1456,10 +2290,29 @@ function getFeatureStyle(feature) {
     if (!depData || depData.total === 0) {
       return { stroke: false, fillColor: '#888888', fillOpacity: 0.2, opacity: 1 };
     }
-    const { total, winner, winnerVotes, winningParty } = depData;
-    let fillColor = DEFAULT_SWATCH, fillOpacity = DEFAULT_POINT_FILL_OPACITY, pctVal = 0;
+    const {
+      total,
+      winner,
+      winnerVotes,
+      runnerUpVotes,
+      winningParty,
+      winningPartyVotes,
+      runnerUpPartyVotes
+    } = depData;
+    let fillColor = DEFAULT_SWATCH, outlineColor = DEFAULT_SWATCH, fillOpacity = DEFAULT_POINT_FILL_OPACITY, pctVal = 0;
 
-    if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
+    if (isVictoryMarginMode()) {
+      if (STATE.vereadorViewMode === 'party' && winningParty) {
+        outlineColor = colorForParty(winningParty);
+        pctVal = getVictoryMarginPct(winningPartyVotes, runnerUpPartyVotes, total);
+        fillColor = getVictoryMarginColor(outlineColor, pctVal);
+      } else if (winner) {
+        const meta = STATE.vereadorMetadata[winner];
+        outlineColor = getColorForCandidate(meta ? meta[0] : '', meta ? meta[1] : '');
+        pctVal = getVictoryMarginPct(winnerVotes, runnerUpVotes, total);
+        fillColor = getVictoryMarginColor(outlineColor, pctVal);
+      }
+    } else if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
       if (STATE.vereadorViewMode === 'party') {
         if (winningParty) {
           fillColor = colorForParty(winningParty);
@@ -1498,7 +2351,14 @@ function getFeatureStyle(feature) {
     const localId = resolveFeatureSelectionId(props);
     if (selectedLocationIDs.has(localId) && !STATE.isFilterAggregationActive)
       return { stroke: false, fillColor: 'var(--accent)', fillOpacity: DEFAULT_POINT_FILL_OPACITY, opacity: 1 };
-    return { stroke: false, fillColor, fillOpacity, opacity: 1 };
+    return {
+      stroke: isVictoryMarginMode(),
+      color: outlineColor,
+      weight: isVictoryMarginMode() ? 1.15 : 0,
+      opacity: isVictoryMarginMode() ? 0.78 : 1,
+      fillColor,
+      fillOpacity
+    };
   }
 
   if (isDeputy || currentCargo.startsWith('deputado')) {
@@ -1513,9 +2373,30 @@ function getFeatureStyle(feature) {
       };
     }
 
-    const { total, winner, winnerVotes, winningParty } = depData;
+    const {
+      total,
+      winner,
+      winnerVotes,
+      runnerUpVotes,
+      winningParty,
+      winningPartyVotes,
+      runnerUpPartyVotes
+    } = depData;
 
-    if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
+    if (isVictoryMarginMode()) {
+      if (STATE.deputyViewMode === 'party' && winningParty) {
+        outlineColor = colorForParty(winningParty);
+        pctVal = getVictoryMarginPct(winningPartyVotes, runnerUpPartyVotes, total);
+        fillColor = getVictoryMarginColor(outlineColor, pctVal);
+      } else if (winner) {
+        const meta = STATE.deputyMetadata[winner];
+        const party = meta ? meta[1] : '';
+        const name = meta ? meta[0] : winner;
+        outlineColor = getColorForCandidate(name, party);
+        pctVal = getVictoryMarginPct(winnerVotes, runnerUpVotes, total);
+        fillColor = getVictoryMarginColor(outlineColor, pctVal);
+      }
+    } else if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
       if (STATE.deputyViewMode === 'party') {
         if (winningParty) {
           fillColor = colorForParty(winningParty);
@@ -1572,7 +2453,14 @@ function getFeatureStyle(feature) {
       return { stroke: false, fillColor: 'var(--accent)', fillOpacity: DEFAULT_POINT_FILL_OPACITY, opacity: 1 };
     }
 
-    return { stroke: false, fillColor: fillColor, fillOpacity: fillOpacity, opacity: 1 };
+    return {
+      stroke: isVictoryMarginMode(),
+      color: outlineColor,
+      weight: isVictoryMarginMode() ? 1.15 : 0,
+      opacity: isVictoryMarginMode() ? 0.78 : 1,
+      fillColor: fillColor,
+      fillOpacity: fillOpacity
+    };
   }
 
   // --- STANDARD LOGIC FOR GENERAL ELECTIONS ---
@@ -1580,7 +2468,14 @@ function getFeatureStyle(feature) {
   const { totalValidos } = getVotosValidos(props, currentCargo, turnoKey, STATE.filterInaptos);
 
   // 1. Determine Base Color and Percentage based on Mode
-  if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
+  if (isVictoryMarginMode()) {
+    const { vencedor, segundo } = getTopTwoCandidates(props, currentCargo, turnoKey, STATE.filterInaptos);
+    fillColor = getColorForCandidate(vencedor.nome, vencedor.partido);
+    outlineColor = fillColor;
+    pctVal = getVictoryMarginPct(vencedor.votos, segundo.votos, totalValidos);
+    fillColor = getVictoryMarginColor(fillColor, pctVal);
+
+  } else if (currentVizMode.startsWith('vencedor') || isPresidentShiftMode()) {
     const { nome, partido, votos } = getVencedor(props, currentCargo, turnoKey, STATE.filterInaptos);
     fillColor = getColorForCandidate(nome, partido);
     pctVal = (totalValidos > 0) ? (votos / totalValidos) * 100 : 0;
@@ -1606,7 +2501,7 @@ function getFeatureStyle(feature) {
       performanceModeStats.maxPct
     );
     fillOpacity = DEFAULT_POINT_FILL_OPACITY;
-  } else if (currentVizColorStyle === 'gradient') {
+  } else if (currentVizColorStyle === 'gradient' && !isVictoryMarginMode()) {
     fillColor = getUniversalGradientColor(fillColor, pctVal);
     fillOpacity = DEFAULT_POINT_FILL_OPACITY;
   } else {
@@ -1628,10 +2523,12 @@ function getFeatureStyle(feature) {
   }
 
   return {
-    stroke: false,
+    stroke: isVictoryMarginMode(),
+    color: outlineColor,
+    weight: isVictoryMarginMode() ? 1.15 : 0,
     fillColor: fillColor,
     fillOpacity: fillOpacity,
-    opacity: 1
+    opacity: isVictoryMarginMode() ? 0.78 : 1
   };
 }
 
@@ -1656,6 +2553,37 @@ function getVotosValidos(props, cargo, turno, filtrarInaptos) {
 
   const totalValidos = filtrarInaptos ? (somaVotosCandidatos - votosInaptos) : somaVotosCandidatos;
   return { totalValidos: totalValidos, votosInaptos: votosInaptos };
+}
+
+function getTopTwoCandidates(props, cargo, turno, filtrarInaptos) {
+  const candidatos = STATE.candidates[cargo]?.[turno] || [];
+  let winnerKey = null;
+  let runnerKey = null;
+  let winnerVotes = -1;
+  let runnerVotes = -1;
+
+  candidatos.forEach(key => {
+    if (filtrarInaptos && (STATE.inaptos[cargo]?.[turno] || []).includes(key)) return;
+    const votos = ensureNumber(getProp(props, key));
+    if (votos > winnerVotes) {
+      runnerVotes = winnerVotes;
+      runnerKey = winnerKey;
+      winnerVotes = votos;
+      winnerKey = key;
+    } else if (votos > runnerVotes) {
+      runnerVotes = votos;
+      runnerKey = key;
+    }
+  });
+
+  const vencedor = winnerKey
+    ? { ...parseCandidateKey(winnerKey), votos: winnerVotes }
+    : { nome: 'N/D', partido: 'N/D', votos: 0, status: 'N/D' };
+  const segundo = runnerKey
+    ? { ...parseCandidateKey(runnerKey), votos: runnerVotes }
+    : { nome: 'N/D', partido: 'N/D', votos: 0, status: 'N/D' };
+
+  return { vencedor, segundo };
 }
 
 function getVencedor(props, cargo, turno, filtrarInaptos) {
@@ -1698,7 +2626,7 @@ function onEachFeature(feature, layer) {
   const props = feature.properties;
   layer.bindTooltip(() => {
     const id = resolveFeatureSelectionId(props);
-    return getPresidentShiftTooltipHtml(props, PRESIDENT_SHIFT_TOOLTIP_CACHE.get(id));
+    return getMapFeatureTooltipHtml(props, PRESIDENT_SHIFT_TOOLTIP_CACHE.get(id));
   }, { sticky: true, className: 'feature-map-tooltip' });
   layer.on('mouseover', async () => {
     if (!isPresidentShiftModeActive() || typeof window.resolvePresidentRunoffShiftForProps !== 'function') return;
@@ -1713,13 +2641,22 @@ function onEachFeature(feature, layer) {
       if (!shift || !Number.isFinite(shift.shift)) return;
       PRESIDENT_SHIFT_TOOLTIP_CACHE.set(id, shift);
       if (typeof layer.setTooltipContent === 'function') {
-        layer.setTooltipContent(getPresidentShiftTooltipHtml(props, shift));
+        layer.setTooltipContent(getMapFeatureTooltipHtml(props, shift));
       }
     } catch (error) {
       // Tooltip continua no formato simples.
     }
   });
   layer.on('click', onFeatureClick);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    if (typeof updateMapVizLegendPosition === 'function') updateMapVizLegendPosition();
+  });
+  window.addEventListener('mouseup', () => {
+    if (typeof updateMapVizLegendPosition === 'function') updateMapVizLegendPosition();
+  });
 }
 
 function onFeatureClick(e) {

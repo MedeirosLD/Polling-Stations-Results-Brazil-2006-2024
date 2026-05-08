@@ -517,6 +517,7 @@ function updateVizModeUI() {
     const turno = (currentTurno === 2 && STATE.dataHas2T[currentCargo]) ? '2T' : '1T';
     populateVizCandidatoDropdown(turno);
     dom.vizCandidatoBox.classList.remove('section-hidden');
+    dom.vizCandidatoBox.style.display = '';
     dom.selectVizCandidato.disabled = false;
 
     // Auto-calcular estatísticas para o primeiro candidato selecionado
@@ -533,6 +534,7 @@ function updateVizModeUI() {
     }
   } else {
     dom.vizCandidatoBox.classList.add('section-hidden');
+    dom.vizCandidatoBox.style.display = 'none';
     dom.selectVizCandidato.disabled = true;
     dom.selectVizCandidato.style.display = '';
 
@@ -543,6 +545,8 @@ function updateVizModeUI() {
     // Limpar estatísticas e UI ao sair do modo desempenho
     performanceModeStats = { candidato: null, minPct: 0, maxPct: 0, avgPct: 0, totalLocais: 0 };
     updatePerformanceStatsUI();
+    const statsContainer = document.getElementById('performanceStats');
+    if (statsContainer) statsContainer.remove();
   }
 }
 

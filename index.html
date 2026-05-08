@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=20260502e" />
+    <link rel="stylesheet" href="style.css?v=20260508c" />
 </head>
 
 <body data-theme="light">
@@ -176,6 +176,14 @@
                                     <span class="viz-mode-title">Vencedor</span>
                                     <span class="viz-mode-desc">Cores pelo candidato mais votado</span>
                                 </button>
+                                <button class="chip-button viz-mode-chip" data-value="margem_vitoria">
+                                    <span class="viz-mode-title">Margem</span>
+                                    <span class="viz-mode-desc">Vantagem do 1o sobre o 2o colocado</span>
+                                </button>
+                                <button class="chip-button viz-mode-chip" data-value="ise_mapa">
+                                    <span class="viz-mode-title">Métrica social</span>
+                                    <span class="viz-mode-desc">Renda, gênero, idade, raça e mais</span>
+                                </button>
                                 <button class="chip-button viz-mode-chip" data-value="desempenho">
                                     <span class="viz-mode-title">Desempenho</span>
                                     <span class="viz-mode-desc">Percentual de um candidato escolhido</span>
@@ -184,6 +192,24 @@
                                     <span class="viz-mode-title">Shift 2T</span>
                                     <span class="viz-mode-desc">Mudança PT x PSDB/Bolsonaro</span>
                                 </button>
+                            </div>
+                        </div>
+                        <div class="ctrl section-hidden social-map-metric-box" id="vizSocialMetricBox">
+                            <label>Métrica social no mapa</label>
+                            <div class="social-map-select-grid">
+                                <select id="selectSocialMetricGroup" class="select">
+                                    <option value="ise">Índice ISE</option>
+                                    <option value="genero">Gênero</option>
+                                    <option value="raca">Cor/Raça</option>
+                                    <option value="idade">Faixa Etária</option>
+                                    <option value="escolaridade">Escolaridade</option>
+                                    <option value="estado_civil">Estado Civil</option>
+                                    <option value="saneamento">Saneamento</option>
+                                    <option value="participacao">Participação</option>
+                                </select>
+                                <select id="selectSocialMetric" class="select">
+                                    <option value="ise">Índice composto</option>
+                                </select>
                             </div>
                         </div>
                         <div class="ctrl section-hidden" id="vizCandidatoBox" style="margin-top:10px;">
@@ -535,6 +561,7 @@
                     <option value="gradient">Degradê</option>
                 </select>
             </div>
+            <div id="mapVizLegend" class="map-viz-legend" hidden></div>
 
             <div class="loader-overlay" id="mapLoader">Carregando dados...</div>
         </div>
@@ -1728,19 +1755,19 @@
         <script src="utils.js?v=20260407"></script>
 
         <!-- 3. Init, loadMunicipalIndex, toggleCandidateDetails, scheduleAutoLoad -->
-        <script src="ui-helpers.js?v=20260502a"></script>
+        <script src="ui-helpers.js?v=20260502c"></script>
 
         <!-- 4. setupControls, setupTabs, setupSliders, updateElectionTypeUI -->
-        <script src="ui-controls.js?v=20260502d"></script>
+        <script src="ui-controls.js?v=20260502l"></script>
 
         <!-- 5. Tooltip, neighborhood profile, updateConditionalUI, updateApplyButtonText -->
-        <script src="ui-results.js?v=20260502e"></script>
+        <script src="ui-results.js?v=20260502f"></script>
 
         <!-- 6. Helpers ZIP/GPKG, SQLite, buildMunicipalFeature*, turnout functions -->
         <script src="data-zip.js?v=20260501"></script>
 
         <!-- 7. discoverCandidates, mergeCensusData, createCombobox, populateCidade/Bairro -->
-        <script src="data-process.js?v=20260502a"></script>
+        <script src="data-process.js?v=20260508e"></script>
 
         <!-- 8. Eleições municipais: loadCenso, loadMunicipalBase, loadMunicipal*Prefeito/Vereador -->
         <script src="data-municipal.js?v=20260501"></script>
@@ -1759,17 +1786,17 @@
         <script src="data-loader.js?v=20260502a"></script>
 
         <!-- 12. Renderização do mapa, filtros, seleção por box -->
-        <script src="map-render.js?v=20260502j"></script>
+        <script src="map-render.js?v=20260502y"></script>
 
         <!-- 13. Histórico presidencial por local -->
-        <script src="historico-presidente.js?v=20260502c"></script>
+        <script src="historico-presidente.js?v=20260508a"></script>
 
         <!-- 14. Painel de resultados, modais, precomputeWinners, exports window.* -->
         <script src="results-panel.js?v=20260430"></script>
 
         <!-- ===== Análise Socioeconômica (ISE) ===== -->
         <script src="https://d3js.org/d3.v7.min.js"></script>
-        <script src="ise.js?v=20260407"></script>
+        <script src="ise.js?v=20260502d"></script>
         <script src="correlacao.js"></script>
 </body>
 
