@@ -243,8 +243,6 @@ async function init() {
 
   dom.mapLoader = document.getElementById('mapLoader');
   dom.btnLoadData = document.getElementById('btnLoadData');
-  dom.mapLoader = document.getElementById('mapLoader');
-  dom.btnLoadData = document.getElementById('btnLoadData');
   dom.themeToggle = document.getElementById('themeToggle');
   dom.themeToggle.addEventListener('click', () => {
     // Toggle logic handled by inline script or simple handler, but we must redraw map
